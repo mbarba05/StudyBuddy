@@ -1,7 +1,7 @@
 import "dotenv/config"; //for .env variables
 export default {
     expo: {
-        name: "StudyBuddy",
+        name: "studybuddy",
         slug: "studybuddy",
         scheme: "studdybuddy",
         extra: {
