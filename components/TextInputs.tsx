@@ -1,10 +1,10 @@
 import React from "react";
-import { TextInput } from "react-native";
+import { TextInput, TextInputProps } from "react-native";
 
-export const LoginInput = ({ ...props }) => {
+export const LoginInput: React.FC<TextInputProps> = ({ ...props }) => {
     return (
         <TextInput
-            className="border border-1 rounded-lg h-12 pl-2 w-72 text-colors-text"
+            className="border border-colors-text rounded-lg h-12 pl-2 w-full text-colors-text"
             {...props}
         />
     );

@@ -1,5 +1,7 @@
+import { createSessionFromUrl } from "@/auth/authRedirect";
 import { makeRedirectUri } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
+import { Alert } from "react-native";
 import supabase from "./subapase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -16,6 +18,7 @@ export async function signInWithGoogle() {
         options: {
             redirectTo,
             skipBrowserRedirect: true,
+            queryParams: { hd: "mail.fresnostate.edu" }, //only show fresno state emails
         },
     });
     if (error) throw error;
@@ -24,6 +27,25 @@ export async function signInWithGoogle() {
     const res = await WebBrowser.openAuthSessionAsync(data.url!, redirectTo);
     console.log("Res from google.ts:", res);
 
-    const { data: sess } = await supabase.auth.getSession();
-    return sess.session;
+    if (res.type === "success" && res.url) {
+        const session = await createSessionFromUrl(res.url);
+        const email = session?.user?.email ?? "";
+
+        const allowed =
+            email.endsWith("@fresnostate.edu") ||
+            email.endsWith("@mail.fresnostate.edu");
+
+        if (!allowed) {
+            await supabase.auth.signOut();
+            Alert.alert(
+                "Use your Fresno State email",
+                "Please sign in with your campus account."
+            );
+            return null;
+        }
+
+        return session;
+    }
+
+    return null;
 }
