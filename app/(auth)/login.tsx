@@ -1,8 +1,8 @@
-import { useAuth } from "@/auth/AuthProvider";
 import { LoginButton } from "@/components/Buttons";
 import { TextSeparator } from "@/components/Seperators";
 import { LoginInput } from "@/components/TextInputs";
 import { signInWithGoogle } from "@/lib/google";
+import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";

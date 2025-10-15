@@ -1,4 +1,4 @@
-import { useAuth } from "@/auth/AuthProvider";
+import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 

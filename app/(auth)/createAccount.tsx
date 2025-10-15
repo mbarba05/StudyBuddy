@@ -1,7 +1,10 @@
-import { MIN_PASSWORD_LENGTH, VALID_EMAIL_DOMAIN } from "@/auth/authModels";
-import { useAuth } from "@/auth/AuthProvider";
 import { LoginButton, RedButton } from "@/components/Buttons";
 import { LoginInput } from "@/components/TextInputs";
+import {
+    MIN_PASSWORD_LENGTH,
+    VALID_EMAIL_DOMAIN,
+} from "@/services/auth/authModels";
+import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";

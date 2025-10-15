@@ -1,4 +1,4 @@
-import { AuthProvider } from "@/auth/AuthProvider";
+import { AuthProvider } from "@/services/auth/AuthProvider";
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "./global.css";

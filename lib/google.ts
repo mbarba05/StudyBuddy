@@ -1,5 +1,5 @@
-import { VALID_EMAIL_DOMAIN } from "@/auth/authModels";
-import { createSessionFromUrl } from "@/auth/authRedirect";
+import { VALID_EMAIL_DOMAIN } from "@/services/auth/authModels";
+import { createSessionFromUrl } from "@/services/auth/authRedirect";
 import { makeRedirectUri } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { Alert } from "react-native";
