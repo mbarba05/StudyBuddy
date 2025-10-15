@@ -1,11 +1,12 @@
-import { Text, View } from "react-native";
+import { useAuth } from "@/auth/AuthProvider";
+import { RedButton } from "@/components/Buttons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
+    const { signOut } = useAuth();
     return (
-        <View
-            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-            <Text style={{ fontSize: 20 }}>Profile</Text>
-        </View>
+        <SafeAreaView className="flex-1 justify-center items-center bg-colors-background">
+            <RedButton onPress={signOut}>Sign Out</RedButton>
+        </SafeAreaView>
     );
 }

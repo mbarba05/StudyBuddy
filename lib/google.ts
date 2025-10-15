@@ -1,3 +1,4 @@
+import { VALID_EMAIL_DOMAIN } from "@/auth/authModels";
 import { createSessionFromUrl } from "@/auth/authRedirect";
 import { makeRedirectUri } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
@@ -18,7 +19,7 @@ export async function signInWithGoogle() {
         options: {
             redirectTo,
             skipBrowserRedirect: true,
-            queryParams: { hd: "mail.fresnostate.edu" }, //only show fresno state emails
+            queryParams: { hd: VALID_EMAIL_DOMAIN }, //only show fresno state emails
         },
     });
     if (error) throw error;
@@ -31,9 +32,7 @@ export async function signInWithGoogle() {
         const session = await createSessionFromUrl(res.url);
         const email = session?.user?.email ?? "";
 
-        const allowed =
-            email.endsWith("@fresnostate.edu") ||
-            email.endsWith("@mail.fresnostate.edu");
+        const allowed = email.endsWith("@mail.fresnostate.edu");
 
         if (!allowed) {
             await supabase.auth.signOut();

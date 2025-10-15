@@ -1,11 +1,7 @@
-import { Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MatchmakingScreen() {
     return (
-        <View
-            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-            <Text style={{ fontSize: 20 }}>Social</Text>
-        </View>
+        <SafeAreaView className="bg-colors-background flex-1"></SafeAreaView>
     );
 }

@@ -61,6 +61,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
     };
 
     const signUp = async (email: string, password: string) => {
+        //TODO: use Supabase confirm email, need to set up redirect URL
         const { error } = await supabase.auth.signUp({
             email,
             password,

@@ -3,13 +3,15 @@ import { LoginButton } from "@/components/Buttons";
 import { TextSeparator } from "@/components/Seperators";
 import { LoginInput } from "@/components/TextInputs";
 import { signInWithGoogle } from "@/lib/google";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { signIn, signUp } = useAuth();
+    const { signIn } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
@@ -22,25 +24,23 @@ export default function LoginScreen() {
         }
     };
 
-    const onSignUp = async () => {
-        try {
-            await signUp(email.trim(), password);
-            Alert.alert(
-                "Check your email",
-                "If confirmations are enabled, you must confirm before signing in."
-            );
-        } catch (e: any) {
-            Alert.alert("Sign up failed", e.message ?? String(e));
-        }
-    };
-
     return (
-        <View className="flex-1 p-12 justify-center bg-colors-background gap-4">
-            <Text className="text-colors-text font-bold text-6xl text-center">
-                Study Buddy
+        <SafeAreaView className="flex-1 p-12 justify-center bg-colors-background gap-2">
+            <Text className="text-colors-textSecondary text-center text-4xl">
+                Welcome To
+            </Text>
+            <View className="flex flex-row items-center justify-center gap-4">
+                <Ionicons name="school" size={36} color="#fff" />
+                <Text className="text-colors-text font-bold text-5xl text-center">
+                    Study Buddy
+                </Text>
+                <Ionicons name="people" size={36} color="#fff" />
+            </View>
+            <Text className="text-colors-textSecondary text-center text-xl mb-12">
+                Made by Fresno State students, for Fresno State Students
             </Text>
             <View className="flex gap-2.5">
-                <Text className="text-colors-textSecondary text-xl text-center font-semibold">
+                <Text className="text-colors-text text-xl font-semibold">
                     Sign In
                 </Text>
                 <View className="flex flex-row items-center gap-2">
@@ -63,7 +63,13 @@ export default function LoginScreen() {
                         placeholderTextColor="darkgray"
                     />
                 </View>
-                <LoginButton onPress={onSignIn}>Log In</LoginButton>
+                <LoginButton
+                    bgColor="bg-colors-primary"
+                    textColor="text-colors-text"
+                    onPress={onSignIn}
+                >
+                    Log In
+                </LoginButton>
             </View>
             <TextSeparator text="Or" />
             <LoginButton
@@ -80,7 +86,13 @@ export default function LoginScreen() {
                 Continue With Google
             </LoginButton>
             <TextSeparator text="Or" />
-            <LoginButton onPress={onSignUp}>Create Account</LoginButton>
-        </View>
+            <LoginButton
+                bgColor="bg-colors-secondary"
+                textColor="text-colors-text"
+                onPress={() => router.push("/createAccount")}
+            >
+                Create Account
+            </LoginButton>
+        </SafeAreaView>
     );
 }
