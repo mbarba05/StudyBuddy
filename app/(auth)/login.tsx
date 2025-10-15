@@ -1,9 +1,10 @@
 import { useAuth } from "@/auth/AuthProvider";
+import { LoginButton } from "@/components/Buttons";
 import { LoginInput } from "@/components/TextInputs";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Button, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -34,7 +35,7 @@ export default function LoginScreen() {
 
     return (
         <View className="flex-1 p-12 justify-center bg-white">
-            <View className="border border-black p-5 ">
+            <View className="border border-black px-2.5 py-5 flex gap-3">
                 <Text>Log in with Fresno State Email</Text>
                 <View className="flex flex-row items-center gap-2">
                     <Ionicons name="mail" size={32} />
@@ -56,9 +57,9 @@ export default function LoginScreen() {
                         onChangeText={setPassword}
                     />
                 </View>
-                <Button title="Sign In" onPress={onSignIn} />
+                <LoginButton onPress={onSignIn}>Log In</LoginButton>
             </View>
-            <Button title="Create Account" onPress={onSignUp} />
+            <LoginButton onPress={onSignUp}>Create Account</LoginButton>
         </View>
     );
 }
