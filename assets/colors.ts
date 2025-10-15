@@ -1,12 +1,12 @@
 export const colors = {
     //make these colors ours
-    primary: "#2563EB",
-    secondary: "#9333EA",
-    accent: "#F59E0B",
-    background: "#F9FAFB",
-    text: "#111827",
-    textInfo: "#903492",
-    muted: "#6B7280",
-    error: "#EF4444",
-    success: "#10B981",
+    primary: "#db0032",
+    secondary: "#054eb4ff",
+    accent: "#eaa732ff",
+    background: "#002e6d",
+    text: "#ffffffff",
+    textSecondary: "#898989ff",
+    muted: "#3c3c3cff",
+    error: "#77001cff",
+    success: "#00790eff",
 };

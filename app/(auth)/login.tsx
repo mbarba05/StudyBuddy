@@ -34,9 +34,9 @@ export default function LoginScreen() {
     };
 
     return (
-        <View className="flex-1 p-12 justify-center bg-white">
+        <View className="flex-1 p-12 justify-center bg-colors-background">
             <View className="border border-black px-2.5 py-5 flex gap-3">
-                <Text>Log in with Fresno State Email</Text>
+                <Text className="text-colors-text">Log in with Fresno State Email</Text>
                 <View className="flex flex-row items-center gap-2">
                     <Ionicons name="mail" size={32} />
                     <LoginInput
