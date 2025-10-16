@@ -1,0 +1,9 @@
+Week 1 Notes
+Nick:
+10/15: I went in to this cycle planning on finishing Google Authentication. I was able to do it in a day better than
+I thought I would. Google auth makes it really easy, so i just had to add a domain parameter to the Google
+sign in function and it opened up the Fresno State log in page. After this I just had to save the session
+and we were good to go. After that I styled the log in page and was proud of how it looked I then added the option 
+to create an account using noraml email log in. This was a new screen, and I made sure to validate all the input 
+and show error messages (passwords don't match, non valid Fresno State email, password length >= 6). In the future 
+I need to figure out how to do email confirmations as that is one of the features Supabase offers.
