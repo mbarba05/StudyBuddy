@@ -1,5 +1,5 @@
-import { LoginButton, RedButton } from "@/components/Buttons";
-import { LoginInput } from "@/components/TextInputs";
+import { LoginButton, RedButton } from "@/components/ui/Buttons";
+import { LoginInput } from "@/components/ui/TextInputs";
 import {
     MIN_PASSWORD_LENGTH,
     VALID_EMAIL_DOMAIN,
