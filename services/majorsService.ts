@@ -3,6 +3,8 @@ import supabase from "@/lib/subapase";
 
 export type MajorDropDownItem = { label: string; value: number };
 
+export type Major = { id: any; name: any }[];
+
 export const getAllMajorsForDropdown = async (): Promise<
     MajorDropDownItem[]
 > => {
