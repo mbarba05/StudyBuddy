@@ -29,7 +29,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 
     useEffect(() => {
         let mounted = true;
-
         const init = async () => {
             const {
                 data: { user },
@@ -39,7 +38,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
             setLoading(false);
         };
         init();
-
         const { data: sub } = supabase.auth.onAuthStateChange(
             (_event, session) => {
                 setUser(session?.user ?? null);

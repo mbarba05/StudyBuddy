@@ -16,13 +16,14 @@ const EditProfileForm = () => {
     useEffect(() => {
         //gets all major options
         let mounted = true;
-        (async () => {
+        const getMajors = async () => {
             const majors = await getAllMajorsForDropdown();
             if (mounted) {
                 setMajorOptions(majors);
                 setLoading(false);
             }
-        })();
+        };
+        getMajors();
         return () => {
             mounted = false;
         };

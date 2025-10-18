@@ -15,21 +15,14 @@ export interface Profile {
     pp_url: string | undefined;
 }
 
-export const getUserProfile = async (): Promise<Profile | null> => {
-    const {
-        data: { session },
-        error: sessionError,
-    } = await supabase.auth.getSession();
-    if (sessionError) {
-        console.error("Error getting session:", sessionError);
-        return null;
-    }
-
-    const userId = session?.user?.id;
+export const getUserProfile = async (
+    userId: string | null
+): Promise<Profile | null> => {
     if (!userId) {
         console.warn("No user in session");
         return null;
     }
+
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
         .select("user_id, display_name, major:majors(id, name), year, pp_url")
@@ -50,7 +43,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     return data;
 };
 
-export const hasProfileByUserId = async (userId: string): Promise<boolean> => {
+export const hasProfile = async (userId: string): Promise<boolean> => {
     const { data, count, error } = await supabase
         .from("profiles")
         .select("user_id", { count: "exact", head: true })

@@ -6,24 +6,25 @@ import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
 
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         let mounted = true;
-        (async () => {
-            const prof = await getUserProfile();
+        const getProfile = async () => {
+            const prof = await getUserProfile(user?.id || null);
             if (mounted) {
                 setProfile(prof);
                 setLoading(false);
             }
-        })();
+        };
+        getProfile();
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [user?.id]);
 
     console.log("prfile", profile);
     if (loading) return <LoadingScreen />;
