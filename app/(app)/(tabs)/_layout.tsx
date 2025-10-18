@@ -1,10 +1,11 @@
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 
 export default function AppLayout() {
     const { user, loading } = useAuth();
-    if (loading) return null;
+    if (loading) return <LoadingScreen />;
 
     if (!user) return <Redirect href="/(auth)/login" />;
 

@@ -1,4 +1,5 @@
 import { RedButton } from "@/components/ui/Buttons";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getUserProfile, Profile } from "@/services/profileService";
 import { useEffect, useState } from "react";
@@ -25,7 +26,7 @@ export default function ProfileScreen() {
     }, []);
 
     console.log("prfile", profile);
-    if (loading) return null; //TODO: make loading image
+    if (loading) return <LoadingScreen />;
 
     return (
         <SafeAreaView className="flex-1 justify-center items-center bg-colors-background">

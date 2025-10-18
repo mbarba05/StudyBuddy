@@ -1,3 +1,4 @@
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import {
     getAllMajorsForDropdown,
     MajorDropDownItem,
@@ -27,7 +28,7 @@ const EditProfileForm = () => {
         };
     }, []);
 
-    if (loading) return null; //we should make this some type of loading thing like a blinking logo
+    if (loading) return <LoadingScreen />;
 
     return (
         <View className="w-1/2">
