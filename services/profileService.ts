@@ -7,6 +7,7 @@ import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { Major } from "./majorsService";
 
+
 export interface Profile {
     user_id: string;
     display_name: string;
