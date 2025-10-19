@@ -1,78 +1,59 @@
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
-import { hasProfileByUserId } from "@/services/profileService";
-import { Stack, router, usePathname } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { hasProfile } from "@/services/profileService";
+import { Redirect, Stack, usePathname } from "expo-router";
+import { useEffect, useState } from "react";
 
 export default function AppLayout() {
     const { user } = useAuth();
     const pathname = usePathname();
-
-    const [ready, setReady] = useState(false);
+    const CREATE_PROFILE = "/create-profile";
+    const [loading, setloading] = useState(false);
     const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(
         null
     );
 
-    // refs to avoid duplicate navs
-    const checkedUserId = useRef<string | null>(null);
-    const navigated = useRef(false);
-
-    //check profile once per signed-in user
     useEffect(() => {
         let mounted = true;
 
-        (async () => {
+        const checkProfile = async () => {
             if (!user) {
-                setReady(true);
-                setNeedsOnboarding(null);
-                checkedUserId.current = null;
-                navigated.current = false;
+                if (mounted) {
+                    setNeedsOnboarding(null);
+                    setloading(true);
+                }
                 return;
             }
 
-            if (checkedUserId.current === user.id) {
-                setReady(true);
-                return;
-            }
-
-            // if we are already on create profile, mark that we need onboarding
-            if (pathname === "/(app)/create-profile") {
-                checkedUserId.current = user.id;
-                setNeedsOnboarding(true);
-                setReady(true);
-                return;
-            }
-
-            // do the existence check once
-            const exists = await hasProfileByUserId(user.id);
+            const profile = await hasProfile(user.id);
             if (!mounted) return;
+            setNeedsOnboarding(!profile);
+            setloading(true);
+        };
 
-            checkedUserId.current = user.id;
-            setNeedsOnboarding(!exists);
-            setReady(true);
-        })();
-
+        checkProfile();
         return () => {
             mounted = false;
         };
-    }, [user, pathname]);
+    }, [user]);
 
-    useEffect(() => {
-        if (!user) return;
-        if (needsOnboarding !== true) return;
-        if (pathname === "/(app)/create-profile") return;
-        if (navigated.current) return;
+    if (!loading) {
+        return <LoadingScreen />;
+    }
 
-        navigated.current = true;
-        router.replace("/(app)/create-profile");
-    }, [needsOnboarding, pathname, user]);
-
-    if (!ready && pathname !== "/(app)/create-profile") return null;
+    if (user && needsOnboarding && pathname !== CREATE_PROFILE) {
+        return <Redirect href={CREATE_PROFILE} />;
+    }
 
     return (
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen
                 name="create-profile"
-                options={{ headerShown: true, title: "Create Profile" }}
+                options={{
+                    headerShown: true,
+                    title: "Create Profile",
+                    animation: "none",
+                }}
             />
             <Stack.Screen name="(tabs)" />
         </Stack>
