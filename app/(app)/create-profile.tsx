@@ -39,10 +39,10 @@ export default function CreateProfileScreen() {
     const [error, setError] = useState("");
 
     const yearOptions = [
-        { label: "Freshman", value: "FRESHMAN" },
-        { label: "Sophomore", value: "SOPHOMORE" },
-        { label: "Junior", value: "JUNIOR" },
-        { label: "Senior", value: "SENIOR" },
+        { label: "Freshman", value: "Freshman" },
+        { label: "Sophomore", value: "Sophomore" },
+        { label: "Junior", value: "Junior" },
+        { label: "Senior", value: "Senior" },
     ];
 
     // Fetch from supabase the majors

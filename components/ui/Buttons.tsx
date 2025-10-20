@@ -49,3 +49,19 @@ export const RedButton: React.FC<GenericButtonProps> = ({
         </TouchableOpacity>
     );
 };
+
+export const BlueButton: React.FC<GenericButtonProps> = ({
+    children,
+    ...props
+}) => {
+    return (
+        <TouchableOpacity
+            className="flex flex-row gap-3 bg-colors-secondary items-center justify-center w-1/2 h-12 rounded-lg"
+            {...props}
+        >
+            <Text className="flex flex-row items-center justify-center text-colors-text">
+                {children}
+            </Text>
+        </TouchableOpacity>
+    );
+};
