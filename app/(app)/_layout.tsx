@@ -50,7 +50,6 @@ export default function AppLayout() {
             <Stack.Screen
                 name="create-profile"
                 options={{
-                    headerShown: true,
                     title: "Create Profile",
                     animation: "none",
                 }}

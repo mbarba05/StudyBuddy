@@ -1,309 +1,308 @@
+import { LoginButton, RedButton } from "@/components/ui/Buttons";
+import { LoginInput } from "@/components/ui/TextInputs";
+import supabase from "@/lib/subapase";
+import { useAuth } from "@/services/auth/AuthProvider";
+import {
+    getAllMajorsForDropdown,
+    MajorDropDownItem,
+} from "@/services/majorsService";
+import { createProfile } from "@/services/profileService";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  Alert,
-  ActivityIndicator,
-  TouchableOpacity,
-  FlatList,
-  Modal,
-  Image,
+    ActivityIndicator,
+    Alert,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
+import DropDownPicker from "react-native-dropdown-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LoginInput } from "@/components/ui/TextInputs";
-import { LoginButton, RedButton } from "@/components/ui/Buttons";
-import { useAuth } from "@/services/auth/AuthProvider";
-import { createProfile } from "@/services/profileService"; // ✅ named import
-import supabase from "@/lib/subapase"; // ✅ default import (matches your filename)
-import { router } from "expo-router";
 
-
-// Screen 
+// Screen
 export default function CreateProfileScreen() {
-  const { user, signOut } = useAuth();
+    const { user, signOut } = useAuth();
 
-  // useState initalizations 
-  const [fullName, setFullName] = useState("");
-  const [year, setYear] = useState("");
-  const [majorId, setMajorId] = useState<number | null>(null);
-  const [majors, setMajors] = useState<{ id: number; name: string }[]>([]);
-  const [majorModalVisible, setMajorModalVisible] = useState(false);
+    const [fullName, setFullName] = useState("");
+    const [yearValue, setYearValue] = useState("");
+    const [yearOpen, setYearOpen] = useState(false);
+    const [majorOpen, setMajorOpen] = useState(false);
+    const [majorValue, setMajorValue] = useState<number | null>(null);
+    const [majorOptions, setMajorOptions] = useState<MajorDropDownItem[]>([]); // [{label, value}]
+    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+    const yearOptions = [
+        { label: "Freshman", value: "FRESHMAN" },
+        { label: "Sophomore", value: "SOPHOMORE" },
+        { label: "Junior", value: "JUNIOR" },
+        { label: "Senior", value: "SENIOR" },
+    ];
 
-  // Fetch from supabase the majors 
-  useEffect(() => {
-    const fetchMajors = async () => {
-      const { data, error } = await supabase
-        .from("majors")
-        .select("id, name")
-        .order("name", { ascending: true });
+    // Fetch from supabase the majors
+    useEffect(() => {
+        //gets all major options
+        let mounted = true;
+        const getMajors = async () => {
+            const majors = await getAllMajorsForDropdown();
+            if (mounted) {
+                setMajorOptions(majors);
+                setLoading(false);
+            }
+        };
+        getMajors();
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
-      if (error) {
-        console.error("Error fetching majors:", error);
-      } else {
-        setMajors(data || []);
-      }
+    // Can't proceed unless the text fields are filled
+    const validateInputs = () => {
+        if (!fullName.trim()) return "Full name is required.";
+        if (!majorValue) return "Please select a major.";
+        if (!yearValue) return "Year is required.";
+        return "";
     };
 
-    fetchMajors();
-  }, []);
+    // Let user pick a profile pic from their phone's gallery
+    const pickImage = async () => {
+        const permission =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert(
+                "Permission required",
+                "Please allow access to your photos."
+            );
+            return;
+        }
 
-  // Can't proceed unless the text fields are filled
-  const validateInputs = () => {
-    if (!fullName.trim()) return "Full name is required.";
-    if (!majorId) return "Please select a major.";
-    if (!year.trim()) return "Year is required.";
-    return "";
-  };
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+        });
 
-  // Let user pick a profile pic from their phone's gallery 
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Permission required", "Please allow access to your photos.");
-      return;
-    }
+        if (!result.canceled && result.assets?.length > 0) {
+            setImageUri(result.assets[0].uri);
+        }
+    };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
+    // Upload the user profile pic images to supabase
+    const uploadImage = async (fileUri: string, userId: string) => {
+        try {
+            setUploading(true);
+            const response = await fetch(fileUri);
+            const blob = await response.blob();
+            const fileExt = fileUri.split(".").pop();
+            const fileName = `${userId}.${fileExt}`;
+            const filePath = `${fileName}`;
 
-    if (!result.canceled && result.assets?.length > 0) {
-      setImageUri(result.assets[0].uri);
-    }
-  };
+            const { error: uploadError } = await supabase.storage
+                .from("profile-pictures")
+                .upload(filePath, blob, { upsert: true });
 
-  // Upload the user profile pic images to supabase 
-  const uploadImage = async (fileUri: string, userId: string) => {
-    try {
-      setUploading(true);
-      const response = await fetch(fileUri);
-      const blob = await response.blob();
-      const fileExt = fileUri.split(".").pop();
-      const fileName = `${userId}.${fileExt}`;
-      const filePath = `${fileName}`;
+            if (uploadError) throw uploadError;
 
-      const { error: uploadError } = await supabase.storage
-        .from("profile-pictures")
-        .upload(filePath, blob, { upsert: true });
+            const { data: publicUrlData } = supabase.storage
+                .from("profile-pictures")
+                .getPublicUrl(filePath);
 
-      if (uploadError) throw uploadError;
+            return publicUrlData.publicUrl;
+        } catch (error: any) {
+            console.error("Error uploading image: ", error);
+            Alert.alert("Error", "Failed to upload image to Supa.");
+            return null;
+        } finally {
+            setUploading(false);
+        }
+    };
 
-      const { data: publicUrlData } = supabase.storage
-        .from("profile-pictures")
-        .getPublicUrl(filePath);
+    // Create the profile
+    const handleCreateProfile = async () => {
+        const validationError = validateInputs();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
 
-      return publicUrlData.publicUrl;
-    } catch (error: any) {
-      console.error("Error uploading image: ", error);
-      Alert.alert("Error", "Failed to upload image to Supa.");
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
+        if (!user) {
+            Alert.alert(
+                "Error",
+                "No user was found. Please try to log in again."
+            );
+            return;
+        }
 
-  // Create the profile
-  const handleCreateProfile = async () => {
-    const validationError = validateInputs();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+        try {
+            setLoading(true);
+            setError("");
 
-    if (!user) {
-      Alert.alert("Error", "No user was found. Please try to log in again.");
-      return;
-    }
+            let imageUrl: string | null = null;
+            if (imageUri) {
+                imageUrl = await uploadImage(imageUri, user.id);
+            }
 
-    try {
-      setLoading(true);
-      setError("");
+            const newProfile = {
+                userId: user.id,
+                displayName: fullName.trim(),
+                majorId: majorValue,
+                year: yearValue,
+                ppUrl: imageUrl || null,
+            };
 
-      let imageUrl: string | null = null;
-      if (imageUri) {
-        imageUrl = await uploadImage(imageUri, user.id);
-      }
+            await createProfile(newProfile);
 
-      const newProfile = {
-        userId: user.id,
-        displayName: fullName.trim(),
-        majorId: majorId!,
-        year: year.trim(),
-        ppUrl: imageUrl || null,
-      };
+            Alert.alert("Success", "Your profile has been created!");
+            router.replace("/(app)/(tabs)");
+        } catch (e: any) {
+            console.error("Error creating profile:", e);
+            Alert.alert("Error", e.message || "Failed to create profile.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      await createProfile(newProfile);
+    // Spent some time here and make it so it signed out and returned to the login screen
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+            router.replace("/(auth)/login");
+        } catch (error) {
+            console.error("Sign out error:", error);
+            Alert.alert("Error", "Unable to sign out. Please try again.");
+        }
+    };
 
-
-
-      Alert.alert("Success", "Your profile has been created!");
-      router.replace("/(app)/(tabs)");
-    } catch (e: any) {
-      console.error("Error creating profile:", e);
-      Alert.alert("Error", e.message || "Failed to create profile.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Spent some time here and make it so it signed out and returned to the login screen 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.replace("/(auth)/login"); 
-    } catch (error) {
-      console.error("Sign out error:", error);
-      Alert.alert("Error", "Unable to sign out. Please try again.");
-    }
-  };
-
-  // UI like the text and styling 
-  return (
-    <SafeAreaView className="flex-1 bg-colors-background">
-      <View className="px-6 py-8 gap-3">
-        <Text className="text-3xl font-bold text-colors-text">
-          Create Your Profile
-        </Text>
-        <Text className="text-colors-textSecondary">
-          Add your info and profile picture before continuing.
-        </Text>
-      </View>
-
-      <View className="px-6 gap-3">
-        <LoginInput
-          placeholder="Full Name *"
-          value={fullName}
-          onChangeText={setFullName}
-          placeholderTextColor="darkgray"
-        />
-
-        {/* Major Selection */}
-        <TouchableOpacity
-          onPress={() => setMajorModalVisible(true)}
-          style={{
-            backgroundColor: "#1E1E1E",
-            borderRadius: 8,
-            paddingVertical: 14,
-            paddingHorizontal: 12,
-          }}
-        >
-          <Text
-            style={{
-              color: majorId ? "white" : "gray",
-              fontSize: 16,
-            }}
-          >
-            {majorId
-              ? majors.find((m) => m.id === majorId)?.name
-              : "Select Major *"}
-          </Text>
-        </TouchableOpacity>
-
-        <LoginInput
-          placeholder="Year (Freshman, Sophomore, Junior, Senior) *"
-          value={year}
-          onChangeText={setYear}
-          placeholderTextColor="darkgray"
-        />
-
-        {/*  Profile Picture */}
-        <View className="mt-3 items-center">
-          {imageUri ? (
-            <Image
-              source={{ uri: imageUri }}
-              style={{
-                width: 120,
-                height: 120,
-                borderRadius: 60,
-                marginBottom: 10,
-              }}
-            />
-          ) : (
-            <View
-              style={{
-                width: 120,
-                height: 120,
-                borderRadius: 60,
-                borderWidth: 2,
-                borderColor: "#555",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 10,
-              }}
-            >
-              <Text style={{ color: "#777" }}>No Image</Text>
+    // UI like the text and styling
+    return (
+        <SafeAreaView className="flex-1 justify-center bg-colors-background">
+            <View className="px-6 py-8 gap-3">
+                <View className="flex flex-row justify-center items-center gap-3">
+                    <Text className="text-4xl font-bold text-colors-text">
+                        Create Your Profile
+                    </Text>
+                    <Ionicons name="person-circle" color={"#ffff"} size={36} />
+                </View>
+                <Text className="text-colors-textSecondary text-center">
+                    Add your info and profile picture before continuing.
+                </Text>
             </View>
-          )}
-          <LoginButton
-            bgColor="bg-gray-700"
-            textColor="text-colors-text"
-            onPress={pickImage}
-          >
-            {uploading ? <ActivityIndicator /> : "Select Photo"}
-          </LoginButton>
-        </View>
 
-        {error ? (
-          <Text className="text-colors-error font-semibold mt-2">{error}</Text>
-        ) : null}
-      </View>
+            <View className="px-6 gap-3">
+                {/*  Profile Picture */}
+                <View className="mb-3 items-center">
+                    {imageUri ? (
+                        <TouchableOpacity onPress={pickImage}>
+                            <Image
+                                source={{ uri: imageUri }}
+                                className="w-72 h-72 rounded-full border-2 border-colors-text"
+                            />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={pickImage}
+                            className="w-72 h-72 rounded-full border-2 border-colors-text flex justify-center items-center mb-4"
+                        >
+                            {uploading ? (
+                                <ActivityIndicator />
+                            ) : (
+                                <Ionicons
+                                    name="camera"
+                                    size={32}
+                                    color={"#898989ff"}
+                                />
+                            )}
+                        </TouchableOpacity>
+                    )}
+                </View>
+                <LoginInput
+                    placeholder="Full Name *"
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholderTextColor="darkgray"
+                />
 
-      <View className="px-6 mt-6 gap-3">
-        <LoginButton
-          bgColor={loading ? "bg-gray-500" : "bg-colors-primary"}
-          textColor="text-colors-text"
-          onPress={handleCreateProfile}
-        >
-          {loading ? <ActivityIndicator /> : "Create Profile"}
-        </LoginButton>
+                {/* Major Selection */}
+                <View className="z-20">
+                    <DropDownPicker
+                        open={majorOpen}
+                        value={majorValue}
+                        items={majorOptions}
+                        setOpen={setMajorOpen}
+                        setValue={setMajorValue}
+                        setItems={setMajorOptions}
+                        searchable
+                        searchPlaceholder="Search Majors"
+                        placeholder="Choose Major"
+                        placeholderStyle={styles.placeholder}
+                        textStyle={{ color: "white" }}
+                        style={styles.dropdown}
+                        dropDownContainerStyle={styles.dropdownContainer}
+                        searchContainerStyle={styles.searchContainer}
+                        searchTextInputProps={{ color: "white" }}
+                    />
+                </View>
 
-        {/* Calls sign out and now it works for me and goes back to the login screen  */}
-        <RedButton onPress={handleSignOut}>Sign Out</RedButton>
-      </View>
+                <View className="z-10">
+                    <DropDownPicker
+                        open={yearOpen}
+                        value={yearValue}
+                        items={yearOptions}
+                        setOpen={setYearOpen}
+                        setValue={setYearValue}
+                        placeholder="Choose Grade"
+                        placeholderStyle={styles.placeholder}
+                        textStyle={{ color: "white" }}
+                        style={styles.dropdown}
+                        dropDownContainerStyle={styles.dropdownContainer}
+                    />
+                </View>
 
-      {/* */}
-      <Modal visible={majorModalVisible} animationType="slide">
-        <SafeAreaView className="flex-1 bg-colors-background">
-          <View className="px-6 py-4">
-            <Text className="text-2xl font-bold text-colors-text">
-              Select Your Major
-            </Text>
-          </View>
-          <FlatList
-            data={majors}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  setMajorId(item.id);
-                  setMajorModalVisible(false);
-                }}
-                style={{
-                  padding: 16,
-                  borderBottomWidth: 1,
-                  borderColor: "#333",
-                }}
-              >
-                <Text className="text-colors-text">{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-          <View className="px-6 py-4">
-            <RedButton onPress={() => setMajorModalVisible(false)}>
-              Cancel
-            </RedButton>
-          </View>
+                {error ? (
+                    <Text className="text-colors-error font-semibold mt-2">
+                        {error}
+                    </Text>
+                ) : null}
+            </View>
+
+            <View className="flex items-center px-6 mt-6 gap-3">
+                <LoginButton
+                    bgColor={loading ? "bg-gray-500" : "bg-colors-secondary"}
+                    textColor="text-colors-text"
+                    onPress={handleCreateProfile}
+                >
+                    {loading ? <ActivityIndicator /> : "Create Profile"}
+                </LoginButton>
+
+                {/* Calls sign out and now it works for me and goes back to the login screen  */}
+                <RedButton onPress={handleSignOut}>Sign Out</RedButton>
+            </View>
+
+            {/* */}
         </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
-  );
+    );
 }
+
+const styles = StyleSheet.create({
+    dropdown: {
+        backgroundColor: "#002e6d",
+        borderColor: "#ffff",
+    },
+    placeholder: {
+        color: "#898989ff",
+    },
+    dropdownContainer: {
+        backgroundColor: "#054eb4ff",
+        borderColor: "#ffffff",
+    },
+    searchContainer: {
+        borderColor: "#ffffff",
+    },
+});

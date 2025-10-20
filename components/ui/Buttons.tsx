@@ -21,7 +21,7 @@ export const LoginButton: React.FC<LoginButtonProps> = ({
 }) => {
     return (
         <TouchableOpacity
-            className={`${bgColor} flex flex-row gap-3 items-center justify-center w-full h-12 rounded-sm`}
+            className={`${bgColor}  flex flex-row gap-3 items-center justify-center w-full h-12 rounded-lg`}
             {...props}
         >
             {image}
@@ -40,7 +40,7 @@ export const RedButton: React.FC<GenericButtonProps> = ({
 }) => {
     return (
         <TouchableOpacity
-            className="flex flex-row gap-3 bg-colors-primary items-center justify-center w-1/2 h-12 rounded-sm"
+            className="flex flex-row gap-3 bg-colors-primary items-center justify-center w-1/2 h-12 rounded-lg"
             {...props}
         >
             <Text className="flex flex-row items-center justify-center text-colors-text">
