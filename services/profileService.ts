@@ -61,3 +61,60 @@ export const hasProfile = async (userId: string): Promise<boolean> => {
 
     return exists;
 };
+
+
+
+// 
+type CreateProfileInput = {
+    displayName: string;
+    majorId: string | number;
+    year: string;
+    ppUrl?: string | undefined;
+};
+
+
+// function to get profile inputs from the frontend
+//                                       
+export async function createProfile(input: CreateProfileInput): Promise<Profile>{
+    //checking whos signed in
+    const {data: u, error: authErr} = await supabase.auth.getUser();
+    if(authErr) throw authErr;
+    const user_id = u?.user?.id;  // if no one is signed in, user_id becomes Undefined instead of crashing 
+    if(!user_id) throw new Error("No user Active");
+
+    //building new row into the table
+    const payload = {
+        user_id,
+        display_name: input.displayName,
+        major_id: input.majorId,
+        year: input.year,
+        pp_url: input.ppUrl ?? null, // grabs pfp if available 
+    };
+
+    // return a joined row for profile
+    const {data, error} = await supabase
+        .from(TABLES.PROFILES) //"profiles"
+        .upsert(payload, { onConflict: "user_id"})
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
+        .single();
+
+        if (error) throw error;
+
+        const major = (data as any).major;
+        /*
+        if(!major || Array.isArray(major)){
+            throw new Error("Profile must have a single major.");
+        }
+        */
+
+        const result: Profile = {
+            user_id: data.user_id,
+            display_name: data.display_name,
+            year: data.year,
+            pp_url: data.pp_url ?? undefined,
+            major: {id:major.id,name:major.name},
+        };
+
+        return result;
+}
+
