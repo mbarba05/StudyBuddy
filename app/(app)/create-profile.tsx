@@ -64,9 +64,10 @@ export default function CreateProfileScreen() {
 
     // Can't proceed unless the text fields are filled
     const validateInputs = () => {
-        if (!fullName.trim()) return "Full name is required.";
+        if (!fullName.trim()) return "Name is required.";
         if (!majorValue) return "Please select a major.";
         if (!yearValue) return "Year is required.";
+        if (!imageUri) return "Profile Pic is required"; 
         return "";
     };
 
@@ -230,7 +231,7 @@ export default function CreateProfileScreen() {
                 />
 
                 {/* Major Selection */}
-                <View className="z-20">
+                <View className="z-10">
                     <DropDownPicker
                         open={majorOpen}
                         value={majorValue}
@@ -250,7 +251,7 @@ export default function CreateProfileScreen() {
                     />
                 </View>
 
-                <View className="z-10">
+                <View className="z-20">
                     <DropDownPicker
                         open={yearOpen}
                         value={yearValue}
