@@ -7,6 +7,12 @@ and we were good to go. After that I styled the log in page and was proud of how
 to create an account using noraml email log in. This was a new screen, and I made sure to validate all the input 
 and show error messages (passwords don't match, non valid Fresno State email, password length >= 6). In the future 
 I need to figure out how to do email confirmations as that is one of the features Supabase offers.
+10/23
+End of the cycle. After the last changes, I had to make sure the app redirected you to the create profile page
+when you didn't have an account. This took alot of trial and error but I got it eventually. 
+In class, I made sure everyone was able to run the app on the emulator. I also helped to make sure everyone 
+knew what to work on. I made some refinements to Carlos's create profile page, and made the skeletons of the edit 
+profile page.
 
 Marquez:
 10/17-23: I have edited, changed, and added colors to be used within the app. 
@@ -14,3 +20,4 @@ This would include primary, secondary, accent colors etc. These changes could be
 seen in the colors.ts file within assets. I have also managed to edit the profile 
 page within index to make the visuals more appealing (spaced out buttons/ editing 
 sizes and texts/ changing the profile picture window).
+

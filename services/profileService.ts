@@ -23,7 +23,6 @@ export const getUserProfile = async (
         console.warn("No user in session");
         return null;
     }
-
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
         .select("user_id, display_name, major:majors(id, name), year, pp_url")
@@ -63,24 +62,28 @@ export const hasProfile = async (userId: string): Promise<boolean> => {
 };
 
 
-
-// 
+ 
 type CreateProfileInput = {
     displayName: string;
-    majorId: string | number;
+    majorId: number; 
     year: string;
-    ppUrl?: string | undefined;
+    ppUrl?: string;
+    ppFile?: File | Blob;
 };
 
-
 // function to get profile inputs from the frontend
-//                                       
 export async function createProfile(input: CreateProfileInput): Promise<Profile>{
     //checking whos signed in
     const {data: u, error: authErr} = await supabase.auth.getUser();
     if(authErr) throw authErr;
-    const user_id = u?.user?.id;  // if no one is signed in, user_id becomes Undefined instead of crashing 
+    const user_id = u?.user?.id; 
     if(!user_id) throw new Error("No user Active");
+
+    // uploading Profile_pic file and grabbing url
+    let finalUrl = input.ppUrl;
+    if(!finalUrl && input.ppFile){
+        finalUrl = await uploadProfilePics(input.ppFile);
+    }
 
     //building new row into the table
     const payload = {
@@ -88,12 +91,12 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         display_name: input.displayName,
         major_id: input.majorId,
         year: input.year,
-        pp_url: input.ppUrl ?? null, // grabs pfp if available 
+        ...(finalUrl ? {pp_url: finalUrl } : {}), 
     };
 
     // return a joined row for profile
     const {data, error} = await supabase
-        .from(TABLES.PROFILES) //"profiles"
+        .from(TABLES.PROFILES) 
         .upsert(payload, { onConflict: "user_id"})
         .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
         .single();
@@ -101,12 +104,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         if (error) throw error;
 
         const major = (data as any).major;
-        /*
-        if(!major || Array.isArray(major)){
-            throw new Error("Profile must have a single major.");
-        }
-        */
-
+        
         const result: Profile = {
             user_id: data.user_id,
             display_name: data.display_name,
@@ -116,5 +114,52 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         };
 
         return result;
+        
 }
+
+function getExt(name?: string, mime?: string):string{
+    return(
+        name?.split(".").pop()?.toLowerCase() ||
+        mime?.split("/")[1]?.toLowerCase() ||
+        "png"
+    );
+}
+
+// adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
+export const BUCKETS = {PROFILE_PICS: 'profile-pictures'} as const;
+export async function uploadProfilePics(file: File | Blob): Promise<string>{
+    // whos signed in
+    const { data: u, error: authErr} = await supabase.auth.getUser(); 
+    if (authErr) throw authErr;
+    const userId = u?.user?.id;
+    if (!userId) throw new Error("No user logged in");
+
+    // creating unique path
+    const f: any = file;
+    const name: string | undefined = typeof f?.name === 'string' && f.name ? f.name : undefined;
+    let mime: string | undefined = typeof f?.type === 'string' && f.type ? f.type : undefined;
+    if(!mime) mime = "image/jpeg"; 
+
+    const ext = getExt(name, mime);
+    const filePath = `${userId}/avatar-${Date.now()}.${ext}`;
+
+    // add to bucket
+    const { error: uploadError } = await supabase.storage
+    .from(BUCKETS.PROFILE_PICS)
+    .upload(filePath, file, { 
+        upsert: true, 
+        contentType: mime || `image/${ext}`,
+    });
+    if (uploadError) throw uploadError;
+
+    //grabbing public url
+    const { data: publicData} = supabase.storage
+    .from(BUCKETS.PROFILE_PICS)
+    .getPublicUrl(filePath);
+
+    const publicUrl = publicData.publicUrl;
+    if (!publicUrl) throw new Error("Failed to generate public url");
+
+    return publicUrl;
+};
 
