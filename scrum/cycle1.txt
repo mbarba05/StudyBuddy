@@ -24,6 +24,14 @@ sizes and texts/ changing the profile picture window).
 
 Eliezer:
 10/19:
-In this cycle I'm planning on working on creating functions to store the user profile information (name, major, year, and profile picture) when they create the profile after creating the account.
+In this cycle I'm planning on working on creating functions to store the user profile information (name, major, year, and profile picture) 
+when they create the profile after creating the account.
 10/23: 
-In this scum cycle I worked on saving the user profile in the profile table in supabase. I created two functions that was able to get the user input. I was able to create a function to grab the user information like (name, major, year, and profile picture). In order to grab the profile picture the user used I needed to create a function that stored the image into a bucket (where all the profile pictures files are stored) and then created a url and then stored that url into the profile table. I was able to get these functions to work completely, I know because I was able to see the table in supabase and it showed all fields complete. The storage in supabase also shows the file(image) the user uploaded. 
+In this scum cycle I worked on saving the user profile in the profile table in supabase. I created two functions that was able to get the user input.
+I was able to create a function to grab the user information like (name, major, year, and profile picture). In order to grab the profile picture the 
+user used I needed to create a function that stored the image into a bucket (where all the profile pictures files are stored) and then created a url 
+and then stored that url into the profile table. I was able to get these functions to work completely, I know because I was able to see the table 
+in supabase and it showed all fields complete. The storage in supabase also shows the file(image) the user uploaded. 
+
+
+
