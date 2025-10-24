@@ -35,3 +35,11 @@ in supabase and it showed all fields complete. The storage in supabase also show
 
 
 
+Carlos (10/15/2025): Going into this cycle, I’m planning to make the create a profile page. This might take some time as I’m familiar with React but not React native and I know there’s certain differences such as the <div> and headers while in Native it’s <View> and <p> for the text while in React Native it’s <Text>. Besides that, I should be able to figure out the workings to make the create profile page and make it so that it loads onto the home page. I also need to familiarize myself more with Nativewind styling as I’ve mostly only used a little bit of Tailwind CSS in the past.  
+
+
+Carlos (10/19/2025) : I went into this cycle with the plan of creating the create profile page. Once a user creates an account, it should redirect them to the create profile page which is the page I made. Users should be able to upload an image from their camera roll and type in their full name. It then allows them to click on the dropdown for their majors which is from the Supabase table column of majors that Nick added in. It then allows you to select a year (Freshman, Sophomore, Junior, Senior) from the dropdown as well. Once the user is finished creating the profile, it then loads into the home screen. I also added if statements so that the user can't create the profile unless they fill all the fields. I did have trouble at first with having the user be able to upload their picture for the profile pic from their device’s photo gallery but I managed to get it down.  
+
+
+
+
