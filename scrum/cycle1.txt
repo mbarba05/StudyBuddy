@@ -13,3 +13,11 @@ when you didn't have an account. This took alot of trial and error but I got it 
 In class, I made sure everyone was able to run the app on the emulator. I also helped to make sure everyone 
 knew what to work on. I made some refinements to Carlos's create profile page, and made the skeletons of the edit 
 profile page.
+
+Marquez:
+10/17-23: I have edited, changed, and added colors to be used within the app. 
+This would include primary, secondary, accent colors etc. These changes could be 
+seen in the colors.ts file within assets. I have also managed to edit the profile 
+page within index to make the visuals more appealing (spaced out buttons/ editing 
+sizes and texts/ changing the profile picture window).
+
