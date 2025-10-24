@@ -2,13 +2,14 @@ import { BlueButton, RedButton } from "@/components/ui/Buttons";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getUserProfile, Profile } from "@/services/profileService";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
     const { signOut, user } = useAuth();
+    const { refreshKey } = useLocalSearchParams();
     const router = useRouter();
 
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -27,32 +28,25 @@ export default function ProfileScreen() {
         return () => {
             mounted = false;
         };
-    }, [user?.id]);
+    }, [user?.id, refreshKey]);
 
-    console.log("prfile", profile);
     if (loading) return <LoadingScreen />;
 
     return (
         <SafeAreaView className="flex-1 justify-center items-center bg-colors-background px-6">
             <Image
-                className="w-40 h-40 rounded-full border-2 border-colors-text mb-4"
+                className="w-72 h-72 rounded-full border-2 border-colors-text mb-4"
                 source={{ uri: profile?.pp_url }}
             ></Image>
-            <Text className="text-2xl font-bold text-colors-text mt-2">{profile?.display_name}</Text>
-            <Text className="text-xl text-colors-text mt-1">{profile?.year}</Text>
-            <Text className="text-xl text-colors-text mb-6">{profile?.major.name}</Text>
-
-            {/*<View className="w-full items-center mt-6">
-                <View className="mb-4">
-            <BlueButton onPress={() => router.push("/(tabs)/profile/edit")}>
-                Edit Profile
-            </BlueButton>
-                </View>
-                <View>
-            <RedButton onPress={signOut}>Sign Out</RedButton>
-            </View>
-            </View>
-            */}
+            <Text className="text-2xl font-bold text-colors-text mt-2">
+                {profile?.display_name}
+            </Text>
+            <Text className="text-xl text-colors-text mt-1">
+                {profile?.year}
+            </Text>
+            <Text className="text-xl text-colors-text mb-6">
+                {profile?.major.name}
+            </Text>
             <View className="w-full items-center mt-6">
                 <BlueButton
                     onPress={() => router.push("/(tabs)/profile/edit")}
@@ -61,10 +55,10 @@ export default function ProfileScreen() {
                     Edit Profile
                 </BlueButton>
 
-            <RedButton style={{ width: 200 }} onPress={signOut}>
-                Sign Out
-            </RedButton>
-        </View>
+                <RedButton style={{ width: 200 }} onPress={signOut}>
+                    Sign Out
+                </RedButton>
+            </View>
         </SafeAreaView>
     );
 }

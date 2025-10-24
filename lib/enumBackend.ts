@@ -7,3 +7,5 @@ export const TABLES = {
     COURSE_PROFESSOR: "course_professor",
     ENROLLMENTS: "enrollments",
 };
+
+export const BUCKETS = { PROFILE_PICS: "profile-pictures" };

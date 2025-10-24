@@ -1,11 +1,12 @@
 import { LoginButton, RedButton } from "@/components/ui/Buttons";
 import { LoginInput } from "@/components/ui/TextInputs";
-import supabase from "@/lib/subapase";
+import { yearOptions } from "@/lib/enumFrontend";
 import { useAuth } from "@/services/auth/AuthProvider";
 import {
     getAllMajorsForDropdown,
     MajorDropDownItem,
 } from "@/services/majorsService";
+import { useOnboarding } from "@/services/OnboardingProvider";
 import { createProfile } from "@/services/profileService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -26,7 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Screen
 export default function CreateProfileScreen() {
     const { user, signOut } = useAuth();
-
+    const { setNeedsOnboarding, refresh } = useOnboarding();
     const [fullName, setFullName] = useState("");
     const [yearValue, setYearValue] = useState("");
     const [yearOpen, setYearOpen] = useState(false);
@@ -34,16 +35,10 @@ export default function CreateProfileScreen() {
     const [majorValue, setMajorValue] = useState<number | null>(null);
     const [majorOptions, setMajorOptions] = useState<MajorDropDownItem[]>([]); // [{label, value}]
     const [imageUri, setImageUri] = useState<string | null>(null);
-    const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    const yearOptions = [
-        { label: "Freshman", value: "Freshman" },
-        { label: "Sophomore", value: "Sophomore" },
-        { label: "Junior", value: "Junior" },
-        { label: "Senior", value: "Senior" },
-    ];
+    const handleOpenMajor = () => setYearOpen(false);
+    const handleOpenYear = () => setMajorOpen(false);
 
     // Fetch from supabase the majors
     useEffect(() => {
@@ -56,6 +51,7 @@ export default function CreateProfileScreen() {
                 setLoading(false);
             }
         };
+
         getMajors();
         return () => {
             mounted = false;
@@ -67,7 +63,7 @@ export default function CreateProfileScreen() {
         if (!fullName.trim()) return "Name is required.";
         if (!majorValue) return "Please select a major.";
         if (!yearValue) return "Year is required.";
-        if (!imageUri) return "Profile Pic is required"; 
+        if (!imageUri) return "Profile Pic is required";
         return "";
     };
 
@@ -95,36 +91,6 @@ export default function CreateProfileScreen() {
         }
     };
 
-    // Upload the user profile pic images to supabase
-    const uploadImage = async (fileUri: string, userId: string) => {
-        try {
-            setUploading(true);
-            const response = await fetch(fileUri);
-            const blob = await response.blob();
-            const fileExt = fileUri.split(".").pop();
-            const fileName = `${userId}.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from("profile-pictures")
-                .upload(filePath, blob, { upsert: true });
-
-            if (uploadError) throw uploadError;
-
-            const { data: publicUrlData } = supabase.storage
-                .from("profile-pictures")
-                .getPublicUrl(filePath);
-
-            return publicUrlData.publicUrl;
-        } catch (error: any) {
-            console.error("Error uploading image: ", error);
-            Alert.alert("Error", "Failed to upload image to Supa.");
-            return null;
-        } finally {
-            setUploading(false);
-        }
-    };
-
     // Create the profile
     const handleCreateProfile = async () => {
         const validationError = validateInputs();
@@ -145,22 +111,17 @@ export default function CreateProfileScreen() {
             setLoading(true);
             setError("");
 
-            let imageUrl: string | null = null;
-            if (imageUri) {
-                imageUrl = await uploadImage(imageUri, user.id);
-            }
-
             const newProfile = {
                 userId: user.id,
                 displayName: fullName.trim(),
-                majorId: majorValue,
+                majorId: majorValue as number,
                 year: yearValue,
-                ppUrl: imageUrl || null,
+                ppUrl: imageUri as string,
             };
-
             await createProfile(newProfile);
+            setNeedsOnboarding(false);
+            await refresh();
 
-            Alert.alert("Success", "Your profile has been created!");
             router.replace("/(app)/(tabs)");
         } catch (e: any) {
             console.error("Error creating profile:", e);
@@ -183,7 +144,7 @@ export default function CreateProfileScreen() {
 
     // UI like the text and styling
     return (
-        <SafeAreaView className="flex-1 justify-center bg-colors-background">
+        <SafeAreaView className="flex-1 bg-colors-background">
             <View className="px-6 py-8 gap-3">
                 <View className="flex flex-row justify-center items-center gap-3">
                     <Text className="text-4xl font-bold text-colors-text">
@@ -211,31 +172,28 @@ export default function CreateProfileScreen() {
                             onPress={pickImage}
                             className="w-72 h-72 rounded-full border-2 border-colors-text flex justify-center items-center mb-4"
                         >
-                            {uploading ? (
-                                <ActivityIndicator />
-                            ) : (
-                                <Ionicons
-                                    name="camera"
-                                    size={32}
-                                    color={"#898989ff"}
-                                />
-                            )}
+                            <Ionicons
+                                name="camera"
+                                size={32}
+                                color={"#898989ff"}
+                            />
                         </TouchableOpacity>
                     )}
                 </View>
                 <LoginInput
-                    placeholder="Full Name *"
+                    placeholder="Full Name"
                     value={fullName}
                     onChangeText={setFullName}
                     placeholderTextColor="darkgray"
                 />
 
                 {/* Major Selection */}
-                <View className="z-10">
+                <View className="z-50">
                     <DropDownPicker
                         open={majorOpen}
                         value={majorValue}
                         items={majorOptions}
+                        onOpen={handleOpenMajor}
                         setOpen={setMajorOpen}
                         setValue={setMajorValue}
                         setItems={setMajorOptions}
@@ -251,9 +209,10 @@ export default function CreateProfileScreen() {
                     />
                 </View>
 
-                <View className="z-20">
+                <View className="z-40">
                     <DropDownPicker
                         open={yearOpen}
+                        onOpen={handleOpenYear}
                         value={yearValue}
                         items={yearOptions}
                         setOpen={setYearOpen}
@@ -284,6 +243,9 @@ export default function CreateProfileScreen() {
 
                 {/* Calls sign out and now it works for me and goes back to the login screen  */}
                 <RedButton onPress={handleSignOut}>Sign Out</RedButton>
+                <RedButton onPress={() => router.replace("/(app)/(tabs)")}>
+                    Go to tabs (for Dev only if you get stuck here)
+                </RedButton>
             </View>
 
             {/* */}

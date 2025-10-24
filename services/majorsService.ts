@@ -19,6 +19,5 @@ export const getAllMajorsForDropdown = async (): Promise<
     }
 
     // map to DropDownPicker format
-    console.log(data);
     return (data ?? []).map((m) => ({ label: m.name, value: m.id }));
 };
