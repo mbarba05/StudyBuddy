@@ -1,5 +1,5 @@
 import { AuthProvider } from "@/services/auth/AuthProvider";
-import { OnboardingProvider } from "@/services/OnboardingProvider";
+import { ProfileProvider } from "@/services/ProfileProvider";
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "./global.css";
@@ -9,10 +9,10 @@ import "./global.css";
 export default function RootLayout() {
     return (
         <AuthProvider>
-            <OnboardingProvider>
+            <ProfileProvider>
                 <StatusBar style="auto" />
                 <Slot />
-            </OnboardingProvider>
+            </ProfileProvider>
         </AuthProvider>
     );
 }

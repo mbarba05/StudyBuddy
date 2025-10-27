@@ -1,26 +1,26 @@
+// app/(app)/_layout.tsx
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
-import { useOnboarding } from "@/services/OnboardingProvider";
+import { useProfileGate } from "@/services/ProfileProvider";
 import { Redirect, Stack, usePathname } from "expo-router";
 
-export default function AppLayout() {
-    const { user } = useAuth();
-    const { ready, needsOnboarding } = useOnboarding();
+const CREATE_PROFILE = "/create-profile";
+
+export default function ProtectedLayout() {
+    const { user, authReady } = useAuth();
+    const { profileReady, hasProfile } = useProfileGate();
     const pathname = usePathname();
-    const CREATE_PROFILE = "/create-profile";
 
-    if (!ready) return <LoadingScreen />;
+    if (!authReady || !profileReady) return <LoadingScreen />;
 
-    if (user && needsOnboarding && pathname !== CREATE_PROFILE) {
+    if (!user) return <Redirect href="/(auth)/login" />;
+
+    if (hasProfile === false && pathname !== CREATE_PROFILE) {
         return <Redirect href={CREATE_PROFILE} />;
     }
 
     return (
         <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen
-                name="create-profile"
-                options={{ title: "Create Profile", animation: "none" }}
-            />
             <Stack.Screen name="(tabs)" />
         </Stack>
     );

@@ -6,7 +6,7 @@ import {
     getAllMajorsForDropdown,
     MajorDropDownItem,
 } from "@/services/majorsService";
-import { useOnboarding } from "@/services/OnboardingProvider";
+import { useProfileGate } from "@/services/ProfileProvider";
 import { createProfile } from "@/services/profileService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -27,7 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // Screen
 export default function CreateProfileScreen() {
     const { user, signOut } = useAuth();
-    const { setNeedsOnboarding, refresh } = useOnboarding();
+    const { refreshProfile } = useProfileGate();
     const [fullName, setFullName] = useState("");
     const [yearValue, setYearValue] = useState("");
     const [yearOpen, setYearOpen] = useState(false);
@@ -119,8 +119,7 @@ export default function CreateProfileScreen() {
                 ppUrl: imageUri as string,
             };
             await createProfile(newProfile);
-            setNeedsOnboarding(false);
-            await refresh();
+            await refreshProfile();
 
             router.replace("/(app)/(tabs)");
         } catch (e: any) {
@@ -243,9 +242,6 @@ export default function CreateProfileScreen() {
 
                 {/* Calls sign out and now it works for me and goes back to the login screen  */}
                 <RedButton onPress={handleSignOut}>Sign Out</RedButton>
-                <RedButton onPress={() => router.replace("/(app)/(tabs)")}>
-                    Go to tabs (for Dev only if you get stuck here)
-                </RedButton>
             </View>
 
             {/* */}
