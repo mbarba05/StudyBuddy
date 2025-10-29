@@ -1,0 +1,6 @@
+10/28: I will be will be working on the Matchmaking
+screen. This includes formatring the cards that will pop
+up and either swipe left or right for matching (what will 
+show up on the cards [logic]). I am going to try and make
+match making card component with profile picture, name,
+and major and pass as prop.
