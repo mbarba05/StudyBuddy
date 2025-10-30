@@ -39,7 +39,7 @@ export const getUserProfile = async (
         return null;
     }
 
-    return data as Profile;
+    return data as unknown as Profile;
 };
 
 export const hasProfile = async (userId: string): Promise<boolean> => {

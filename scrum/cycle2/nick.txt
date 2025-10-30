@@ -1,1 +1,2 @@
-10/27
+10/27: The profile redirect was always bringing us back to the create profile page on app refresh,
+so finally was able to figure out a fix. Now I am figuring out what we should work on next.
