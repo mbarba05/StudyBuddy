@@ -6,6 +6,8 @@ export const TABLES = {
     MAJORS: "majors",
     COURSE_PROFESSOR: "course_professor",
     ENROLLMENTS: "enrollments",
+    FRIENDSHIPS: "friendships",
+    FRIEND_REQUESTS: "friend_requests",
 };
 
 export const BUCKETS = { PROFILE_PICS: "profile-pictures" };

@@ -15,6 +15,7 @@ export interface Profile {
     pp_url: string | null;
 }
 
+
 export const getUserProfile = async (
     userId: string | null
 ): Promise<Profile | null> => {
