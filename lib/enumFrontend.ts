@@ -7,8 +7,3 @@ export const yearOptions = [
 
 
 
-export const friendshipOptions = [
-    { label: "Pending Request", value: "pending" },
-    { label: "Friends", value: "friends" },
-    { label: "Rejected", value: "rejected" }, 
-  ];
