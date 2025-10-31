@@ -14,29 +14,17 @@ export async function getCoursesForProfile(userId: string | null): Promise<Cours
     }
     const { data, error } = await supabase
         .from("enrollments")
-        .select(
-            `
-      course_professor:course_prof_id (
-        id,
-        course:courses (
-          code
-        ),
-        professor:professors (
-          name
-        )
-      )
-    `
-        )
+        .select(`id, course_professor:course_prof_id (id, course:courses (code), professor:professors (name))`)
         .eq("user_id", userId);
 
     if (error) {
         console.error("Error fetching enrollments:", error);
         throw error;
     }
-
     if (!data) return [];
 
     return data.map((row: any) => ({
+        enrollmentId: row.id,
         course_prof_id: row.course_professor.id,
         course_code: row.course_professor.course.code,
         prof_name: row.course_professor.professor.name,
@@ -45,6 +33,7 @@ export async function getCoursesForProfile(userId: string | null): Promise<Cours
 
 export async function createEnrollments(userId: string, courseProfIds: number[]) {
     ///TODO: term support for everything here
+    if (courseProfIds.length === 0) return;
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
         .insert(
@@ -57,6 +46,23 @@ export async function createEnrollments(userId: string, courseProfIds: number[])
 
     if (error) {
         console.error("Error inserting enrollments:", error);
+        throw error;
+    }
+
+    return data;
+}
+
+export async function deleteEnrollments(userId: string, enrollmentIds: number[]) {
+    console.log("DELETING", enrollmentIds);
+    if (enrollmentIds.length === 0) return;
+    const { data, error } = await supabase
+        .from(TABLES.ENROLLMENTS)
+        .delete()
+        .in("id", enrollmentIds)
+        .eq("user_id", userId);
+
+    if (error) {
+        console.error("Error deleting enrollments:", error);
         throw error;
     }
 

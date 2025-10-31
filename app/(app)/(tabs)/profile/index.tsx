@@ -37,39 +37,52 @@ export default function ProfileScreen() {
     }, [user?.id, refreshKey, setCourses]);
 
     if (loading) return <LoadingScreen />;
-
     return (
-        <SafeAreaView className="flex-1 justify-center items-center bg-colors-background px-6">
+        <SafeAreaView className="flex-1 justify-center items-center bg-colors-background px-12 gap-4">
             <Image
                 className="w-72 h-72 rounded-full border-2 border-colors-text mb-4"
                 source={{ uri: profile?.pp_url }}
             ></Image>
-            <Text className="text-2xl font-bold text-colors-text mt-2">{profile?.display_name}</Text>
-            <Text className="text-2xl text-colors-text mt-1">{profile?.year}</Text>
-            <Text className="text-2xl text-colors-text mb-6">{profile?.major.name}</Text>
-            {!courses ? (
-                <Text className="text-colors-textSecondary text-2xl text-left mt-1">
-                    You are not enrolled in any courses.
-                </Text>
-            ) : (
-                <View
-                    className={`flex ${courses && "flex-row"} justify-center flex-wrap gap-4 min-h-14 rounded-lg p-2 w-4/5 text-colors-text`}
-                >
-                    {courses.map((item: CourseProfDisplay) => (
-                        <View
-                            key={item.course_prof_id}
-                            className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
-                        >
-                            <View>
-                                <Text className="text-colors-text text-xl text-center">{item.course_code}</Text>
-                                <Text className="text-colors-textSecondary text-xl text-center">
-                                    {parseLastName(item.prof_name)}
-                                </Text>
-                            </View>
-                        </View>
-                    ))}
+            <View className="flex flex-row gap-12">
+                <View>
+                    <Text className="text-center color-colors-textSecondary">Name</Text>
+                    <Text className="text-2xl text-colors-text">{profile?.display_name}</Text>
                 </View>
-            )}
+                <View>
+                    <Text className="color-colors-textSecondary text-center">Year</Text>
+                    <Text className="text-2xl text-colors-text">{profile?.year}</Text>
+                </View>
+            </View>
+            <View>
+                <Text className=" color-colors-textSecondary text-center">Major</Text>
+                <Text className="text-2xl text-colors-text">{profile?.major.name}</Text>
+            </View>
+            <View>
+                <Text className=" color-colors-textSecondary text-center mb-2">Courses</Text>
+                {!courses || courses.length === 0 ? (
+                    <Text className="text-colors-textSecondary text-2xl text-left">
+                        You are not enrolled in any courses.
+                    </Text>
+                ) : (
+                    <View
+                        className={`flex ${courses ? "flex-row" : ""} justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-4  text-colors-text`}
+                    >
+                        {courses.map((item: CourseProfDisplay) => (
+                            <View
+                                key={item.course_prof_id}
+                                className="flex flex-row gap-2 items-center bg-colors-secondary p-2 rounded-md"
+                            >
+                                <View>
+                                    <Text className="text-colors-text text-xl text-center">{item.course_code}</Text>
+                                    <Text className="text-colors-textSecondary text-xl text-center">
+                                        {parseLastName(item.prof_name)}
+                                    </Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                )}
+            </View>
             <View className="w-full items-center mt-6">
                 <BlueButton
                     onPress={() => router.push("/(tabs)/profile/edit")}

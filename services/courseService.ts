@@ -33,6 +33,7 @@ export interface CourseProfDisplay {
     course_prof_id: number;
     prof_name: string;
     course_code: string;
+    enrollmentId?: number;
 }
 
 export async function getProfessorsForCourse(courseId: number): Promise<ProfessorForCourse[]> {
