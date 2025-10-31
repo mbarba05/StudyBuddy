@@ -8,22 +8,8 @@ import {
     ProfessorForCourse,
 } from "@/services/courseService";
 import { Ionicons } from "@expo/vector-icons";
-import React, {
-    Dispatch,
-    SetStateAction,
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-} from "react";
-import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import React, { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, Modal, Text, TouchableOpacity, View } from "react-native";
 
 interface CourseSearchModalProps {
     visible: boolean;
@@ -43,12 +29,8 @@ const CourseSearchModal = ({
     const [loading, setLoading] = useState(false);
     const [isDebouncing, setIsDebouncing] = useState(false);
     const searchRef = useRef(0); //ref to make sure loading state is show correctly
-    const [expandedCourseId, setExpandedCourseId] = useState<number | null>(
-        null
-    );
-    const [professors, setProfessors] = useState<
-        Record<number, ProfessorForCourse[]>
-    >({});
+    const [expandedCourseId, setExpandedCourseId] = useState<number | null>(null);
+    const [professors, setProfessors] = useState<Record<number, ProfessorForCourse[]>>({});
     const [loadingProfId, setLoadingProfId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -67,14 +49,10 @@ const CourseSearchModal = ({
                 setLoading(true);
                 const results = await getCoursesForSearch(searchTerm);
                 if (searchRef.current === id) {
-                    const selectedCodes = selectedCourseProf.map(
-                        (item) => item.course_code
-                    );
+                    const selectedCodes = selectedCourseProf.map((item) => item.course_code);
                     setFoundCourses(
                         //filter out already selected courses
-                        results.filter(
-                            (course) => !selectedCodes.includes(course.code)
-                        )
+                        results.filter((course) => !selectedCodes.includes(course.code))
                     );
                     setExpandedCourseId(null);
                 }
@@ -103,25 +81,15 @@ const CourseSearchModal = ({
 
     const ListEmptyComponent = () => {
         if (!searchTerm)
-            return (
-                <Text className="text-colors-textSecondary text-xl mt-6 text-center">
-                    Add your classes!
-                </Text>
-            );
+            return <Text className="text-colors-textSecondary text-xl mt-6 text-center">Add your classes!</Text>;
         if (isDebouncing) return null;
         if (searchTerm.length < 3)
             return (
-                <Text className="text-colors-textSecondary text-xl mt-6 text-center">
-                    Type at least 3 characters
-                </Text>
+                <Text className="text-colors-textSecondary text-xl mt-6 text-center">Type at least 3 characters</Text>
             );
         if (loading) return <ActivityIndicator className="mt-6" />;
 
-        return (
-            <Text className="text-colors-textSecondary mt-6 text-xl text-center">
-                No courses found
-            </Text>
-        );
+        return <Text className="text-colors-textSecondary mt-6 text-xl text-center">No courses found</Text>;
     };
 
     const listRenderItem = useCallback(
@@ -158,20 +126,12 @@ const CourseSearchModal = ({
                                 size={16}
                                 color={colors.text}
                                 style={{
-                                    transform: [
-                                        { rotate: expanded ? "90deg" : "0deg" },
-                                    ],
+                                    transform: [{ rotate: expanded ? "90deg" : "0deg" }],
                                 }}
                             />
-                            <Text className="text-xl color-colors-text font-semibold">
-                                {item.code}
-                            </Text>
+                            <Text className="text-xl color-colors-text font-semibold">{item.code}</Text>
                         </View>
-                        {expanded && (
-                            <Text className="text-xl color-colors-textSecondary">
-                                Choose Professor:
-                            </Text>
-                        )}
+                        {expanded && <Text className="text-xl color-colors-textSecondary">Choose Professor:</Text>}
                     </TouchableOpacity>
 
                     {/* Dropdown section */}
@@ -180,9 +140,7 @@ const CourseSearchModal = ({
                             {isLoading ? (
                                 <ActivityIndicator className="p-8" />
                             ) : profList.length === 0 ? (
-                                <Text className="colors-colors-text p-8">
-                                    No professors
-                                </Text>
+                                <Text className="colors-colors-text p-8">No professors</Text>
                             ) : (
                                 <View className="flex flex-row flex-wrap justify-center gap-2 py-2">
                                     {profList.map((prof) => (
@@ -190,23 +148,17 @@ const CourseSearchModal = ({
                                             key={prof.course_prof_id}
                                             className="rounded-lg p-4 bg-colors-secondary"
                                             onPress={() => {
-                                                const courseProfDisplay: CourseProfDisplay =
-                                                    {
-                                                        prof_name: prof.name,
-                                                        course_code: item.code,
-                                                        course_prof_id:
-                                                            prof.course_prof_id,
-                                                    };
+                                                const courseProfDisplay: CourseProfDisplay = {
+                                                    prof_name: prof.name,
+                                                    course_code: item.code,
+                                                    course_prof_id: prof.course_prof_id,
+                                                };
 
-                                                handleProfessorPicked(
-                                                    courseProfDisplay
-                                                );
+                                                handleProfessorPicked(courseProfDisplay);
                                                 modalClose();
                                             }}
                                         >
-                                            <Text className="text-xl font-semibold text-colors-text">
-                                                {prof.name}
-                                            </Text>
+                                            <Text className="text-xl font-semibold text-colors-text">{prof.name}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -216,13 +168,7 @@ const CourseSearchModal = ({
                 </View>
             );
         },
-        [
-            expandedCourseId,
-            professors,
-            loadingProfId,
-            handleProfessorPicked,
-            modalClose,
-        ]
+        [expandedCourseId, professors, loadingProfId, handleProfessorPicked, modalClose]
     );
 
     return (

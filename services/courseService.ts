@@ -6,9 +6,7 @@ export interface Course {
     code: string;
 }
 
-export async function getCoursesForSearch(
-    searchTerm: string
-): Promise<Course[]> {
+export async function getCoursesForSearch(searchTerm: string): Promise<Course[]> {
     const trimmedTerm = searchTerm.trim();
 
     const { data, error } = await supabase
@@ -37,9 +35,7 @@ export interface CourseProfDisplay {
     course_code: string;
 }
 
-export async function getProfessorsForCourse(
-    courseId: number
-): Promise<ProfessorForCourse[]> {
+export async function getProfessorsForCourse(courseId: number): Promise<ProfessorForCourse[]> {
     const { data, error } = await supabase
         .from(TABLES.COURSE_PROFESSOR)
         .select(`id, prof_id, prof:professors (id, name)`)

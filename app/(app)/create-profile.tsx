@@ -7,10 +7,7 @@ import { parseLastName } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
 import { createEnrollments } from "@/services/enrollmentService";
-import {
-    getAllMajorsForDropdown,
-    MajorDropDownItem,
-} from "@/services/majorsService";
+import { getAllMajorsForDropdown, MajorDropDownItem } from "@/services/majorsService";
 import { useProfileGate } from "@/services/ProfileProvider";
 import { createProfile } from "@/services/profileService";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,9 +45,7 @@ export default function CreateProfileScreen() {
     const [error, setError] = useState("");
     const [courseModalVisible, setCourseModalVisible] = useState(false);
 
-    const [selectedCourseProf, setSelectedCourseProf] = useState<
-        CourseProfDisplay[]
-    >([]);
+    const [selectedCourseProf, setSelectedCourseProf] = useState<CourseProfDisplay[]>([]);
 
     const handleOpenMajor = () => setYearOpen(false);
     const handleOpenYear = () => setMajorOpen(false);
@@ -73,14 +68,9 @@ export default function CreateProfileScreen() {
         };
     }, []);
 
-    const handleProfessorPicked = useCallback(
-        (courseProf: CourseProfDisplay) => {
-            setSelectedCourseProf((prev) =>
-                prev.includes(courseProf) ? prev : [...prev, courseProf]
-            );
-        },
-        []
-    );
+    const handleProfessorPicked = useCallback((courseProf: CourseProfDisplay) => {
+        setSelectedCourseProf((prev) => (prev.includes(courseProf) ? prev : [...prev, courseProf]));
+    }, []);
 
     const chooseCoursesPress = () => {
         if (selectedCourseProf.length >= 6) {
@@ -91,9 +81,7 @@ export default function CreateProfileScreen() {
     };
 
     const removeCourse = (courseProfId: number) => {
-        setSelectedCourseProf((prev) =>
-            prev.filter((item) => item.course_prof_id !== courseProfId)
-        );
+        setSelectedCourseProf((prev) => prev.filter((item) => item.course_prof_id !== courseProfId));
     };
 
     // Can't proceed unless the text fields are filled
@@ -102,20 +90,15 @@ export default function CreateProfileScreen() {
         if (!majorValue) return "Please select a major.";
         if (!yearValue) return "Year is required.";
         if (!imageUri) return "Profile Pic is required";
-        if (selectedCourseProf.length === 0)
-            return "Please choose at least one course.";
+        if (selectedCourseProf.length === 0) return "Please choose at least one course.";
         return "";
     };
 
     // Let user pick a profile pic from their phone's gallery
     const pickImage = async () => {
-        const permission =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            Alert.alert(
-                "Permission required",
-                "Please allow access to your photos."
-            );
+            Alert.alert("Permission required", "Please allow access to your photos.");
             return;
         }
 
@@ -140,10 +123,7 @@ export default function CreateProfileScreen() {
         }
 
         if (!user) {
-            Alert.alert(
-                "Error",
-                "No user was found. Please try to log in again."
-            );
+            Alert.alert("Error", "No user was found. Please try to log in again.");
             return;
         }
 
@@ -159,9 +139,7 @@ export default function CreateProfileScreen() {
                 ppUrl: imageUri as string,
             };
 
-            const courseProdIds = selectedCourseProf.map(
-                (courseProf) => courseProf.course_prof_id
-            );
+            const courseProdIds = selectedCourseProf.map((courseProf) => courseProf.course_prof_id);
             await createProfile(newProfile);
             await createEnrollments(user.id, courseProdIds);
             await refreshProfile();
@@ -203,9 +181,7 @@ export default function CreateProfileScreen() {
                 >
                     <View className="px-6 py-8 gap-3">
                         <View className="flex flex-row justify-center items-center gap-3">
-                            <Text className="text-4xl font-bold text-colors-text">
-                                Create Your Profile
-                            </Text>
+                            <Text className="text-4xl font-bold text-colors-text">Create Your Profile</Text>
                             <Ionicons
                                 name="person-circle"
                                 color={"#ffff"}
@@ -267,9 +243,7 @@ export default function CreateProfileScreen() {
                                     fontSize: 17,
                                 }}
                                 style={styles.dropdown}
-                                dropDownContainerStyle={
-                                    styles.dropdownContainer
-                                }
+                                dropDownContainerStyle={styles.dropdownContainer}
                                 searchContainerStyle={styles.searchContainer}
                                 searchTextInputProps={{
                                     color: colors.text,
@@ -291,9 +265,7 @@ export default function CreateProfileScreen() {
                                 placeholderStyle={styles.placeholder}
                                 textStyle={{ color: colors.text, fontSize: 17 }}
                                 style={styles.dropdown}
-                                dropDownContainerStyle={
-                                    styles.dropdownContainer
-                                }
+                                dropDownContainerStyle={styles.dropdownContainer}
                                 listMode="SCROLLVIEW"
                             />
                         </View>
@@ -307,38 +279,28 @@ export default function CreateProfileScreen() {
                                     Current Courses
                                 </Text>
                             ) : (
-                                selectedCourseProf.map(
-                                    (item: CourseProfDisplay) => (
-                                        <View
-                                            key={item.course_prof_id}
-                                            className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
-                                        >
-                                            <TouchableOpacity
-                                                onPress={() =>
-                                                    removeCourse(
-                                                        item.course_prof_id
-                                                    )
-                                                }
-                                            >
-                                                <Ionicons
-                                                    size={16}
-                                                    name="close-circle-outline"
-                                                    color={colors.primary}
-                                                />
-                                            </TouchableOpacity>
-                                            <View>
-                                                <Text className="text-colors-text text-xl text-center">
-                                                    {item.course_code}
-                                                </Text>
-                                                <Text className="text-colors-textSecondary text-xl text-center">
-                                                    {parseLastName(
-                                                        item.prof_name
-                                                    )}
-                                                </Text>
-                                            </View>
+                                selectedCourseProf.map((item: CourseProfDisplay) => (
+                                    <View
+                                        key={item.course_prof_id}
+                                        className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
+                                    >
+                                        <TouchableOpacity onPress={() => removeCourse(item.course_prof_id)}>
+                                            <Ionicons
+                                                size={16}
+                                                name="close-circle-outline"
+                                                color={colors.primary}
+                                            />
+                                        </TouchableOpacity>
+                                        <View>
+                                            <Text className="text-colors-text text-xl text-center">
+                                                {item.course_code}
+                                            </Text>
+                                            <Text className="text-colors-textSecondary text-xl text-center">
+                                                {parseLastName(item.prof_name)}
+                                            </Text>
                                         </View>
-                                    )
-                                )
+                                    </View>
+                                ))
                             )}
                         </Pressable>
 
@@ -349,18 +311,12 @@ export default function CreateProfileScreen() {
                             selectedCourseProf={selectedCourseProf}
                         />
 
-                        {error ? (
-                            <Text className="text-colors-error font-semibold mt-2">
-                                {error}
-                            </Text>
-                        ) : null}
+                        {error ? <Text className="text-colors-error font-semibold mt-2">{error}</Text> : null}
                     </View>
 
                     <View className="flex items-center px-6 mt-6 gap-3">
                         <LoginButton
-                            bgColor={
-                                loading ? "bg-gray-500" : "bg-colors-secondary"
-                            }
+                            bgColor={loading ? "bg-gray-500" : "bg-colors-secondary"}
                             textColor="text-colors-text"
                             onPress={handleCreateProfile}
                         >
