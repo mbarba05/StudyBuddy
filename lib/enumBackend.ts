@@ -5,6 +5,7 @@ export const TABLES = {
     PROFILES: "profiles",
     MAJORS: "majors",
     COURSE_PROFESSOR: "course_professor",
+    COURSES: "courses",
     ENROLLMENTS: "enrollments",
 };
 

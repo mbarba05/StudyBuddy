@@ -10,13 +10,16 @@ export default function AppLayout() {
     if (!user) return <Redirect href="/(auth)/login" />;
 
     return (
-        <Tabs screenOptions={{ headerShown: true }}>
+        <Tabs screenOptions={{ headerShown: false }}>
             <Tabs.Screen
                 name="reviews"
                 options={{
                     title: "Reviews",
                     tabBarIcon: ({ focused }) => (
-                        <Ionicons name="pencil" size={20} />
+                        <Ionicons
+                            name="pencil"
+                            size={20}
+                        />
                     ),
                 }}
             />
@@ -25,7 +28,10 @@ export default function AppLayout() {
                 options={{
                     title: "Matchmaking",
                     tabBarIcon: () => (
-                        <Ionicons name="heart-circle" size={20} />
+                        <Ionicons
+                            name="heart-circle"
+                            size={20}
+                        />
                     ),
                 }}
             />
@@ -34,7 +40,10 @@ export default function AppLayout() {
                 options={{
                     title: "Home",
                     tabBarIcon: ({ focused }) => (
-                        <Ionicons name="home" size={20} />
+                        <Ionicons
+                            name="home"
+                            size={20}
+                        />
                     ),
                 }}
             />
@@ -42,7 +51,12 @@ export default function AppLayout() {
                 name="social"
                 options={{
                     title: "Social",
-                    tabBarIcon: () => <Ionicons name="chatbox" size={20} />,
+                    tabBarIcon: () => (
+                        <Ionicons
+                            name="chatbox"
+                            size={20}
+                        />
+                    ),
                 }}
             />
             <Tabs.Screen
@@ -50,7 +64,10 @@ export default function AppLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: () => (
-                        <Ionicons name="person-circle" size={20} />
+                        <Ionicons
+                            name="person-circle"
+                            size={20}
+                        />
                     ),
                 }}
             />
