@@ -1,5 +1,6 @@
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
+import { Alert } from "react-native";
 
 export interface Course {
     id: number;
@@ -53,4 +54,20 @@ export async function getProfessorsForCourse(courseId: number): Promise<Professo
         professor_id: row.prof.id,
         name: row.prof.name,
     }));
+}
+
+export async function createNewCourse(code: string) {
+    //for reference, insert takes an array of objects, each object is a row
+    const { data, error } = await supabase.from(TABLES.COURSES).insert([{ code }]).select();
+
+    if (error) {
+        if (error.code === "23505") {
+            Alert.alert("Course already exists", `The course "${code}" is already in the database.`);
+        } else {
+            Alert.alert("Error adding course", error.message);
+        }
+        return false;
+    }
+
+    return data;
 }

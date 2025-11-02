@@ -1,15 +1,18 @@
 import { colors } from "@/assets/colors";
-import { SearchBar } from "@/components/ui/TextInputs";
+import { RedButton } from "@/components/ui/Buttons";
+import { LoginInput, SearchBar } from "@/components/ui/TextInputs";
+import { validateClassInput } from "@/lib/utillities";
 import {
     Course,
     CourseProfDisplay,
+    createNewCourse,
     getCoursesForSearch,
     getProfessorsForCourse,
     ProfessorForCourse,
 } from "@/services/courseService";
 import { Ionicons } from "@expo/vector-icons";
-import React, { Dispatch, SetStateAction, useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Text, TouchableOpacity, View } from "react-native";
+import React, { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, Modal, Text, TouchableOpacity, View } from "react-native";
 
 interface CourseSearchModalProps {
     visible: boolean;
@@ -32,6 +35,8 @@ const CourseSearchModal = ({
     const [expandedCourseId, setExpandedCourseId] = useState<number | null>(null);
     const [professors, setProfessors] = useState<Record<number, ProfessorForCourse[]>>({});
     const [loadingProfId, setLoadingProfId] = useState<number | null>(null);
+    const [addClassExpanded, setAddClassExpanded] = useState(false);
+    const [newClassCode, setNewClassCode] = useState("");
 
     useEffect(() => {
         if (!searchTerm || searchTerm.length < 3) {
@@ -55,6 +60,8 @@ const CourseSearchModal = ({
                         results.filter((course) => !selectedCodes.includes(course.code))
                     );
                     setExpandedCourseId(null);
+                    setNewClassCode("");
+                    setAddClassExpanded(false);
                 }
             } finally {
                 //only clear loading if still latest
@@ -75,11 +82,33 @@ const CourseSearchModal = ({
         setLoading(false);
         setVisible(false);
         setExpandedCourseId(null);
+        setAddClassExpanded(false);
+        setNewClassCode("");
     }, [setVisible]);
 
     const keyExtractor = useCallback((item: Course) => String(item.id), []);
 
-    const ListEmptyComponent = () => {
+    const submitNewClass = async (code: string) => {
+        if (!validateClassInput(code)) {
+            Alert.alert(
+                "Please enter a valid input",
+                "2-6 letters, followed by a space, followed by 1-3 digits, followed by 1 optional letter. Ex: CSCI 152E."
+            );
+            return;
+        }
+
+        const success = await createNewCourse(code);
+
+        if (!success) return;
+
+        setSearchTerm(code);
+    };
+
+    const ListEmptyComponent = useMemo(() => {
+        const classAddPress = () => {
+            setAddClassExpanded(!addClassExpanded);
+        };
+
         if (!searchTerm)
             return <Text className="text-colors-textSecondary text-xl mt-6 text-center">Add your classes!</Text>;
         if (isDebouncing) return null;
@@ -89,8 +118,38 @@ const CourseSearchModal = ({
             );
         if (loading) return <ActivityIndicator className="mt-6" />;
 
-        return <Text className="text-colors-textSecondary mt-6 text-xl text-center">No courses found</Text>;
-    };
+        return (
+            <View className="flex items-center gap-4">
+                <Text className="text-colors-textSecondary mt-6 text-xl text-center">No courses found.</Text>
+                <TouchableOpacity onPress={classAddPress}>
+                    <View className="flex flex-row items-center">
+                        <Text className="text-colors-secondary text-xl">Can&apos;t find your course? Add it here.</Text>
+                        <Ionicons
+                            name="caret-forward"
+                            size={16}
+                            color={colors.secondary}
+                            style={{
+                                transform: [{ rotate: addClassExpanded ? "90deg" : "0deg" }],
+                            }}
+                        />
+                    </View>
+                </TouchableOpacity>
+                {addClassExpanded && (
+                    <View className="w-3/4 gap-4 p-4 bg-colors-secondary rounded-md items-center">
+                        <Text className="text-colors-text text-xl font-semibold">Enter class code:</Text>
+                        <LoginInput
+                            autoCapitalize="characters"
+                            autoComplete="off"
+                            value={newClassCode}
+                            onChangeText={setNewClassCode}
+                            placeholder="CSCI152E"
+                        />
+                        <RedButton onPress={() => submitNewClass(newClassCode)}>Submit</RedButton>
+                    </View>
+                )}
+            </View>
+        );
+    }, [searchTerm, isDebouncing, loading, addClassExpanded, newClassCode]);
 
     const listRenderItem = useCallback(
         ({ item }: { item: Course }) => {
@@ -182,6 +241,8 @@ const CourseSearchModal = ({
         >
             <View className="p-5">
                 <SearchBar
+                    autoCapitalize="characters"
+                    autoComplete="off"
                     onChangeText={setSearchTerm}
                     autoFocus
                     placeholder="Search for a course. ex: (CSCI40)"
