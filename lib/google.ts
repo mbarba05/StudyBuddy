@@ -19,7 +19,7 @@ export async function signInWithGoogle() {
         options: {
             redirectTo,
             skipBrowserRedirect: true,
-            queryParams: { hd: VALID_EMAIL_DOMAIN }, //only show fresno state emails
+            queryParams: { hd: VALID_EMAIL_DOMAIN, prompt: "select_account" }, //only show fresno state emails
         },
     });
     if (error) throw error;

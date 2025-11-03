@@ -1,0 +1,7 @@
+10/27: The profile redirect was always bringing us back to the create profile page on app refresh,
+so finally was able to figure out a fix. Now I am figuring out what we should work on next.
+10/28: I started to work on the class adding logic. I added a modal to the create profile screen that will let you search.
+10/29: I was able to show all the classes being from the search. I had to learn how to do the Supabase query for this
+10/30: After about 5 hours of work, i was able to show the professors for a class and let the user pick a professor and class 
+and create an enrollment on submit. In the future, i do want to add logic for terms with enrollments, but that will be its own 
+thing.

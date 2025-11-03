@@ -1,0 +1,58 @@
+Week 1 Notes
+Nick:
+10/15: I went in to this cycle planning on finishing Google Authentication. I was able to do it in a day better than
+I thought I would. Google auth makes it really easy, so i just had to add a domain parameter to the Google
+sign in function and it opened up the Fresno State log in page. After this I just had to save the session
+and we were good to go. After that I styled the log in page and was proud of how it looked I then added the option 
+to create an account using noraml email log in. This was a new screen, and I made sure to validate all the input 
+and show error messages (passwords don't match, non valid Fresno State email, password length >= 6). In the future 
+I need to figure out how to do email confirmations as that is one of the features Supabase offers.
+10/23
+End of the cycle. After the last changes, I had to make sure the app redirected you to the create profile page
+when you didn't have an account. This took alot of trial and error but I got it eventually. 
+In class, I made sure everyone was able to run the app on the emulator. I also helped to make sure everyone 
+knew what to work on. I made some refinements to Carlos's create profile page, and made the skeletons of the edit 
+profile page.
+
+Marquez:
+10/17-23: I have edited, changed, and added colors to be used within the app. 
+This would include primary, secondary, accent colors etc. These changes could be 
+seen in the colors.ts file within assets. I have also managed to edit the profile 
+page within index to make the visuals more appealing (spaced out buttons/ editing 
+sizes and texts/ changing the profile picture window).
+
+
+Eliezer:
+10/19:
+In this cycle I'm planning on working on creating functions to store the user profile information (name, major, year, and profile picture) 
+when they create the profile after creating the account.
+10/23: 
+In this scum cycle I worked on saving the user profile in the profile table in supabase. I created two functions that was able to get the user input.
+I was able to create a function to grab the user information like (name, major, year, and profile picture). In order to grab the profile picture the 
+user used I needed to create a function that stored the image into a bucket (where all the profile pictures files are stored) and then created a url 
+and then stored that url into the profile table. I was able to get these functions to work completely, I know because I was able to see the table 
+in supabase and it showed all fields complete. The storage in supabase also shows the file(image) the user uploaded. 
+
+
+
+Carlos (10/15/2025): Going into this cycle, I’m planning to make the create a profile page. 
+This might take some time as I’m familiar with React but not React native and I know there’s certain differences 
+such as the <div> and headers while in Native it’s <View> and <p> for the text while in React Native it’s 
+<Text>. Besides that, I should be able to figure out the workings to make the create profile page and 
+make it so that it loads onto the home page. I also need to familiarize myself more with Nativewind 
+styling as I’ve mostly only used a little bit of Tailwind CSS in the past.  
+
+
+Carlos (10/19/2025) : I went into this cycle with the plan of creating the create profile page. 
+Once a user creates an account, it should redirect them to the create profile page which is the page 
+I made. Users should be able to upload an image from their camera roll and type in their full name. 
+It then allows them to click on the dropdown for their majors which is from the Supabase table column 
+of majors that Nick added in. It then allows you to select a year (Freshman, Sophomore, Junior, Senior) 
+from the dropdown as well. Once the user is finished creating the profile, it then loads into the home 
+screen. I also added if statements so that the user can't create the profile unless they fill all the 
+fields. I did have trouble at first with having the user be able to upload their picture for the profile 
+pic from their device’s photo gallery but I managed to get it down.  
+
+
+
+

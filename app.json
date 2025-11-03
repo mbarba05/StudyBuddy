@@ -26,6 +26,10 @@
             "favicon": "./assets/images/favicon.png"
         },
         "plugins": [
+            "expo-image-picker",
+            {
+                "photosPermission": "Allow access to photos to upload images."
+            },
             "@react-native-google-signin/google-signin",
             "expo-router",
             [

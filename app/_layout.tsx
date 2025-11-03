@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/services/auth/AuthProvider";
+import { ProfileProvider } from "@/services/ProfileProvider";
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "./global.css";
@@ -8,8 +9,10 @@ import "./global.css";
 export default function RootLayout() {
     return (
         <AuthProvider>
-            <StatusBar style="auto" />
-            <Slot />
+            <ProfileProvider>
+                <StatusBar style="auto" />
+                <Slot />
+            </ProfileProvider>
         </AuthProvider>
     );
 }

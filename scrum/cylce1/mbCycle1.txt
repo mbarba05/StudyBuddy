@@ -1,0 +1,11 @@
+Marquez:
+I plan on creating colors to be used within the app to stylize as well 
+as allow information to be read easily off of the app (easily readable).
+I will also be editing the profile page (spacing out the buttons and 
+text, changing the fonts/styles, tweaking the profile picture window).
+10/17-23: I have edited, changed, and added colors to be used within the app. 
+This would include primary, secondary, accent colors etc. These changes could be 
+seen in the colors.ts file within assets. I have also managed to edit the profile 
+page within index to make the visuals more appealing (spaced out buttons/ editing 
+sizes and texts/ changing the profile picture window). There were no challenges,
+messed around with sizing to see what is more visually appealing.

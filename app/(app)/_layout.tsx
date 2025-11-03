@@ -1,58 +1,27 @@
+// app/(app)/_layout.tsx
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
-import { Ionicons } from "@expo/vector-icons";
-import { Redirect, Tabs } from "expo-router";
+import { useProfileGate } from "@/services/ProfileProvider";
+import { Redirect, Stack, usePathname } from "expo-router";
 
-export default function AppLayout() {
-    const { user, loading } = useAuth();
-    if (loading) return null;
+const CREATE_PROFILE = "/create-profile";
+
+export default function ProtectedLayout() {
+    const { user, authReady } = useAuth();
+    const { profileReady, hasProfile } = useProfileGate();
+    const pathname = usePathname();
+
+    if (!authReady || !profileReady) return <LoadingScreen />;
 
     if (!user) return <Redirect href="/(auth)/login" />;
 
+    if (hasProfile === false && pathname !== CREATE_PROFILE) {
+        return <Redirect href={CREATE_PROFILE} />;
+    }
+
     return (
-        <Tabs screenOptions={{ headerShown: true }}>
-            <Tabs.Screen
-                name="reviews"
-                options={{
-                    title: "Reviews",
-                    tabBarIcon: ({ focused }) => (
-                        <Ionicons name="pencil" size={20} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="matchmaking"
-                options={{
-                    title: "Matchmaking",
-                    tabBarIcon: () => (
-                        <Ionicons name="heart-circle" size={20} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="index"
-                options={{
-                    title: "Home",
-                    tabBarIcon: ({ focused }) => (
-                        <Ionicons name="home" size={20} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="social"
-                options={{
-                    title: "Social",
-                    tabBarIcon: () => <Ionicons name="chatbox" size={20} />,
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: "Profile",
-                    tabBarIcon: () => (
-                        <Ionicons name="person-circle" size={20} />
-                    ),
-                }}
-            />
-        </Tabs>
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+        </Stack>
     );
 }
