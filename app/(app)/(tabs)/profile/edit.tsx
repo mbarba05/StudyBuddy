@@ -288,7 +288,9 @@ const EditProfileScreen = () => {
                                         className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
                                     >
                                         <TouchableOpacity
-                                            onPress={() => removeCourse(item.course_prof_id, item.enrollmentId)}
+                                            onPress={() =>
+                                                removeCourse(item.course_prof_id, item.enrollmentId as number)
+                                            }
                                         >
                                             <Ionicons
                                                 size={16}
@@ -297,7 +299,7 @@ const EditProfileScreen = () => {
                                             />
                                         </TouchableOpacity>
                                         <View>
-                                            <Text className="text-colors-text text-xl text-center">
+                                            <Text className="font-semibold text-colors-text text-xl text-center">
                                                 {item.course_code}
                                             </Text>
                                             <Text className="text-colors-textSecondary text-xl text-center">

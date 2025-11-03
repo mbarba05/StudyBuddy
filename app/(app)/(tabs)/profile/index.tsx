@@ -1,6 +1,6 @@
+import CourseProfDisplayWidget from "@/components/features/courses/CourseProfDisplayWidget";
 import { BlueButton, RedButton } from "@/components/ui/Buttons";
 import LoadingScreen from "@/components/ui/LoadingScreen";
-import { parseLastName } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
 import { getCoursesForProfile } from "@/services/enrollmentService";
@@ -46,16 +46,16 @@ export default function ProfileScreen() {
             <View className="flex flex-row gap-12">
                 <View>
                     <Text className="text-center color-colors-textSecondary">Name</Text>
-                    <Text className="text-2xl text-colors-text">{profile?.display_name}</Text>
+                    <Text className="font-semibold text-2xl text-colors-text">{profile?.display_name}</Text>
                 </View>
                 <View>
                     <Text className="color-colors-textSecondary text-center">Year</Text>
-                    <Text className="text-2xl text-colors-text">{profile?.year}</Text>
+                    <Text className="font-semibold text-2xl text-colors-text">{profile?.year}</Text>
                 </View>
             </View>
             <View>
                 <Text className=" color-colors-textSecondary text-center">Major</Text>
-                <Text className="text-2xl text-colors-text">{profile?.major.name}</Text>
+                <Text className="font-semibold text-2xl text-colors-text">{profile?.major.name}</Text>
             </View>
             <View>
                 <Text className=" color-colors-textSecondary text-center mb-2">Courses</Text>
@@ -68,16 +68,8 @@ export default function ProfileScreen() {
                         className={`flex ${courses ? "flex-row" : ""} justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-4  text-colors-text`}
                     >
                         {courses.map((item: CourseProfDisplay) => (
-                            <View
-                                key={item.course_prof_id}
-                                className="flex flex-row gap-2 items-center bg-colors-secondary p-2 rounded-md"
-                            >
-                                <View>
-                                    <Text className="text-colors-text text-xl text-center">{item.course_code}</Text>
-                                    <Text className="text-colors-textSecondary text-xl text-center">
-                                        {parseLastName(item.prof_name)}
-                                    </Text>
-                                </View>
+                            <View key={item.course_prof_id}>
+                                <CourseProfDisplayWidget {...item} />
                             </View>
                         ))}
                     </View>

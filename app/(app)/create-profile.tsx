@@ -292,7 +292,7 @@ export default function CreateProfileScreen() {
                                             />
                                         </TouchableOpacity>
                                         <View>
-                                            <Text className="text-colors-text text-xl text-center">
+                                            <Text className="font-semibold text-colors-text text-xl text-center">
                                                 {item.course_code}
                                             </Text>
                                             <Text className="text-colors-textSecondary text-xl text-center">
