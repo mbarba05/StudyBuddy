@@ -56,9 +56,7 @@ export async function getIncomingFriendRequests(user_id: string) {
   return data as FriendRequest[];
 }
 
-/**
- * Get all outgoing friend requests sent by current user
- */
+//
 export async function getOutgoingFriendRequests(user_id: string) {
   const { data, error } = await supabase
     .from(TABLES.FRIEND_REQUESTS)
@@ -120,9 +118,7 @@ export async function rejectFriendRequest(request_id: number) {
   if (error) throw error;
 }
 
-/**
- * Get all friends for the current user
- */
+// Get friends from the user 
 export async function getFriends(user_id: string) {
   const { data, error } = await supabase
     .from(TABLES.FRIENDSHIPS)
@@ -147,9 +143,7 @@ export async function getFriends(user_id: string) {
   return data as Friendship[];
 }
 
-/**
- * Remove an existing friendship (both directions)
- */
+// Removes a friend from both ends the user and the othe r
 export async function removeFriend(user_id: string, friend_id: string) {
   const { error } = await supabase
     .from(TABLES.FRIENDSHIPS)
