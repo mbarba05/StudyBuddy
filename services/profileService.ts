@@ -258,3 +258,23 @@ export async function editProfile(
 
     return result;
 }
+
+// fetch all profiles from the profiles table
+export async function getAllProfiles() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(`
+      user_id,
+      display_name,
+      year,
+      pp_url,
+      major:major_id (name)
+    `);
+
+  if (error) {
+    console.error("Error fetching profiles:", error);
+    return [];
+  }
+
+  return data || [];
+}
