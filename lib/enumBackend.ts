@@ -5,7 +5,11 @@ export const TABLES = {
     PROFILES: "profiles",
     MAJORS: "majors",
     COURSE_PROFESSOR: "course_professor",
+    COURSES: "courses",
+    PROFESSORS: "professors",
     ENROLLMENTS: "enrollments",
+    FRIENDSHIPS: "friendships",
+    FRIEND_REQUESTS: "friend_requests",
 };
 
 export const BUCKETS = { PROFILE_PICS: "profile-pictures" };

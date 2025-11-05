@@ -15,6 +15,7 @@ export interface Profile {
     pp_url: string | null;
 }
 
+
 export const getUserProfile = async (
     userId: string | null
 ): Promise<Profile | null> => {
@@ -39,7 +40,7 @@ export const getUserProfile = async (
         return null;
     }
 
-    return data as Profile;
+    return data as unknown as Profile;
 };
 
 export const hasProfile = async (userId: string): Promise<boolean> => {
