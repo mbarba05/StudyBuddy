@@ -1,6 +1,13 @@
 10/28: I will be will be working on the Matchmaking
 screen. This includes formatring the cards that will pop
 up and either swipe left or right for matching (what will 
-show up on the cards [logic]). I am going to try and make
-match making card component with profile picture, name,
+show up on the cards [logic]). Make it so when user swipes right
+profile is removed from swiping list and friend request is sent.
+If the user swipes right the profile is just taken out of the pool.
+Ensuring profiles will not reappear whether swipe. I am going to 
+try and make match making card component with profile picture, name,
 and major and pass as prop.
+Problems: Figuring out how to avoid repeating profiles showing up.
+Also having to mess with backend to deal with accepting friend requests
+when swiping right (also adding a sort of swipe history to keep track
+of whose been swiped so profiles won't reappear after app reloads).
