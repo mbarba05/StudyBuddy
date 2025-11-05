@@ -19,11 +19,19 @@ export type FriendRequest = {
   status: FriendStatus;
 };
 
-// Send a friend requests 
+// Send a friend request
 export async function sendFriendRequest(receiver_id: string) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!user) throw new Error("User not authenticated");
+
   const { data, error } = await supabase
     .from(TABLES.FRIEND_REQUESTS)
-    .insert([{ receiver_id, status: "pending" }])
+    .insert([{ sender_id: user.id, receiver_id, status: "pending" }])
     .select()
     .single();
 
@@ -31,7 +39,7 @@ export async function sendFriendRequest(receiver_id: string) {
   return data as FriendRequest;
 }
 
-// Get all the incoming friend requests from the other users 
+// Get all the incoming friend requests from the other users
 export async function getIncomingFriendRequests(user_id: string) {
   const { data, error } = await supabase
     .from(TABLES.FRIEND_REQUESTS)
@@ -56,7 +64,7 @@ export async function getIncomingFriendRequests(user_id: string) {
   return data as FriendRequest[];
 }
 
-//
+// Outgoing friend requests (sent by user)
 export async function getOutgoingFriendRequests(user_id: string) {
   const { data, error } = await supabase
     .from(TABLES.FRIEND_REQUESTS)
@@ -81,7 +89,7 @@ export async function getOutgoingFriendRequests(user_id: string) {
   return data as FriendRequest[];
 }
 
-// Accept the friend request and creates it on both ends if it gets accepted 
+// Accept the friend request and creates it on both ends if it gets accepted
 export async function acceptFriendRequest(request: FriendRequest) {
   const { error: updateErr } = await supabase
     .from(TABLES.FRIEND_REQUESTS)
@@ -108,7 +116,7 @@ export async function acceptFriendRequest(request: FriendRequest) {
   if (insertErr) throw insertErr;
 }
 
-// Reject a friend request 
+// Reject a friend request
 export async function rejectFriendRequest(request_id: number) {
   const { error } = await supabase
     .from(TABLES.FRIEND_REQUESTS)
@@ -118,7 +126,7 @@ export async function rejectFriendRequest(request_id: number) {
   if (error) throw error;
 }
 
-// Get friends from the user 
+// Get friends from the user
 export async function getFriends(user_id: string) {
   const { data, error } = await supabase
     .from(TABLES.FRIENDSHIPS)
@@ -143,7 +151,7 @@ export async function getFriends(user_id: string) {
   return data as Friendship[];
 }
 
-// Removes a friend from both ends the user and the othe r
+// Removes a friend from both ends the user and the other
 export async function removeFriend(user_id: string, friend_id: string) {
   const { error } = await supabase
     .from(TABLES.FRIENDSHIPS)
@@ -155,9 +163,7 @@ export async function removeFriend(user_id: string, friend_id: string) {
   if (error) throw error;
 }
 
-/**
- * Check if two users are already friends
- */
+// Checks if two different users are friends already 
 export async function areFriends(user_id: string, friend_id: string) {
   const { data, error } = await supabase
     .from(TABLES.FRIENDSHIPS)
