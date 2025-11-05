@@ -1,4 +1,5 @@
 import supabase from "@/lib/subapase";
+import { sendFriendRequest } from "./friendshipsService";
 
 // Record a swipe event in the user_swipes table. If it's a right swipe, also create a friend request.
 export async function recordSwipe(
@@ -23,7 +24,7 @@ export async function recordSwipe(
 
   // Also create friend request for right swipes
   if (direction === "right") {
-    await sendFriendRequest(swiperId, targetId);
+    await sendFriendRequest(targetId);
   }
 }
 
@@ -49,7 +50,7 @@ export async function getSwipedUserIds(swiperId: string): Promise<string[]> {
 
 // Send a new friend request when user swipes right. 
 // Adds entry to friend_requests table with pending status.
-export async function sendFriendRequest(
+/*export async function sendFriendRequest(
   senderId: string,
   receiverId: string
 ) {
@@ -67,4 +68,4 @@ export async function sendFriendRequest(
   } else {
     console.log(`Friend request sent from ${senderId} to ${receiverId}`);
   }
-}
+}*/
