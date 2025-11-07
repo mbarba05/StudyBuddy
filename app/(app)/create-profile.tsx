@@ -10,6 +10,7 @@ import { createEnrollments } from "@/services/enrollmentService";
 import { getAllMajorsForDropdown, MajorDropDownItem } from "@/services/majorsService";
 import { useProfileGate } from "@/services/ProfileProvider";
 import { createProfile } from "@/services/profileService";
+import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -44,13 +45,12 @@ export default function CreateProfileScreen() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [courseModalVisible, setCourseModalVisible] = useState(false);
-
     const [selectedCourseProf, setSelectedCourseProf] = useState<CourseProfDisplay[]>([]);
-
+    const [currentAndNextTerm, setCurrentAndNextTerm] = useState<[Term, Term] | null>(null);
     const handleOpenMajor = () => setYearOpen(false);
     const handleOpenYear = () => setMajorOpen(false);
 
-    // Fetch from supabase the majors
+    // Fetch from supabase the majors and terms
     useEffect(() => {
         //gets all major options
         let mounted = true;
@@ -58,11 +58,18 @@ export default function CreateProfileScreen() {
             const majors = await getAllMajorsForDropdown();
             if (mounted) {
                 setMajorOptions(majors);
-                setLoading(false);
             }
         };
 
+        const getTerms = async () => {
+            const terms = await getCurrentAndNextTerm();
+            if (mounted) {
+                setCurrentAndNextTerm(terms);
+                setLoading(false);
+            }
+        };
         getMajors();
+        getTerms();
         return () => {
             mounted = false;
         };
@@ -276,7 +283,7 @@ export default function CreateProfileScreen() {
                         >
                             {selectedCourseProf.length === 0 ? (
                                 <Text className="text-colors-textSecondary text-xl text-left mt-1">
-                                    Current Courses
+                                    Courses for {currentAndNextTerm && currentAndNextTerm[0].name}
                                 </Text>
                             ) : (
                                 selectedCourseProf.map((item: CourseProfDisplay) => (
