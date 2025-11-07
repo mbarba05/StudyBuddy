@@ -11,3 +11,17 @@ Problems: Figuring out how to avoid repeating profiles showing up.
 Also having to mess with backend to deal with accepting friend requests
 when swiping right (also adding a sort of swipe history to keep track
 of whose been swiped so profiles won't reappear after app reloads).
+
+11/6: I have been able to complete making the matchmaking screen adding
+backend with supabase keeping track of friend requests and user swipes to
+avoid having people reappearing (people you have already swiped on). Also
+adding logic such as Tinder Swiping so that users can swipe right or left 
+in order to send a friend request or deny their account. Also used placeholders
+for my teammates to make cards and algorithm to then be placed into my matchmaking
+screen. Challenges I have faced is having to deal with making the logic without 
+having my teammates finished work so I had to make placeholders to then be
+changed later for when they have completed their portion. I also tested by usign supabase
+to track user swipes so that when I reload my Android simulator those previous
+accounts would not show back up again. Also testing the friend request table to 
+see when I swipe right the friend request will be saved in backend for later usage
+(friend request pending).
