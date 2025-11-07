@@ -1,0 +1,7 @@
+Carlos (10/28/25): For this scrum cycle, I will be working on creating tables in Supabase and trying to show the relationships 
+between users as friends. I want to clean it up and make sure the relationships are being properly displayed. I will be working 
+with Johnae on this section and hopefully I will be able to complete the tables in time for the next scrum meeting.
+
+(11/04/2025): For this scrum cycle, I created two tables in supabase. I created a table for friend_requests and a table for 
+friendships. I had to configure the RLS policies as well for the tables. I then worked on a new file friendshipsService.ts 
+under the services folder which deals with adding, rejecting and pending for friendship requests. 

@@ -80,7 +80,7 @@ export default function MatchmakingScreen() {
   return (
     <SafeAreaView className="flex-1 justify-center items-center bg-colors-background">
       {/* Map over all profiles to create individual TinderCards */
-        /*
+/*
         <TinderCard
           key={shownProfile.user_id} // Unique key for each user
           onSwipe={(dir) => swiped(dir, shownProfile.display_name)} // Handle swipe direction
@@ -92,80 +92,103 @@ export default function MatchmakingScreen() {
   );
 }
   */
- /** 
-  * Matchmaking Screen
-  * Tinder-like swipe interface for connecting with other users.
-  * Fetches user profiles from Supabase and allows swiping left/right. (except users)
-  * Shows one profile at a time
-  * Sends friend requests on right swipe (sends friend request to Supabase pending)
-  * On left swipe, skips the profile.
-  * Rewind button to go back to the last swiped profile.
-  */
+/**
+ * Matchmaking Screen
+ * Tinder-like swipe interface for connecting with other users.
+ * Fetches user profiles from Supabase and allows swiping left/right. (except users)
+ * Shows one profile at a time
+ * Sends friend requests on right swipe (sends friend request to Supabase pending)
+ * On left swipe, skips the profile.
+ * Rewind button to go back to the last swiped profile.
+ */
 
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Text, View, Image } from "react-native";
+import {
+  ActivityIndicator,
+  Dimensions,
+  Text,
+  View,
+  Image,
+  Pressable,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TinderCard from "react-tinder-card";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getAllProfiles } from "@/services/profileService";
 import { recordSwipe, getSwipedUserIds } from "@/services/swipeService";
+import MatchMakingCard from "../../../components/MatchMakingCard.tsx";
 // Get the screen width of the device (used for responsive card sizing)
 const SCREEN_WIDTH = Dimensions.get("window").width;
+//For web browser
+const CARD_WIDTH = Platform.OS === "web" ? 420 : SCREEN_WIDTH * 0.9;
+const CARD_HEIGHT = Platform.OS === "web" ? 520 : SCREEN_WIDTH * 1.1;
 // MatchmakingScreen component
 export default function MatchmakingScreen() {
-    // Access the current authenticated user
+  // Access the current authenticated user
   const { user } = useAuth();
-    // Store all profiles retrieved from Supabase and filter user out
+  // Store all profiles retrieved from Supabase and filter user out
   const [profiles, setProfiles] = useState<any[]>([]);
-    // Boolean to show a loading spinner while profiles are being fetched
+  // Boolean to show a loading spinner while profiles are being fetched
   const [loading, setLoading] = useState(true);
 
+  const loadProfiles = async () => {
+    // Try-catch block to handle potential errors
+    try {
+      // Ensure user is logged in
+      if (!user?.id) return;
+
+      // Fetch all profiles from Supabase
+      const allProfiles = await getAllProfiles();
+
+      // Get list of already-swiped users ,
+      const swipedIds = await getSwipedUserIds(user.id);
+
+      // Filter out the current user + anyone swiped on before
+      /*
+      const availableProfiles = allProfiles.filter(
+        (p: any) => p.user_id !== user.id && !swipedIds.includes(p.user_id)
+      );
+      */
+      const availableProfiles = allProfiles.filter(
+        (p: any) => p.user_id !== user.id
+      );
+
+      // Update state with available profiles
+      setProfiles(availableProfiles);
+      // Log loaded profiles for debugging
+      console.log("Profiles loaded:", availableProfiles);
+    } catch (err) {
+      // console.error("Error loading profiles:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
   //Fetch all profiles that haven't been swiped on yet
   useEffect(() => {
     // Asynchronous function to fetch all user profiles
-    const loadProfiles = async () => {
-        // Try-catch block to handle potential errors
-      try {
-        // Ensure user is logged in
-        if (!user?.id) return;
-
-        // Fetch all profiles from Supabase
-        const allProfiles = await getAllProfiles();
-
-        // Get list of already-swiped users
-        const swipedIds = await getSwipedUserIds(user.id);
-
-        // Filter out the current user + anyone swiped on before
-        const availableProfiles = allProfiles.filter(
-          (p: any) => p.user_id !== user.id && !swipedIds.includes(p.user_id)
-        );
-        // Update state with available profiles
-        setProfiles(availableProfiles);
-        // Log loaded profiles for debugging
-        console.log("Profiles loaded:", availableProfiles);
-      } catch (err) {
-        console.error("Error loading profiles:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     loadProfiles();
   }, [user]);
 
-  
-   //Handle a swipe left/right action. Records swipe in Supabase. Removes profile from local deck.
-   
+  //Handle a swipe left/right action. Records swipe in Supabase. Removes profile from local deck.
+
   const handleSwipe = async (direction: string, targetProfile: any) => {
     // Log the swipe action
     console.log(`Swiped ${direction} on ${targetProfile.display_name}`);
     // Record the swipe in Supabase
     if (direction === "left" || direction === "right") {
-      await recordSwipe(user.id, targetProfile.user_id, direction as "left" | "right");
+      await recordSwipe(
+        user.id,
+        targetProfile.user_id,
+        direction as "left" | "right"
+      );
     }
 
     // Remove current profile from stack
-    setProfiles((prev) => prev.filter((p) => p.user_id !== targetProfile.user_id));
+    setProfiles((prev) =>
+      prev.filter((p) => p.user_id !== targetProfile.user_id)
+    );
   };
 
   // Loading spinner while fetching data
@@ -177,58 +200,85 @@ export default function MatchmakingScreen() {
       </SafeAreaView>
     );
 
-  
-   // Empty state when no more profiles left
-   
+  // Empty state when no more profiles left
+
   if (profiles.length === 0)
     return (
       <SafeAreaView className="flex-1 justify-center items-center bg-colors-background">
-        <Text className="text-white text-lg">No profiles available</Text>
+        <Text className="text-white text-lg mb-2">No profiles available</Text>
+        <Pressable
+          onPress={loadProfiles}
+          className="bg-white/90 px-4 py-2 rounded-full"
+        >
+          <Text className="text-black font-semibold">Reset Profiles</Text>
+        </Pressable>
       </SafeAreaView>
     );
 
-  
-   // Current top profile to display
-   
+  // Current top profile to display
+
   const currentProfile = profiles[0];
 
   return (
-    <SafeAreaView className="flex-1 justify-center items-center bg-colors-background">
-        {/* TinderCard for swipeable profile card (change after teammate finishes) */}
-      <TinderCard
-      // Unique key for the profile
-        key={currentProfile.user_id}
-        // Handle swipe action
-        onSwipe={(dir) => handleSwipe(dir, currentProfile)}
-        // Disable vertical swiping
-        preventSwipe={["up", "down"]}
-      >
-        {/* Profile card layout */}
+    <SafeAreaView className="flex-1 bg-colors-background">
+      <View style={{ flex: 1 }}>
+        {/* top reset button */}
+        <View className="items-center mt-10"></View>
+
+        {/* stacked cards */}
         <View
-          className="bg-white rounded-3xl shadow-lg p-4 items-center"
-          style={{
-            width: SCREEN_WIDTH * 0.9,
-            height: SCREEN_WIDTH * 1.2,
-            alignSelf: "center",
-          }}
+          style={
+            Platform.OS === "web"
+              ? {
+                  flex: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }
+              : {
+                  position: "absolute",
+                  top: 120,
+                  left: 0,
+                  right: 0,
+                  alignItems: "center",
+                }
+          }
         >
-            {/* Profile picture and details */}
-          <Image
-            source={{
-              uri:
-                currentProfile.pp_url || "https://placehold.co/300x300?text=No+Image",
+          <View
+            style={{
+              width: Platform.OS === "web" ? CARD_WIDTH : SCREEN_WIDTH,
+              height:
+                Platform.OS === "web" ? CARD_HEIGHT + 40 : SCREEN_WIDTH * 1.25,
+              position: "relative",
             }}
-            className="w-72 h-72 rounded-3xl mb-4"
-          />
-          <Text className="text-2xl font-bold text-black mb-2">
-            {currentProfile.display_name}
-          </Text>
-          <Text className="text-lg text-gray-600 mb-1">
-            {currentProfile.major?.name}
-          </Text>
-          <Text className="text-md text-gray-500">{currentProfile.year}</Text>
+          >
+            {[...profiles].reverse().map((profile, index) => (
+              <TinderCard
+                key={profile.user_id}
+                onSwipe={(dir) => handleSwipe(dir, profile)}
+                preventSwipe={["up", "down"]}
+              >
+                <View
+                  style={{
+                    position: "absolute",
+                    alignSelf: "center",
+                    top: Platform.OS === "web" ? index * 3 : index * 4,
+                    zIndex: index,
+                  }}
+                >
+                  <MatchMakingCard
+                    name={profile.display_name}
+                    major={profile.major?.name}
+                    year={profile.year}
+                    imageUrl={profile.pp_url}
+                    width={CARD_WIDTH}
+                    height={CARD_HEIGHT}
+                  />
+                </View>
+              </TinderCard>
+            ))}
+          </View>
         </View>
-      </TinderCard>
+      </View>
     </SafeAreaView>
   );
 }
