@@ -110,6 +110,7 @@ import {
   View,
   Image,
   Pressable,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TinderCard from "react-tinder-card";
@@ -119,6 +120,9 @@ import { recordSwipe, getSwipedUserIds } from "@/services/swipeService";
 import MatchMakingCard from "../../../components/MatchMakingCard.tsx";
 // Get the screen width of the device (used for responsive card sizing)
 const SCREEN_WIDTH = Dimensions.get("window").width;
+//For web browser
+const CARD_WIDTH = Platform.OS === "web" ? 420 : SCREEN_WIDTH * 0.9;
+const CARD_HEIGHT = Platform.OS === "web" ? 520 : SCREEN_WIDTH * 1.1;
 // MatchmakingScreen component
 export default function MatchmakingScreen() {
   // Access the current authenticated user
@@ -223,18 +227,27 @@ export default function MatchmakingScreen() {
 
         {/* stacked cards */}
         <View
-          style={{
-            position: "absolute",
-            top: 120,
-            left: 0,
-            right: 0,
-            alignItems: "center",
-          }}
+          style={
+            Platform.OS === "web"
+              ? {
+                  flex: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }
+              : {
+                  position: "absolute",
+                  top: 120,
+                  left: 0,
+                  right: 0,
+                  alignItems: "center",
+                }
+          }
         >
           <View
             style={{
-              width: SCREEN_WIDTH,
-              height: SCREEN_WIDTH * 1.25,
+              width: Platform.OS === "web" ? CARD_WIDTH : SCREEN_WIDTH,
+              height:
+                Platform.OS === "web" ? CARD_HEIGHT + 40 : SCREEN_WIDTH * 1.25,
               position: "relative",
             }}
           >
@@ -248,7 +261,7 @@ export default function MatchmakingScreen() {
                   style={{
                     position: "absolute",
                     alignSelf: "center",
-                    top: index * 4,
+                    top: Platform.OS === "web" ? index * 3 : index * 4,
                     zIndex: index,
                   }}
                 >
@@ -257,8 +270,8 @@ export default function MatchmakingScreen() {
                     major={profile.major?.name}
                     year={profile.year}
                     imageUrl={profile.pp_url}
-                    width={SCREEN_WIDTH * 0.9}
-                    height={SCREEN_WIDTH * 1.1}
+                    width={CARD_WIDTH}
+                    height={CARD_HEIGHT}
                   />
                 </View>
               </TinderCard>
