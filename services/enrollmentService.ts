@@ -7,14 +7,14 @@ export interface Enrollment {
     course_prod_id: number;
 }
 
-export async function getCoursesForProfile(userId: string | null): Promise<CourseProfDisplay[] | null> {
+export async function getEnrollmentsForProfile(userId: string | null): Promise<CourseProfDisplay[] | null> {
     if (!userId) {
         console.error("No user id found");
         return null;
     }
     const { data, error } = await supabase
         .from("enrollments")
-        .select(`id, course_professor:course_prof_id (id, course:courses (code), professor:professors (name))`)
+        .select(`id, term, course_professor:course_prof_id (id, course:courses (code), professor:professors (name))`)
         .eq("user_id", userId);
 
     if (error) {
@@ -28,11 +28,36 @@ export async function getCoursesForProfile(userId: string | null): Promise<Cours
         course_prof_id: row.course_professor.id,
         course_code: row.course_professor.course.code,
         prof_name: row.course_professor.professor.name,
+        term: row.term,
     }));
 }
 
-export async function createEnrollments(userId: string, courseProfIds: number[]) {
-    ///TODO: term support for everything here
+export async function getCurrentandNextCoursesForProfile(userId: string | null): Promise<CourseProfDisplay[] | null> {
+    if (!userId) {
+        console.error("No user id found");
+        return null;
+    }
+    const { data, error } = await supabase
+        .from("enrollments")
+        .select(`id, term, course_professor:course_prof_id (id, course:courses (code), professor:professors (name))`)
+        .eq("user_id", userId);
+
+    if (error) {
+        console.error("Error fetching enrollments:", error);
+        throw error;
+    }
+    if (!data) return [];
+
+    return data.map((row: any) => ({
+        enrollmentId: row.id,
+        course_prof_id: row.course_professor.id,
+        course_code: row.course_professor.course.code,
+        prof_name: row.course_professor.professor.name,
+        term: row.term,
+    }));
+}
+
+export async function createEnrollments(userId: string, courseProfIds: number[], termName: string) {
     if (courseProfIds.length === 0) return;
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
@@ -40,6 +65,7 @@ export async function createEnrollments(userId: string, courseProfIds: number[])
             courseProfIds.map((courseProfId) => ({
                 user_id: userId,
                 course_prof_id: courseProfId,
+                term: termName,
             }))
         )
         .select(); // optional: returns the inserted rows
