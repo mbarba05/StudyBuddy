@@ -45,7 +45,9 @@ export default function CreateProfileScreen() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [courseModalVisible, setCourseModalVisible] = useState(false);
+    const [nextCourseModalVisible, setNextCourseModalVisible] = useState(false);
     const [selectedCourseProf, setSelectedCourseProf] = useState<CourseProfDisplay[]>([]);
+    const [selectedNextCourseProf, setSelectedNextCourseProf] = useState<CourseProfDisplay[]>([]);
     const [currentAndNextTerm, setCurrentAndNextTerm] = useState<[Term, Term] | null>(null);
     const handleOpenMajor = () => setYearOpen(false);
     const handleOpenYear = () => setMajorOpen(false);
@@ -79,6 +81,10 @@ export default function CreateProfileScreen() {
         setSelectedCourseProf((prev) => (prev.includes(courseProf) ? prev : [...prev, courseProf]));
     }, []);
 
+    const handleNextProfessorPicked = useCallback((courseProf: CourseProfDisplay) => {
+        setSelectedNextCourseProf((prev) => (prev.includes(courseProf) ? prev : [...prev, courseProf]));
+    }, []);
+
     const chooseCoursesPress = () => {
         if (selectedCourseProf.length >= 6) {
             setError("You can only pick up to 6 courses");
@@ -87,8 +93,20 @@ export default function CreateProfileScreen() {
         }
     };
 
+    const chooseNextCoursesPress = () => {
+        if (selectedNextCourseProf.length >= 6) {
+            setError("You can only pick up to 6 courses");
+        } else {
+            setNextCourseModalVisible(true);
+        }
+    };
+
     const removeCourse = (courseProfId: number) => {
         setSelectedCourseProf((prev) => prev.filter((item) => item.course_prof_id !== courseProfId));
+    };
+
+    const removeNextCourse = (courseProfId: number) => {
+        setSelectedNextCourseProf((prev) => prev.filter((item) => item.course_prof_id !== courseProfId));
     };
 
     // Can't proceed unless the text fields are filled
@@ -147,8 +165,17 @@ export default function CreateProfileScreen() {
             };
 
             const courseProdIds = selectedCourseProf.map((courseProf) => courseProf.course_prof_id);
+            const nextCourseProdIds = selectedNextCourseProf.map((courseProf) => courseProf.course_prof_id);
+
             await createProfile(newProfile);
-            await createEnrollments(user.id, courseProdIds);
+
+            if (currentAndNextTerm) {
+                await createEnrollments(user.id, courseProdIds, currentAndNextTerm[0].name); //current term enrollments
+                await createEnrollments(user.id, nextCourseProdIds, currentAndNextTerm[1].name as string); //next term enrollments
+            } else {
+                Alert.alert("Error adding classes to profile", "Could not find current and next term.");
+            }
+
             await refreshProfile();
 
             router.replace("/(app)/(tabs)");
@@ -277,45 +304,100 @@ export default function CreateProfileScreen() {
                             />
                         </View>
 
-                        <Pressable
-                            className={`flex ${selectedCourseProf.length !== 0 && "flex-row"} justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-2 w-full text-colors-text`}
-                            onPress={chooseCoursesPress}
-                        >
-                            {selectedCourseProf.length === 0 ? (
-                                <Text className="text-colors-textSecondary text-xl text-left mt-1">
-                                    Courses for {currentAndNextTerm && currentAndNextTerm[0].name}
-                                </Text>
-                            ) : (
-                                selectedCourseProf.map((item: CourseProfDisplay) => (
-                                    <View
-                                        key={item.course_prof_id}
-                                        className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
-                                    >
-                                        <TouchableOpacity onPress={() => removeCourse(item.course_prof_id)}>
-                                            <Ionicons
-                                                size={16}
-                                                name="close-circle-outline"
-                                                color={colors.primary}
-                                            />
-                                        </TouchableOpacity>
-                                        <View>
-                                            <Text className="font-semibold text-colors-text text-xl text-center">
-                                                {item.course_code}
-                                            </Text>
-                                            <Text className="text-colors-textSecondary text-xl text-center">
-                                                {parseLastName(item.prof_name)}
-                                            </Text>
+                        <View>
+                            <Text className="mb-2 color-colors-textSecondary">
+                                Courses for current term ({currentAndNextTerm && currentAndNextTerm[0].name})
+                            </Text>
+                            <Pressable
+                                className={`flex ${
+                                    selectedCourseProf.length !== 0 && "flex-row"
+                                } justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-2 w-full text-colors-text`}
+                                onPress={chooseCoursesPress}
+                            >
+                                {selectedCourseProf.length === 0 ? (
+                                    <Text className="text-colors-textSecondary text-xl text-left mt-1">
+                                        {currentAndNextTerm && currentAndNextTerm[0].name}
+                                    </Text>
+                                ) : (
+                                    selectedCourseProf.map((item: CourseProfDisplay) => (
+                                        <View
+                                            key={item.course_prof_id}
+                                            className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
+                                        >
+                                            <TouchableOpacity onPress={() => removeCourse(item.course_prof_id)}>
+                                                <Ionicons
+                                                    size={16}
+                                                    name="close-circle-outline"
+                                                    color={colors.primary}
+                                                />
+                                            </TouchableOpacity>
+                                            <View>
+                                                <Text className="font-semibold text-colors-text text-xl text-center">
+                                                    {item.course_code}
+                                                </Text>
+                                                <Text className="text-colors-textSecondary text-xl text-center">
+                                                    {parseLastName(item.prof_name)}
+                                                </Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                ))
-                            )}
-                        </Pressable>
+                                    ))
+                                )}
+                            </Pressable>
+                        </View>
+
+                        <View>
+                            <Text className="mb-2 color-colors-textSecondary">
+                                Courses for next term ({currentAndNextTerm && currentAndNextTerm[1].name})
+                            </Text>
+                            <Pressable
+                                className={`flex ${
+                                    selectedNextCourseProf.length !== 0 && "flex-row"
+                                } justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-2 w-full text-colors-text`}
+                                onPress={chooseNextCoursesPress}
+                            >
+                                {selectedNextCourseProf.length === 0 ? (
+                                    <Text className="text-colors-textSecondary text-xl text-left mt-1">
+                                        {currentAndNextTerm && currentAndNextTerm[1].name}
+                                    </Text>
+                                ) : (
+                                    selectedNextCourseProf.map((item: CourseProfDisplay) => (
+                                        <View
+                                            key={item.course_prof_id}
+                                            className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
+                                        >
+                                            <TouchableOpacity onPress={() => removeNextCourse(item.course_prof_id)}>
+                                                <Ionicons
+                                                    size={16}
+                                                    name="close-circle-outline"
+                                                    color={colors.primary}
+                                                />
+                                            </TouchableOpacity>
+                                            <View>
+                                                <Text className="font-semibold text-colors-text text-xl text-center">
+                                                    {item.course_code}
+                                                </Text>
+                                                <Text className="text-colors-textSecondary text-xl text-center">
+                                                    {parseLastName(item.prof_name)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    ))
+                                )}
+                            </Pressable>
+                        </View>
 
                         <CourseSearchModal
                             visible={courseModalVisible}
                             setVisible={setCourseModalVisible}
                             handleProfessorPicked={handleProfessorPicked}
                             selectedCourseProf={selectedCourseProf}
+                        />
+
+                        <CourseSearchModal
+                            visible={nextCourseModalVisible}
+                            setVisible={setNextCourseModalVisible}
+                            handleProfessorPicked={handleNextProfessorPicked}
+                            selectedCourseProf={selectedNextCourseProf}
                         />
 
                         {error ? <Text className="text-colors-error font-semibold mt-2">{error}</Text> : null}
