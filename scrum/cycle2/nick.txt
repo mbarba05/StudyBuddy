@@ -5,5 +5,3 @@ so finally was able to figure out a fix. Now I am figuring out what we should wo
 10/30: After about 5 hours of work, i was able to show the professors for a class and let the user pick a professor and class 
 and create an enrollment on submit. In the future, i do want to add logic for terms with enrollments, but that will be its own 
 thing.
-11/4: I started terms for enrollments and made a terms service to get the current and next term and all past terms to
-be able to add all the users past classes in the future

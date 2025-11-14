@@ -35,7 +35,6 @@ export interface CourseProfDisplay {
     prof_name: string;
     course_code: string;
     enrollmentId?: number;
-    term: string;
 }
 
 export async function getProfessorsForCourse(courseId: number): Promise<ProfessorForCourse[]> {
@@ -56,23 +55,17 @@ export async function getProfessorsForCourse(courseId: number): Promise<Professo
         name: row.prof.name,
     }));
 }
-export async function createNewCourse(rawCode: string) {
-    const code = rawCode.trim();
 
-    console.log("Creating new course with code:", code);
+export async function createNewCourse(code: string) {
+    //for reference, insert takes an array of objects, each object is a row
     const { data, error } = await supabase.from(TABLES.COURSES).insert([{ code }]).select();
 
     if (error) {
-        console.log("Supabase insert error:", JSON.stringify(error, null, 2));
-
-        const isDuplicateCode = error.code === "23505" && error.message?.toLowerCase().includes("courses_code_key"); // adjust to your unique index name
-
-        if (isDuplicateCode) {
+        if (error.code === "23505") {
             Alert.alert("Course already exists", `The course "${code}" is already in the database.`);
         } else {
             Alert.alert("Error adding course", error.message);
         }
-
         return false;
     }
 
