@@ -1,7 +1,7 @@
-import { SafeAreaView } from "react-native-safe-area-context";
+// ReviewScreen.tsx
+import ReviewTabs from "@/components/features/reviews/ReviewTabs";
+import React from "react";
 
-export default function ReviewsScreen() {
-    return (
-        <SafeAreaView className="flex-1 bg-colors-background"></SafeAreaView>
-    );
+export default function ReviewScreen() {
+    return <ReviewTabs />;
 }
