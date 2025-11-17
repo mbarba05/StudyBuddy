@@ -4,15 +4,16 @@ import { getUserReviews, ReviewDisplay } from "@/services/reviewsService";
 import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import CourseProfDisplayWidget from "../courses/CourseProfDisplayWidget";
+import ReviewWidget from "./ReviewWidget";
 import WriteReviewModal from "./WriteReviewModal";
 
 const YourReviewsScreen = () => {
     const [reviewableEnrollments, setReviewableEnrollments] = useState<ReviewableEnrollment[] | null>(null);
     const [reviewModalVisible, setReviewModalVisible] = useState(false);
     const [selectedEnrollment, setSelectedEnrollment] = useState<ReviewableEnrollment | null>(null);
-    const [review, setReviews] = useState<ReviewDisplay[] | null>();
+    const [reviews, setReviews] = useState<ReviewDisplay[] | null>();
     const [loading, setLoading] = useState(true);
-    console.log("REV", review);
+    console.log("REV", reviews);
     const getData = async () => {
         const enrollments = await getReviewableEnrollments();
         const review = await getUserReviews();
@@ -56,8 +57,14 @@ const YourReviewsScreen = () => {
                     </View>
                 </View>
             )}
-            <View className="flex items-center">
-                <Text className="text-4xl text-colors-text font-semibold">View Reviews</Text>
+            <View className="flex items-center gap-4">
+                <Text className="text-4xl text-colors-text font-semibold">View your Reviews</Text>
+                {reviews &&
+                    reviews.map((r) => (
+                        <View key={r.reviewId}>
+                            <ReviewWidget review={r} />
+                        </View>
+                    ))}
             </View>
             <WriteReviewModal
                 visible={reviewModalVisible}

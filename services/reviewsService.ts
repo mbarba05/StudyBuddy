@@ -59,6 +59,7 @@ export interface ReviewDisplay {
     likes: number;
     profName: string;
     code: string;
+    reviewDate: string;
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
@@ -72,7 +73,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
     const { data, error } = await supabase
         .from(TABLES.REVIEWS)
         .select(
-            `id, review, course_diff, prof_rating, likes, 
+            `id, review, course_diff, prof_rating, likes, created_at, 
         enrollment:enrollment_id (id, user_id, term, course_prof:course_prof_id (course:course_id (code), prof:prof_id(name)))`
         )
         .eq("enrollment.user_id", user.data.user?.id);
@@ -82,16 +83,22 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
         return [];
     }
 
-    const normalizedData: ReviewDisplay[] = (data as any[]).map((item) => ({
-        reviewId: item.id,
-        reviewText: item.review,
-        courseDiff: item.course_diff,
-        profRating: item.prof_rating,
-        likes: item.likes,
-        term: item.enrollment?.term ?? "",
-        code: item.enrollment?.course_prof?.course?.code ?? "",
-        profName: item.enrollment?.course_prof?.prof?.name ?? "",
-    }));
+    const normalizedData: ReviewDisplay[] = (data as any[]).map((item) => {
+        const d = new Date(item.created_at);
+        const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+
+        return {
+            reviewId: item.id,
+            reviewDate,
+            reviewText: item.review,
+            courseDiff: item.course_diff,
+            profRating: item.prof_rating,
+            likes: item.likes,
+            term: item.enrollment?.term ?? "",
+            code: item.enrollment?.course_prof?.course?.code ?? "",
+            profName: item.enrollment?.course_prof?.prof?.name ?? "",
+        };
+    });
 
     return normalizedData;
 }
