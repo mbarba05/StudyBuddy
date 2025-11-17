@@ -11,7 +11,7 @@ interface ReviewWidgetProps {
 
 const ReviewWidget = ({ review }: ReviewWidgetProps) => {
     return (
-        <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4">
+        <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
             <View className="flex-row justify-between">
                 <View>
                     <Text className="color-colors-text text-2xl font-semibold">{review.code}</Text>

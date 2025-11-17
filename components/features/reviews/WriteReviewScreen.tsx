@@ -37,6 +37,9 @@ const YourReviewsScreen = () => {
     return (
         <ScrollView className="flex-1 bg-colors-background">
             <View className="gap-4 p-2">
+                {/* when you cant write any reviews yet, make it so that we show the end date of the semester so they know when thay can review
+                also we should consider splitting into 4 tabs, search prof, search course, your reviews, write reviews*/}
+
                 {reviewableEnrollments && reviewableEnrollments.length > 0 && (
                     <View className="flex items-center">
                         <Text className="text-4xl text-colors-text font-semibold">Write your Reviews</Text>
@@ -60,14 +63,14 @@ const YourReviewsScreen = () => {
                 <View className="flex items-center gap-4">
                     <Text className="text-4xl text-colors-text font-semibold">View your Reviews</Text>
                     <View className="flex gap-4">
-                        {reviews ? (
+                        {reviews && reviews.length !== 0 ? (
                             reviews.map((r) => (
                                 <View key={r.reviewId}>
                                     <ReviewWidget review={r} />
                                 </View>
                             ))
                         ) : (
-                            <Text className="text-lg text-colors-textSecondary">No Reviews Yet</Text>
+                            <Text className="text-2xl text-colors-textSecondary">No Reviews Yet</Text>
                         )}
                     </View>
                 </View>

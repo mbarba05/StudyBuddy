@@ -68,43 +68,100 @@ export interface ReviewDisplay {
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
-    const user = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
 
-    if (!user) {
-        console.error("No user found");
+    if (userError || !userData?.user) {
+        console.error("No user found or error fetching user:", userError);
         return [];
     }
+
+    const userId = userData.user.id;
 
     const { data, error } = await supabase
         .from(TABLES.REVIEWS)
         .select(
-            `id, review, course_diff, prof_rating, likes, created_at, grade, 
-        enrollment:enrollment_id (id, user_id, term, course_prof:course_prof_id (course:course_id (code), prof:prof_id(name)))`
+            `
+            *,
+            enrollment:enrollment_id!inner (
+                *,
+                course_prof:course_prof_id (
+                    course:course_id (code),
+                    prof:prof_id (name)
+                )
+            )
+        `
         )
-        .eq("enrollment.user_id", user.data.user?.id);
+        .eq("enrollment.user_id", userId);
 
     if (error) {
         console.error("Error fetching reviews for user:", error);
         return [];
     }
-
-    const normalizedData: ReviewDisplay[] = (data as any[]).map((item) => {
-        const d = new Date(item.created_at);
-        const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
-
-        return {
-            reviewId: item.id,
-            reviewDate,
-            grade: item.grade,
-            reviewText: item.review,
-            courseDiff: item.course_diff,
-            profRating: item.prof_rating,
-            likes: item.likes,
-            term: item.enrollment?.term ?? "",
-            code: item.enrollment?.course_prof?.course?.code ?? "",
-            profName: item.enrollment?.course_prof?.prof?.name ?? "",
-        };
-    });
-
-    return normalizedData;
+    console.log(" deex", normalizeReviews(data));
+    return normalizeReviews(data ?? []);
 }
+
+export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
+    //Get all enrollments where this professor teaches the course
+    const { data: enrollments, error: enrollError } = await supabase
+        .from(TABLES.ENROLLMENTS)
+        .select(`id, course_prof:course_prof_id!inner (prof_id)`)
+        .eq("course_prof.prof_id", profId);
+
+    if (enrollError) {
+        console.error("Error fetching enrollments for professor:", enrollError);
+        throw enrollError;
+    }
+
+    if (!enrollments || enrollments.length === 0) {
+        return [];
+    }
+
+    const enrollmentIds = enrollments.map((e) => e.id as number);
+
+    //Get all reviews for those enrollments, with nested enrollment -> course_prof -> prof/course
+    const { data, error } = await supabase
+        .from(TABLES.REVIEWS)
+        .select(
+            `
+            *,
+            enrollment:enrollment_id (
+                *,
+                course_prof:course_prof_id (
+                    *,
+                    prof:prof_id (*),
+                    course:course_id (*)
+                )
+            )
+        `
+        )
+        .in("enrollment_id", enrollmentIds);
+
+    if (error) {
+        console.error("Error fetching reviews for professor:", error);
+        throw error;
+    }
+    return normalizeReviews(data ?? []);
+};
+
+const normalizeReview = (item: any): ReviewDisplay => {
+    const d = new Date(item.created_at);
+    const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+
+    return {
+        reviewId: item.id,
+        reviewDate,
+        reviewText: item.review,
+        courseDiff: item.course_diff,
+        profRating: item.prof_rating,
+        likes: item.likes,
+        term: item.enrollment?.term ?? "",
+        code: item.enrollment?.course_prof?.course?.code ?? "",
+        profName: item.enrollment?.course_prof?.prof?.name ?? "",
+        grade: item.grade ?? null,
+    };
+};
+
+const normalizeReviews = (rows: any[]): ReviewDisplay[] => {
+    return rows.map(normalizeReview);
+};

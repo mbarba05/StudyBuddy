@@ -8,10 +8,16 @@ export const TextSeparator = ({ text }: TextSeparatorProps) => {
     return (
         <View className="flex-row items-center my-4">
             <View className="flex-1 h-[1px] bg-colors-textSecondary" />
-            <Text className="mx-3 text-colors-textSecondary font-medium">
-                {text}
-            </Text>
+            <Text className="mx-3 text-colors-textSecondary font-medium">{text}</Text>
             <View className="flex-1 h-[1px] bg-colors-textSecondary" />
         </View>
     );
+};
+
+export const ListSeparator = () => {
+    return <View className="flex-1 h-[1px] bg-colors-textSecondary" />;
+};
+
+export const ReviewSeparator = () => {
+    return <View className="h-4" />;
 };
