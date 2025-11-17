@@ -16,6 +16,7 @@ export interface ReviewInput {
     review: string;
     courseDiff: number;
     profRating: number;
+    grade: string;
 }
 
 export async function submitReview(fullReview: ReviewInput) {
@@ -38,9 +39,12 @@ export async function submitReview(fullReview: ReviewInput) {
             course_diff: fullReview.courseDiff,
             prof_rating: fullReview.profRating,
             likes: 0, // default
+            grade: fullReview.grade,
         })
         .select()
         .single();
+
+    //TODO: update average difficulty and grade on course_prof, and quality on prof
 
     if (error) {
         console.error("Error submitting review:", error);
@@ -60,6 +64,7 @@ export interface ReviewDisplay {
     profName: string;
     code: string;
     reviewDate: string;
+    grade: string;
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
@@ -73,7 +78,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
     const { data, error } = await supabase
         .from(TABLES.REVIEWS)
         .select(
-            `id, review, course_diff, prof_rating, likes, created_at, 
+            `id, review, course_diff, prof_rating, likes, created_at, grade, 
         enrollment:enrollment_id (id, user_id, term, course_prof:course_prof_id (course:course_id (code), prof:prof_id(name)))`
         )
         .eq("enrollment.user_id", user.data.user?.id);
@@ -90,6 +95,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
         return {
             reviewId: item.id,
             reviewDate,
+            grade: item.grade,
             reviewText: item.review,
             courseDiff: item.course_diff,
             profRating: item.prof_rating,

@@ -10,7 +10,6 @@ interface ReviewWidgetProps {
 }
 
 const ReviewWidget = ({ review }: ReviewWidgetProps) => {
-    console.log("review in wefte", review);
     return (
         <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4">
             <View className="flex-row justify-between">
@@ -39,7 +38,7 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
                 </View>
                 <View className="flex items-center">
                     <Text className="color-colors-textSecondary text-lg">Grade</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{review.courseDiff}/10</Text>
+                    <Text className="color-colors-text text-2xl font-semibold">{review.grade}</Text>
                 </View>
             </View>
             <View className="flex flex-row justify-between border-colors-textSecondary border-t pt-2">
@@ -50,7 +49,8 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
                             color={colors.text}
                             size={24}
                         />
-                        <Text className="color-colors-text text-lg">1</Text> {/*TODO: add comment section*/}
+                        <Text className="color-colors-text text-lg">1</Text>
+                        {/*TODO: add comment section*/}
                     </TouchableOpacity>
                     <TouchableOpacity>
                         <Ionicons
@@ -69,7 +69,7 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
                             size={28}
                         />
                     </TouchableOpacity>
-                    <Text className="color-colors-text text-lg">1</Text> {/*TODO: add likes*/}
+                    <Text className="color-colors-text text-lg">1</Text>
                     <TouchableOpacity>
                         <Ionicons
                             name="arrow-down-circle"
@@ -77,6 +77,7 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
                             size={28}
                         />
                     </TouchableOpacity>
+                    {/*TODO: add liking posts*/}
                 </View>
             </View>
         </View>

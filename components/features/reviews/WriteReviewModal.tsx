@@ -1,11 +1,13 @@
 import { colors } from "@/assets/colors";
 import { BlueButton } from "@/components/ui/Buttons";
 import { ReviewInput } from "@/components/ui/TextInputs";
+import { gradeOptions } from "@/lib/enumFrontend";
 import { ReviewableEnrollment } from "@/services/enrollmentService";
 import { submitReview } from "@/services/reviewsService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { ActivityIndicator, Modal, Text, View } from "react-native";
+import { ActivityIndicator, Modal, StyleSheet, Text, View } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
 import StarRating from "react-native-star-rating-widget";
 import { DifficultyIcon, ProfessorQualityIcon } from "./RatingIcons";
 
@@ -22,11 +24,15 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
     const [profRating, setProfRating] = useState(5);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    console.log(profRating);
+    const [gradeOpen, setGradeOpen] = useState(false);
+    const [grade, setGrade] = useState<string>("");
 
     const validateInputs = () => {
         if (reviewText.trim().length === 0) {
             setError("Review text cannot be empty.");
+            return false;
+        } else if (!grade) {
+            setError("Grade can't be empty.");
             return false;
         } else if (reviewText.length > 300) {
             setError("Review text cannot be longer than 300 chars.");
@@ -45,6 +51,7 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
             const reviewInput = {
                 enrollmentId: selectedEnrollment.enrollmentId,
                 review: reviewText,
+                grade,
                 courseDiff,
                 profRating,
             };
@@ -70,6 +77,7 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
         setProfRating(5);
         setError(null);
         setVisible(false);
+        setGrade("");
     };
 
     console.log("Selected Enrollment in Modal:", selectedEnrollment);
@@ -142,6 +150,29 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
                         />
                     </View>
                 </View>
+                <View>
+                    <Text className="text-lg text-colors-textSecondary">Grade</Text>
+                    <View className="flex items-center mt-2">
+                        <DropDownPicker
+                            open={gradeOpen}
+                            value={grade}
+                            items={gradeOptions}
+                            setOpen={setGradeOpen}
+                            setValue={setGrade}
+                            //setItems={setMajorOptions}
+                            placeholder="Choose Grade"
+                            placeholderStyle={styles.placeholder}
+                            textStyle={{
+                                color: "white",
+                                fontSize: 17,
+                            }}
+                            style={styles.dropdown}
+                            dropDownContainerStyle={styles.dropdownContainer}
+                            searchContainerStyle={styles.searchContainer}
+                            listMode="SCROLLVIEW"
+                        />
+                    </View>
+                </View>
                 <View className="h-8">{error && <Text className="text-lg text-colors-error">{error}</Text>}</View>
                 <View>
                     {loading ? <ActivityIndicator /> : <BlueButton onPress={handleSubmitReview}>Submit</BlueButton>}
@@ -152,3 +183,20 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
 };
 
 export default WriteReviewModal;
+
+const styles = StyleSheet.create({
+    dropdown: {
+        backgroundColor: "#002e6d",
+        borderColor: colors.text,
+    },
+    placeholder: {
+        color: colors.textSecondary,
+    },
+    dropdownContainer: {
+        backgroundColor: colors.secondary,
+        borderColor: colors.text,
+    },
+    searchContainer: {
+        borderColor: colors.text,
+    },
+});

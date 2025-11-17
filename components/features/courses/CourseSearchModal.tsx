@@ -182,7 +182,7 @@ const CourseSearchModal = ({
                             onChangeText={setNewClassCode}
                             placeholder="CSCI 152E"
                         />
-                        <BlueButton onPress={() => submitNewClass(newClassCode)}>Submit New Class</BlueButton>
+                        <BlueButton onPress={() => submitNewClass(newClassCode)}>Submit</BlueButton>
                     </View>
                 )}
             </View>
