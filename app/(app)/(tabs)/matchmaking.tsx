@@ -1,6 +1,7 @@
 import MatchMakingCard from "@/components/MatchMakingCard";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
+import { sendFriendRequest } from "@/services/friendshipsService.ts";
 import { getPotentialMatches } from "@/services/profileService";
 import { recordSwipe } from "@/services/swipeService";
 import React, { useEffect, useState } from "react";
@@ -13,7 +14,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 // For web browser
 const CARD_WIDTH = Platform.OS === "web" ? 420 : SCREEN_WIDTH * 0.9;
 const CARD_HEIGHT = Platform.OS === "web" ? 520 : SCREEN_WIDTH * 1.1;
-
+const TEST_MODE = false; //  flip to false when done testing.
 // MatchmakingScreen component
 export default function MatchmakingScreen() {
     // Access the current authenticated user
@@ -52,6 +53,12 @@ export default function MatchmakingScreen() {
 
         console.log(`Swiped ${direction} on ${targetProfile.display_name}`);
 
+        // 🔹 In test mode we DO NOT save swipes in Supabase
+        if (TEST_MODE) {
+            console.log("[TEST_MODE] Not recording swipe to Supabase");
+            return;
+        }
+
         try {
             await recordSwipe(user.id, targetProfile.user_id, direction);
         } catch (err) {
@@ -64,7 +71,21 @@ export default function MatchmakingScreen() {
     };
 
     const handleSwipedRight = (cardIndex: number) => {
-        void handleSwipe("right", cardIndex);
+        void (async () => {
+            const targetProfile = profiles[cardIndex];
+            if (!targetProfile || !user?.id) return;
+
+            // 1) keep recording the swipe like before
+            await handleSwipe("right", cardIndex);
+
+            // 2) ALSO send a friend request row into friend_requests
+            try {
+                await sendFriendRequest(targetProfile.user_id); // receiver_id = the other user
+                console.log("Friend request sent from", user.id, "to", targetProfile.user_id);
+            } catch (err) {
+                console.error("Error sending friend request", err);
+            }
+        })();
     };
 
     // Loading spinner while fetching data
@@ -119,8 +140,8 @@ export default function MatchmakingScreen() {
                                         major={profile.major?.name}
                                         year={profile.year}
                                         imageUrl={profile.pp_url}
-                                        width={CARD_WIDTH}
-                                        height={CARD_HEIGHT}
+                                        // width={CARD_WIDTH}
+                                        // height={CARD_HEIGHT}
                                     />
                                 );
                             }}
