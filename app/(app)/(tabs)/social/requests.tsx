@@ -7,7 +7,7 @@ import {
     FriendRequest,
     getIncomingFriendRequests,
     rejectFriendRequest,
-} from "@/services/friendshipsService.ts"; // <-- make sure this path matches your file
+} from "@/services/friendshipsService";
 import React, { useEffect, useState } from "react";
 import { Dimensions, Platform, Text, View } from "react-native";
 import Swiper from "react-native-deck-swiper";
@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-type IncomingFriendRequest = FriendRequest & {
+export type IncomingFriendRequest = FriendRequest & {
     sender: {
         user_id: string;
         display_name: string;
@@ -25,7 +25,7 @@ type IncomingFriendRequest = FriendRequest & {
     };
 };
 
-export default function SocialScreen() {
+export default function RequestsScreen() {
     const { user } = useAuth();
     const [requests, setRequests] = useState<IncomingFriendRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function SocialScreen() {
             if (!user?.id) return;
 
             try {
-                const data = await getIncomingFriendRequests(user.id);
+                const data = await getIncomingFriendRequests();
                 setRequests(data as IncomingFriendRequest[]);
                 setHasSwipedAll(false);
                 console.log("Incoming friend requests:", data);

@@ -40,7 +40,15 @@ export async function sendFriendRequest(receiver_id: string) {
 }
 
 // Get all the incoming friend requests from the other users
-export async function getIncomingFriendRequests(user_id: string) {
+export async function getIncomingFriendRequests() {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) throw authError;
+    if (!user) throw new Error("User not authenticated");
+
     const { data, error } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
         .select(
@@ -59,7 +67,7 @@ export async function getIncomingFriendRequests(user_id: string) {
       )
     `
         )
-        .eq("receiver_id", user_id)
+        .eq("receiver_id", user.id)
         .eq("status", "pending");
 
     if (error) throw error;
