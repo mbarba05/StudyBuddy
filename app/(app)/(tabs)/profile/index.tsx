@@ -94,7 +94,10 @@ export default function ProfileScreen() {
                         ) : (
                             currCourses.map((item: CourseProfDisplay) => (
                                 <View key={item.course_prof_id}>
-                                    <CourseProfDisplayWidget {...item} />
+                                    <CourseProfDisplayWidget
+                                        code={item.course_code}
+                                        name={item.prof_name}
+                                    />
                                 </View>
                             ))
                         )}
@@ -116,7 +119,10 @@ export default function ProfileScreen() {
                         ) : (
                             nextCourses.map((item: CourseProfDisplay) => (
                                 <View key={item.course_prof_id}>
-                                    <CourseProfDisplayWidget {...item} />
+                                    <CourseProfDisplayWidget
+                                        code={item.course_code}
+                                        name={item.prof_name}
+                                    />
                                 </View>
                             ))
                         )}
@@ -125,17 +131,12 @@ export default function ProfileScreen() {
                 <View className="w-full items-center mt-6">
                     <BlueButton
                         onPress={() => router.push("/(tabs)/profile/edit")}
-                        style={{ marginBottom: 16, width: 200 }}
+                        style={{ marginBottom: 16 }}
                     >
                         Edit Profile
                     </BlueButton>
 
-                    <RedButton
-                        style={{ width: 200 }}
-                        onPress={signOut}
-                    >
-                        Sign Out
-                    </RedButton>
+                    <RedButton onPress={signOut}>Sign Out</RedButton>
                 </View>
             </ScrollView>
         </SafeAreaView>
