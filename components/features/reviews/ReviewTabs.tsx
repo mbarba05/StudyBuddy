@@ -11,7 +11,10 @@ const Tab = createMaterialTopTabNavigator();
 
 export default function ReviewTabs() {
     return (
-        <SafeAreaView className="flex-1 bg-colors-background">
+        <SafeAreaView
+            className="flex-1 bg-colors-background"
+            edges={["top", "left", "right"]}
+        >
             <Tab.Navigator
                 screenOptions={{
                     tabBarLabelStyle: { fontSize: 14, fontWeight: "600", color: colors.text },

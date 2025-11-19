@@ -34,7 +34,10 @@ const ProfessorReviewsScreen = () => {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-colors-background items-center p-4">
+        <SafeAreaView
+            className="flex-1 bg-colors-background items-center p-4"
+            edges={["top", "left", "right"]}
+        >
             <Text className="color-colors-text font-semibold text-4xl mb-4 text-center">Reviews for {profName}</Text>
             {reviews && reviews.length > 0 ? (
                 <FlatList
