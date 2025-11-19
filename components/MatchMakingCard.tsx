@@ -8,9 +8,9 @@ const { width, height } = Dimensions.get("window");
 
 type MatchMakingCardProps = {
     name: string;
-    major?: string; // string already coming from matchmaking.tsx
-    year?: string;
-    imageUrl?: string;
+    major?: string | null; // string already coming from matchmaking.tsx
+    year?: string | null;
+    imageUrl?: string | null;
 };
 
 export default function MatchMakingCard({ name, major, year, imageUrl }: MatchMakingCardProps) {
