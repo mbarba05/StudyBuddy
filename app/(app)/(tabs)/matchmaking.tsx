@@ -5,7 +5,8 @@ import { recordSwipe } from "@/services/swipeService";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Platform, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import TinderCard from "react-tinder-card";
+import { Swiper } from "swiper/react";
+
 // Get the screen width of the device (used for responsive card sizing)
 const SCREEN_WIDTH = Dimensions.get("window").width;
 //For web browser
@@ -103,7 +104,7 @@ export default function MatchmakingScreen() {
                         }}
                     >
                         {[...profiles].reverse().map((profile, index) => (
-                            <TinderCard
+                            <Swiper
                                 key={profile.user_id}
                                 onSwipe={(dir) => handleSwipe(dir, profile)}
                                 preventSwipe={["up", "down"]}
@@ -125,7 +126,7 @@ export default function MatchmakingScreen() {
                                         height={CARD_HEIGHT}
                                     />
                                 </View>
-                            </TinderCard>
+                            </Swiper>
                         ))}
                     </View>
                 </View>
