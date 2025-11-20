@@ -19,15 +19,20 @@ export interface Enrollment {
     };
 }
 
-export async function getEnrollmentsForProfile(userId: string | null): Promise<CourseProfDisplay[] | null> {
-    if (!userId) {
+export async function getEnrollmentsForProfile(): Promise<CourseProfDisplay[] | null> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
         console.error("No user id found");
         return null;
     }
     const { data, error } = await supabase
         .from("enrollments")
         .select(`id, term, course_professor:course_prof_id (id, course:courses (code), professor:professors (name))`)
-        .eq("user_id", userId);
+        .eq("user_id", user.id);
 
     if (error) {
         console.error("Error fetching enrollments:", error);
@@ -44,15 +49,21 @@ export async function getEnrollmentsForProfile(userId: string | null): Promise<C
     }));
 }
 
-export async function getCurrentandNextCoursesForProfile(userId: string | null): Promise<CourseProfDisplay[] | null> {
-    if (!userId) {
-        console.error("No user id found");
+export async function getCurrentandNextCoursesForProfile(): Promise<CourseProfDisplay[] | null> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
+        console.warn("No user in session");
         return null;
     }
+
     const { data, error } = await supabase
         .from("enrollments")
         .select(`id, term, course_professor:course_prof_id (id, course:courses (code), professor:professors (name))`)
-        .eq("user_id", userId);
+        .eq("user_id", user.id);
 
     if (error) {
         console.error("Error fetching enrollments:", error);
@@ -69,13 +80,22 @@ export async function getCurrentandNextCoursesForProfile(userId: string | null):
     }));
 }
 
-export async function createEnrollments(userId: string, courseProfIds: number[], termName: string) {
+export async function createEnrollments(courseProfIds: number[], termName: string) {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
+        console.warn("No user in session");
+        return null;
+    }
     if (courseProfIds.length === 0) return;
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
         .insert(
             courseProfIds.map((courseProfId) => ({
-                user_id: userId,
+                user_id: user.id,
                 course_prof_id: courseProfId,
                 term: termName,
             }))
@@ -90,14 +110,23 @@ export async function createEnrollments(userId: string, courseProfIds: number[],
     return data;
 }
 
-export async function deleteEnrollments(userId: string, enrollmentIds: number[]) {
+export async function deleteEnrollments(enrollmentIds: number[]) {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
+        console.warn("No user in session");
+        return null;
+    }
     console.log("DELETING", enrollmentIds);
     if (enrollmentIds.length === 0) return;
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
         .delete()
         .in("id", enrollmentIds)
-        .eq("user_id", userId);
+        .eq("user_id", user.id);
 
     if (error) {
         console.error("Error deleting enrollments:", error);

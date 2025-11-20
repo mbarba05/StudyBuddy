@@ -21,3 +21,7 @@ export const ListSeparator = () => {
 export const ReviewSeparator = () => {
     return <View className="h-4" />;
 };
+
+export const SectionSeperator = () => {
+    return <View className="h-[1px] bg-colors-textSecondary w-full" />;
+};

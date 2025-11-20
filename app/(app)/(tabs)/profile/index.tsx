@@ -1,24 +1,21 @@
 import CourseProfDisplayWidget from "@/components/features/courses/CourseProfDisplayWidget";
-import { BlueButton, RedButton } from "@/components/ui/Buttons";
+import { LoginButton } from "@/components/ui/Buttons";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { SectionSeperator } from "@/components/ui/Seperators";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
 import { getEnrollmentsForProfile } from "@/services/enrollmentService";
-import { getUserProfile, Profile } from "@/services/profileService";
 import { getFriendsCount } from "@/services/friendshipsService";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Image, Text, View, TouchableOpacity } from "react-native";
+import { getUserProfile, Profile } from "@/services/profileService";
 import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 export default function ProfileScreen() {
-    const { signOut, user } = useAuth();
-    const { refreshKey } = useLocalSearchParams();
+    const { signOut } = useAuth();
     const router = useRouter();
+    const { refreshKey } = useLocalSearchParams<{ refreshKey?: string }>();
 
     const [profile, setProfile] = useState<Profile | null>(null);
     const [currCourses, setCurrCourses] = useState<CourseProfDisplay[] | null>(null);
@@ -26,141 +23,166 @@ export default function ProfileScreen() {
     const [loading, setLoading] = useState(true);
     const [currAndNextTerm, setCurrAndNextTerm] = useState<[Term, Term] | null>(null);
 
-    // Friends count use State 
+    // Friends count use State
     const [friendCount, setFriendCount] = useState<number | null>(null);
 
     useEffect(() => {
-        if (user?.id) {
-            getFriendsCount(user.id).then(setFriendCount);
-        }
-    }, [user?.id]);
+        let cancelled = false;
 
-    const friendsLabel =
-        friendCount === 0
-            ? "0"
-            : friendCount === 1
-            ? "1"
-            : `${friendCount} `;
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [prof, enrollments, terms, friends] = await Promise.all([
+                    getUserProfile(),
+                    getEnrollmentsForProfile(),
+                    getCurrentAndNextTerm(),
+                    getFriendsCount(),
+                ]);
 
-    
-    useEffect(() => {
-        let mounted = true;
-        const getProfile = async () => {
-            const prof = await getUserProfile(user?.id || null);
-            const course = await getEnrollmentsForProfile(user?.id || null);
-            const terms = await getCurrentAndNextTerm();
-            if (mounted) {
+                if (cancelled) return;
+
                 setProfile(prof);
-                setCurrAndNextTerm(terms);
-                const currTermCourses = course?.filter((enrollment) => enrollment.term === terms?.[0].name) || [];
-                const nextTermCourses = course?.filter((enrollment) => enrollment.term === terms?.[1].name) || [];
-                setCurrCourses(currTermCourses);
-                setNextCourses(nextTermCourses);
-                setLoading(false);
+                setCurrAndNextTerm(terms || null);
+                setFriendCount(friends);
+
+                if (terms) {
+                    const currTermCourses =
+                        enrollments?.filter((enrollment) => enrollment.term === terms[0].name) || [];
+                    const nextTermCourses =
+                        enrollments?.filter((enrollment) => enrollment.term === terms[1].name) || [];
+
+                    setCurrCourses(currTermCourses);
+                    setNextCourses(nextTermCourses);
+                } else {
+                    setCurrCourses([]);
+                    setNextCourses([]);
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    console.error("Error loading profile data", e);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         };
-        getProfile();
+
+        loadData();
+
         return () => {
-            mounted = false;
+            cancelled = true;
         };
-    }, [user?.id, refreshKey]);
+    }, [refreshKey]);
 
     if (loading) return <LoadingScreen />;
 
     return (
-        <SafeAreaView className="flex-1 justify-center items-center bg-colors-background gap-4">
-            <ScrollView
-                contentInsetAdjustmentBehavior="automatic" // iOS: safe insets
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{
-                    flexGrow: 1,
-                    alignItems: "center",
-                    gap: 20,
-                    marginTop: 20,
-                }}
-            >
-                <Image
-                    className="w-72 h-72 rounded-full border-2 border-colors-text mb-4"
-                    source={{ uri: profile?.pp_url }}
-                ></Image>
-                <View className="flex flex-row gap-12">
+        <View className="flex-1 items-center  bg-colors-background gap-4 p-2">
+            <View className="flex flex-row gap-12 items-center justify-between w-full">
+                <View className="w-1/3">
+                    <Image
+                        className="w-48 h-48 rounded-full border border-colors-text "
+                        source={{ uri: profile?.pp_url as string }}
+                    />
+                </View>
+                <View className="flex w-2/3 gap-2">
                     <View>
-                        <Text className="text-center color-colors-textSecondary">Name</Text>
+                        <Text className="text-left color-colors-textSecondary">Name</Text>
                         <Text className="font-semibold text-2xl text-colors-text">{profile?.display_name}</Text>
                     </View>
+
                     <View>
-                        <Text className="color-colors-textSecondary text-center">Year</Text>
-                        <Text className="font-semibold text-2xl text-colors-text">{profile?.year}</Text>
+                        <Text className="color-colors-textSecondary text-left">Major</Text>
+                        <Text className="font-semibold text-2xl text-colors-text">{profile?.major.name}</Text>
+                    </View>
+                    <View className="flex flex-row gap-12">
+                        <View>
+                            <Text className="color-colors-textSecondary text-left">Year</Text>
+                            <Text className="font-semibold text-2xl text-colors-text">{profile?.year}</Text>
+                        </View>
+                        <View>
+                            <TouchableOpacity onPress={() => router.push("(tabs)/profile/friendsList")}>
+                                <Text className="color-colors-textSecondary text-center">Friends</Text>
+                                <Text className="text-colors-text text-2xl text-center font-semibold">
+                                    {friendCount}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
-                <View>
-                    <Text className=" color-colors-textSecondary text-center">Major</Text>
-                    <Text className="font-semibold text-2xl text-colors-text">{profile?.major.name}</Text>
-                </View>
-                <View className="w-5/6">
-                    <Text className=" color-colors-textSecondary text-center mb-2">
-                        Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
-                    </Text>
+            </View>
+            <View className="w-full">
+                <Text className=" color-colors-textSecondary text-left mb-1">
+                    Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
+                </Text>
+                <SectionSeperator />
 
-                    <View
-                        className={`flex ${
-                            currCourses ? "flex-row" : ""
-                        } justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-4  text-colors-text`}
-                    >
-                        {!currCourses || currCourses.length === 0 || !currAndNextTerm ? (
-                            <Text className="text-colors-textSecondary text-2xl text-left">
-                                You are not enrolled in any courses this term.
-                            </Text>
-                        ) : (
-                            currCourses.map((item: CourseProfDisplay) => (
-                                <View key={item.course_prof_id}>
-                                    <CourseProfDisplayWidget
-                                        code={item.course_code}
-                                        name={item.prof_name}
-                                    />
-                                </View>
-                            ))
-                        )}
-                    </View>
+                <View
+                    className={`flex ${
+                        currCourses ? "flex-row" : ""
+                    } flex-wrap gap-4 min-h-14  rounded-lg justify-center  text-colors-text mt-4`}
+                >
+                    {!currCourses || currCourses.length === 0 || !currAndNextTerm ? (
+                        <Text className="text-colors-textSecondary text-2xl text-left">
+                            You are not enrolled in any courses this term.
+                        </Text>
+                    ) : (
+                        currCourses.map((item: CourseProfDisplay) => (
+                            <View key={item.course_prof_id}>
+                                <CourseProfDisplayWidget
+                                    code={item.course_code}
+                                    name={item.prof_name}
+                                />
+                            </View>
+                        ))
+                    )}
                 </View>
-                <View className="w-5/6">
-                    <Text className=" color-colors-textSecondary text-center mb-2">
-                        Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
-                    </Text>
-                    <View
-                        className={`flex ${
-                            nextCourses ? "flex-row" : ""
-                        } justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-4  text-colors-text`}
-                    >
-                        {!nextCourses || nextCourses.length === 0 || !currAndNextTerm ? (
-                            <Text className="text-colors-textSecondary text-2xl text-left">
-                                You are not enrolled in any courses this term.
-                            </Text>
-                        ) : (
-                            nextCourses.map((item: CourseProfDisplay) => (
-                                <View key={item.course_prof_id}>
-                                    <CourseProfDisplayWidget
-                                        code={item.course_code}
-                                        name={item.prof_name}
-                                    />
-                                </View>
-                            ))
-                        )}
-                    </View>
-                </View>
-                <View className="w-full items-center mt-6">
-                    <BlueButton
-                        onPress={() => router.push("/(tabs)/profile/edit")}
-                        style={{ marginBottom: 16 }}
-                    >
-                        Edit Profile
-                    </BlueButton>
+            </View>
+            <View className="w-full">
+                <Text className=" color-colors-textSecondary text-left mb-1">
+                    Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
+                </Text>
+                <SectionSeperator />
 
-                    <RedButton onPress={signOut}>Sign Out</RedButton>
+                <View
+                    className={`flex ${
+                        nextCourses ? "flex-row" : ""
+                    } flex-wrap gap-4 min-h-14 rounded-lg justify-center text-colors-text mt-4`}
+                >
+                    {!nextCourses || nextCourses.length === 0 || !currAndNextTerm ? (
+                        <Text className="text-colors-textSecondary text-lg text-center">
+                            You are not enrolled in any courses this term.
+                        </Text>
+                    ) : (
+                        nextCourses.map((item: CourseProfDisplay) => (
+                            <View key={item.course_prof_id}>
+                                <CourseProfDisplayWidget
+                                    code={item.course_code}
+                                    name={item.prof_name}
+                                />
+                            </View>
+                        ))
+                    )}
                 </View>
-            </ScrollView>
-        </SafeAreaView>
+            </View>
+            <View className="flex w-full gap-2 mt-auto">
+                <LoginButton
+                    bgColor="bg-colors-secondary"
+                    textColor="color-colors-text"
+                    onPress={() => router.push("/(tabs)/profile/edit")}
+                >
+                    Edit Profile
+                </LoginButton>
+
+                <LoginButton
+                    bgColor="bg-colors-primary"
+                    textColor="color-colors-text"
+                    onPress={signOut}
+                >
+                    Sign Out
+                </LoginButton>
+            </View>
+        </View>
     );
 }

@@ -66,7 +66,7 @@ export default function MatchMakingCard({ name, major, year, imageUrl }: MatchMa
 const styles = StyleSheet.create({
     card: {
         width: width * 0.95,
-        height: height * 0.8,
+        height: height * 0.75,
         borderRadius: 20,
         overflow: "hidden",
         backgroundColor: "#000",
@@ -76,8 +76,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 4 },
         elevation: 8,
-
-        marginTop: -100,
+        marginTop: -35,
     },
     image: {
         flex: 1,
