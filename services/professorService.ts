@@ -8,7 +8,7 @@ export interface ProfessorForSearch {
 
 export async function getProfessorsForSearch(searchTerm: string): Promise<ProfessorForSearch[]> {
     const trimmedTerm = searchTerm.trim();
-
+    if (!searchTerm) return [];
     const { data, error } = await supabase
         .from(TABLES.PROFESSORS)
         .select("id, name")
@@ -16,7 +16,7 @@ export async function getProfessorsForSearch(searchTerm: string): Promise<Profes
         .order("name", { ascending: true });
 
     if (error) {
-        console.error("Error searching courses:", error);
+        console.error("Error searching professors:", error);
         return [];
     }
 

@@ -1,17 +1,20 @@
 import { parseLastName } from "@/lib/utillities";
-import { CourseProfDisplay } from "@/services/courseService";
 import React from "react";
 import { Text, View } from "react-native";
 
-const CourseProfDisplayWidget = (item: CourseProfDisplay) => {
+interface CourseProfDisplayWidgetProps {
+    code: string;
+    name: string;
+    term?: string;
+}
+
+const CourseProfDisplayWidget = ({ code, name, term }: CourseProfDisplayWidgetProps) => {
     return (
-        <View
-            key={item.course_prof_id}
-            className="flex flex-row gap-2 items-center bg-colors-secondary p-2 rounded-md"
-        >
+        <View className="flex flex-row gap-2 items-center bg-colors-secondary p-2 rounded-md shadow-sm border border-colors-text">
             <View>
-                <Text className="font-semibold text-colors-text text-xl text-center">{item.course_code}</Text>
-                <Text className="text-colors-textSecondary text-xl text-center">{parseLastName(item.prof_name)}</Text>
+                <Text className="font-semibold text-colors-text text-xl text-center">{code}</Text>
+                <Text className="text-colors-textSecondary text-xl text-center">{parseLastName(name)}</Text>
+                {term && <Text className="text-colors-textSecondary text-lg ml-2">{term}</Text>}
             </View>
         </View>
     );

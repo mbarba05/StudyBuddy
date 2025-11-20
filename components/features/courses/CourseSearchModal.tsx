@@ -133,6 +133,7 @@ const CourseSearchModal = ({
     const keyExtractor = useCallback((item: Course) => String(item.id), []);
 
     const submitNewClass = async (code: string) => {
+        console.log("Submitting new class:", code);
         if (!validateClassInput(code)) {
             Alert.alert(
                 "Please enter a valid input",
@@ -181,7 +182,7 @@ const CourseSearchModal = ({
                             onChangeText={setNewClassCode}
                             placeholder="CSCI 152E"
                         />
-                        <BlueButton onPress={() => submitNewClass(newClassCode)}>Submit New Class</BlueButton>
+                        <BlueButton onPress={() => submitNewClass(newClassCode)}>Submit</BlueButton>
                     </View>
                 )}
             </View>
@@ -367,7 +368,9 @@ const CourseSearchModal = ({
                                                         onPress={() => handleAttachAndCreateProf()}
                                                         className="flex-row items-center justify-between p-4 rounded-xl mb-2 bg-colors-secondary"
                                                     >
-                                                        <Text className="text-colors-text font-semibold">{`Add "${profSearchQuery.trim()}" to ${item.code}`}</Text>
+                                                        <Text className="text-colors-text font-semibold">{`Add "${profSearchQuery.trim()}" to ${
+                                                            item.code
+                                                        }`}</Text>
                                                     </TouchableOpacity>
                                                 </View>
                                             )}
