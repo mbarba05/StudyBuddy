@@ -5,6 +5,10 @@ import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
 import { getEnrollmentsForProfile } from "@/services/enrollmentService";
 import { getUserProfile, Profile } from "@/services/profileService";
+import { getFriendsCount } from "@/services/friendshipsService";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Image, Text, View, TouchableOpacity } from "react-native";
 import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -22,6 +26,23 @@ export default function ProfileScreen() {
     const [loading, setLoading] = useState(true);
     const [currAndNextTerm, setCurrAndNextTerm] = useState<[Term, Term] | null>(null);
 
+    // Friends count use State 
+    const [friendCount, setFriendCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (user?.id) {
+            getFriendsCount(user.id).then(setFriendCount);
+        }
+    }, [user?.id]);
+
+    const friendsLabel =
+        friendCount === 0
+            ? "0"
+            : friendCount === 1
+            ? "1"
+            : `${friendCount} `;
+
+    
     useEffect(() => {
         let mounted = true;
         const getProfile = async () => {
@@ -45,6 +66,7 @@ export default function ProfileScreen() {
     }, [user?.id, refreshKey]);
 
     if (loading) return <LoadingScreen />;
+
     return (
         <SafeAreaView className="flex-1 justify-center items-center bg-colors-background gap-4">
             <ScrollView
