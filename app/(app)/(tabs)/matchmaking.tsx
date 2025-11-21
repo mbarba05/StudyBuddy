@@ -2,7 +2,8 @@ import MatchMakingCard from "@/components/MatchMakingCard";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getPotentialMatches } from "@/services/profileService";
-import { recordSwipe } from "@/services/swipeService";
+import { sendMatchNotification } from "@/services/PushNotifications";
+import { isMutualMatch, recordSwipe } from "@/services/swipeService";
 import React, { useEffect, useState } from "react";
 import { Dimensions, Platform, Text, View } from "react-native";
 import Swiper from "react-native-deck-swiper";
@@ -63,8 +64,34 @@ export default function MatchmakingScreen() {
         void handleSwipe("left", cardIndex);
     };
 
-    const handleSwipedRight = (cardIndex: number) => {
-        void handleSwipe("right", cardIndex);
+    const handleSwipedRight = async (cardIndex: number) => {
+        await handleSwipe("right", cardIndex);
+        const targetProfile = profiles[cardIndex];
+        if (!targetProfile || !user?.id) return;
+
+        // 1️Notify the user theres a pending match
+        await sendMatchNotification(
+            targetProfile.user_id, 
+            `${(user as any).display_name} likes you! Check your matches to connect.`
+        );
+
+        // Check if it's a mutual match
+        const matched = await isMutualMatch(user.id, targetProfile.user_id);
+
+        if (matched) {
+        console.log("Mutual match!");
+       
+        // Send upgraded notifications
+        await sendMatchNotification(
+            targetProfile.user_id, 
+            `You matched with ${(user as any).display_name}!`
+        );
+
+        await sendMatchNotification(
+            user.id, 
+            `You and ${targetProfile.display_name} both swiped right!`
+        );
+    }
     };
 
     // Loading spinner while fetching data
@@ -119,8 +146,6 @@ export default function MatchmakingScreen() {
                                         major={profile.major?.name}
                                         year={profile.year}
                                         imageUrl={profile.pp_url}
-                                        width={CARD_WIDTH}
-                                        height={CARD_HEIGHT}
                                     />
                                 );
                             }}

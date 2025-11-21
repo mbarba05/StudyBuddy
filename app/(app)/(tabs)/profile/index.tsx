@@ -61,7 +61,7 @@ export default function ProfileScreen() {
             >
                 <Image
                     className="w-72 h-72 rounded-full border-2 border-colors-text mb-4"
-                    source={{ uri: profile?.pp_url }}
+                    source={{ uri: profile?.pp_url || undefined }}
                 ></Image>
                 <View className="flex flex-row gap-12">
                     <View>

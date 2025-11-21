@@ -48,6 +48,21 @@ export async function getSwipedUserIds(swiperId: string): Promise<string[]> {
   return data.map((row) => row.target_id);
 }
 
+// Check if two users have mutually swiped right on each other
+export async function isMutualMatch(userId1: string, userId2: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_swipes")
+    .select("swiper_id, target_id")
+    .or(`and(swiper_id.eq.${userId1},target_id.eq.${userId2},direction.eq.right),and(swiper_id.eq.${userId2},target_id.eq.${userId1},direction.eq.right)`);
+
+  if (error) {
+    console.error("Error checking mutual match:", error);
+    return false;
+  }
+
+  return data.length === 2;
+}
+
 // Send a new friend request when user swipes right. 
 // Adds entry to friend_requests table with pending status.
 /*export async function sendFriendRequest(
