@@ -1,11 +1,10 @@
 import { colors } from "@/assets/colors";
 import CourseSearchModal from "@/components/features/courses/CourseSearchModal";
-import { BlueButton, RedButton } from "@/components/ui/Buttons";
+import { LoginButton } from "@/components/ui/Buttons";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { LoginInput } from "@/components/ui/TextInputs";
 import { yearOptions } from "@/lib/enumFrontend";
 import { parseLastName } from "@/lib/utillities";
-import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
 import { createEnrollments, deleteEnrollments, getEnrollmentsForProfile } from "@/services/enrollmentService";
 import { getAllMajorsForDropdown, MajorDropDownItem } from "@/services/majorsService";
@@ -17,12 +16,9 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const EditProfileScreen = () => {
-    const { user } = useAuth();
     const router = useRouter();
-
     const [loading, setLoading] = useState(true);
     const [fullName, setFullName] = useState("");
     const [yearOpen, setYearOpen] = useState(false);
@@ -49,15 +45,10 @@ const EditProfileScreen = () => {
 
         const run = async () => {
             try {
-                if (!user?.id) {
-                    if (mounted) setLoading(false);
-                    return;
-                }
-
                 const [majors, prof, course, terms] = await Promise.all([
                     getAllMajorsForDropdown(),
-                    getUserProfile(user.id),
-                    getEnrollmentsForProfile(user.id),
+                    getUserProfile(),
+                    getEnrollmentsForProfile(),
                     getCurrentAndNextTerm(),
                 ]);
 
@@ -84,8 +75,8 @@ const EditProfileScreen = () => {
                         typeof prof.major === "object"
                             ? Number((prof.major as any).id)
                             : prof.major != null
-                            ? Number(prof.major)
-                            : null;
+                              ? Number(prof.major)
+                              : null;
 
                     setMajorValue(Number.isFinite(majorId as number) ? (majorId as number) : null);
                 }
@@ -101,7 +92,7 @@ const EditProfileScreen = () => {
         return () => {
             mounted = false;
         };
-    }, [user?.id]);
+    }, []);
 
     const removeCurrCourse = (courseProfId: number, enrollmentId: number) => {
         setCurrCourses((prev) => prev?.filter((item) => item.course_prof_id !== courseProfId) ?? null);
@@ -189,11 +180,6 @@ const EditProfileScreen = () => {
     };
 
     const updateProfile = async () => {
-        if (!user) {
-            console.error("No user found");
-            return;
-        }
-
         const editedProfile = {
             display_name: fullName,
             major: majorValue,
@@ -202,16 +188,17 @@ const EditProfileScreen = () => {
         };
 
         try {
-            await editProfile(user.id, editedProfile);
+            await editProfile(editedProfile);
             console.log("SAVINFG", enrollmentsToDelete);
             if (currAndNextTerm) {
-                await createEnrollments(user.id, currEnrollmentsToAdd.current, currAndNextTerm[0].name); //enrollments for current term
-                await createEnrollments(user.id, nextEnrollmentsToAdd.current, currAndNextTerm[1].name); //enrollments for next term
+                await createEnrollments(currEnrollmentsToAdd.current, currAndNextTerm[0].name); //enrollments for current term
+                await createEnrollments(nextEnrollmentsToAdd.current, currAndNextTerm[1].name); //enrollments for next term
             } else {
                 Alert.alert("Error updating classes", "Could not find current and next term.");
             }
 
-            await deleteEnrollments(user.id, enrollmentsToDelete.current);
+            await deleteEnrollments(enrollmentsToDelete.current);
+            router.back();
             router.replace({
                 pathname: "/profile",
                 params: { refreshKey: Date.now().toString() },
@@ -222,14 +209,10 @@ const EditProfileScreen = () => {
         }
     };
 
-    const cancel = () => {
-        router.back();
-    };
-
     if (loading) return <LoadingScreen />;
 
     return (
-        <SafeAreaView className="flex-1 bg-colors-background">
+        <View className="flex-1 bg-colors-background">
             <ScrollView
                 contentContainerStyle={{
                     flexGrow: 1,
@@ -246,10 +229,10 @@ const EditProfileScreen = () => {
                             {imageUri ? (
                                 <Image
                                     source={{ uri: imageUri }}
-                                    className="w-72 h-72 rounded-full border-2 border-colors-text"
+                                    className="w-80 h-80 rounded-full border-2 border-colors-text"
                                 />
                             ) : (
-                                <View className="w-72 h-72 rounded-full border-2 border-colors-text items-center justify-center">
+                                <View className="w-80 h-80 rounded-full border-2 border-colors-text items-center justify-center">
                                     <Text className="color-colors-textSecondary">Tap to add photo</Text>
                                 </View>
                             )}
@@ -432,12 +415,17 @@ const EditProfileScreen = () => {
                 </View>
 
                 {/* Action Buttons */}
-                <View className="flex flex-row justify-center w-3/4 gap-8 mb-10">
-                    <RedButton onPress={cancel}>Cancel</RedButton>
-                    <BlueButton onPress={updateProfile}>Save Changes</BlueButton>
+                <View className="w-full gap-2 p-2">
+                    <LoginButton
+                        bgColor="bg-colors-secondary"
+                        textColor="color-colors-text"
+                        onPress={updateProfile}
+                    >
+                        Save
+                    </LoginButton>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 

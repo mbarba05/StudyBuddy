@@ -5,5 +5,18 @@ export const yearOptions = [
     { label: "Senior", value: "Senior" },
 ];
 
-
-
+export const gradeOptions = [
+    { label: "A+", value: "A+" },
+    { label: "A", value: "A" },
+    { label: "A-", value: "A-" },
+    { label: "B+", value: "B+" },
+    { label: "B", value: "B" },
+    { label: "B-", value: "B-" },
+    { label: "C+", value: "C+" },
+    { label: "C", value: "C" },
+    { label: "C-", value: "C-" },
+    { label: "D+", value: "D+" },
+    { label: "D", value: "D" },
+    { label: "D-", value: "D-" },
+    { label: "F", value: "F" },
+];

@@ -3,7 +3,7 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getPotentialMatches } from "@/services/profileService";
 import { sendMatchNotification } from "@/services/PushNotifications";
-import { isMutualMatch, recordSwipe } from "@/services/swipeService";
+import { recordSwipe } from "@/services/swipeService";
 import React, { useEffect, useState } from "react";
 import { Dimensions, Platform, Text, View } from "react-native";
 import Swiper from "react-native-deck-swiper";
@@ -54,7 +54,7 @@ export default function MatchmakingScreen() {
         console.log(`Swiped ${direction} on ${targetProfile.display_name}`);
 
         try {
-            await recordSwipe(user.id, targetProfile.user_id, direction);
+            await recordSwipe(targetProfile.user_id, direction);
         } catch (err) {
             console.error("Error recording swipe:", err);
         }
@@ -75,23 +75,7 @@ export default function MatchmakingScreen() {
             `${(user as any).display_name} likes you! Check your matches to connect.`
         );
 
-        // Check if it's a mutual match
-        const matched = await isMutualMatch(user.id, targetProfile.user_id);
 
-        if (matched) {
-        console.log("Mutual match!");
-       
-        // Send upgraded notifications
-        await sendMatchNotification(
-            targetProfile.user_id, 
-            `You matched with ${(user as any).display_name}!`
-        );
-
-        await sendMatchNotification(
-            user.id, 
-            `You and ${targetProfile.display_name} both swiped right!`
-        );
-    }
     };
 
     // Loading spinner while fetching data

@@ -35,7 +35,7 @@ export interface CourseProfDisplay {
     prof_name: string;
     course_code: string;
     enrollmentId?: number;
-    term: string;
+    term?: string;
 }
 
 export async function getProfessorsForCourse(courseId: number): Promise<ProfessorForCourse[]> {

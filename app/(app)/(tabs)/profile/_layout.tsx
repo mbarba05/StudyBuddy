@@ -1,3 +1,4 @@
+import { colors } from "@/assets/colors";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getUserProfile, Profile } from "@/services/profileService";
@@ -12,7 +13,7 @@ export default function ProfileStack() {
     useEffect(() => {
         let mounted = true;
         const getProfile = async () => {
-            const prof = await getUserProfile(user?.id || null);
+            const prof = await getUserProfile();
             if (mounted) {
                 setProfile(prof);
                 setLoading(false);
@@ -29,8 +30,35 @@ export default function ProfileStack() {
 
     return (
         <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="edit" options={{ headerShown: false }} />
+            <Stack.Screen
+                name="index"
+                options={{
+                    headerShown: true,
+                    headerTitle: "Your Profile",
+                    headerTitleStyle: { color: colors.text, fontSize: 22 },
+                    headerStyle: { backgroundColor: colors.background },
+                    headerBackVisible: false,
+                }}
+            />
+            <Stack.Screen
+                name="edit"
+                options={{
+                    headerShown: true,
+                    headerTitle: "Edit Profile",
+                    headerTitleStyle: { color: colors.text, fontSize: 22 },
+                    headerStyle: { backgroundColor: colors.background },
+                    headerBackButtonMenuEnabled: false,
+                }}
+            />
+            <Stack.Screen
+                name="friendsList"
+                options={{
+                    headerShown: true,
+                    headerTitle: "Friends",
+                    headerTitleStyle: { color: colors.text, fontSize: 22 },
+                    headerStyle: { backgroundColor: colors.background },
+                }}
+            />
         </Stack>
     );
 }

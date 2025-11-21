@@ -29,3 +29,16 @@ export const SearchBar = (props: TextInputProps) => {
         </View>
     );
 };
+
+export const ReviewInput = (props: TextInputProps) => {
+    return (
+        <TextInput
+            {...props}
+            placeholderTextColor={colors.textSecondary}
+            className="border border-colors-text text-lg rounded-lg h-32 p-2 w-full text-colors-text"
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+        />
+    );
+};
