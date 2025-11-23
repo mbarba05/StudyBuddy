@@ -1,3 +1,6 @@
 For this cycle I will work on creating an algorithm to get the matchmaking system that 
 would show a profiles to a user. The profiles that would be shown would have the same major
 as the user (for now). 
+11/6/2025 
+i just completed the alg that grabs users with the same major. It excludes the logged in user and 
+it also excludes profiles i have already interated with (either swipped left or right). 
