@@ -299,7 +299,7 @@ const EditProfileScreen = () => {
                     <View>
                         <View className="flex flex-row items-center gap-2 mb-2">
                             <Text className=" color-colors-textSecondary">
-                                Next Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
+                                Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
                             </Text>
                             <TouchableOpacity onPress={chooseCurrCoursesPress}>
                                 <Ionicons

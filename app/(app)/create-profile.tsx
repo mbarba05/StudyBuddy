@@ -170,8 +170,8 @@ export default function CreateProfileScreen() {
             await createProfile(newProfile);
 
             if (currentAndNextTerm) {
-                await createEnrollments(user.id, courseProdIds, currentAndNextTerm[0].name); //current term enrollments
-                await createEnrollments(user.id, nextCourseProdIds, currentAndNextTerm[1].name as string); //next term enrollments
+                await createEnrollments(courseProdIds, currentAndNextTerm[0].name); //current term enrollments
+                await createEnrollments(nextCourseProdIds, currentAndNextTerm[1].name as string); //next term enrollments
             } else {
                 Alert.alert("Error adding classes to profile", "Could not find current and next term.");
             }

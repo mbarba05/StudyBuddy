@@ -1,7 +1,10 @@
+import { Database } from "@/lib/database.types";
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { CourseProfDisplay } from "./courseService";
 import { getCurrentAndNextTerm } from "./termsService";
+
+type EnrollmentInsert = Database["public"]["Tables"]["enrollments"]["Insert"];
 
 export interface Enrollment {
     id: number;
@@ -94,11 +97,13 @@ export async function createEnrollments(courseProfIds: number[], termName: strin
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
         .insert(
-            courseProfIds.map((courseProfId) => ({
-                user_id: user.id,
-                course_prof_id: courseProfId,
-                term: termName,
-            }))
+            courseProfIds.map(
+                (courseProfId): EnrollmentInsert => ({
+                    user_id: user.id,
+                    course_prof_id: courseProfId,
+                    term: termName,
+                })
+            )
         )
         .select(); // optional: returns the inserted rows
 

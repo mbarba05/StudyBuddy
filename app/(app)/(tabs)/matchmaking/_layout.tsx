@@ -7,7 +7,7 @@ export default function MatchmakingLayout() {
         <Stack
             screenOptions={{
                 headerShown: true,
-                headerTitle: "Your Profile",
+                headerTitle: "Matchmaking",
                 headerTitleStyle: { color: colors.text, fontSize: 22 },
                 headerStyle: { backgroundColor: colors.background },
                 headerBackVisible: false,

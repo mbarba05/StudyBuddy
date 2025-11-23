@@ -1,7 +1,9 @@
 import MatchMakingCard from "@/components/MatchMakingCard";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { useAuth } from "@/services/auth/AuthProvider";
 import { sendFriendRequest } from "@/services/friendshipsService";
 import { getPotentialMatches } from "@/services/profileService";
+import { sendMatchNotification } from "@/services/PushNotifications";
 import { recordSwipe } from "@/services/swipeService";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
@@ -10,6 +12,7 @@ import Swiper from "react-native-deck-swiper";
 const TEST_MODE = false; //  flip to false when done testing.
 
 export default function MatchmakingScreen() {
+    const { user } = useAuth();
     const [profiles, setProfiles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasSwipedAll, setHasSwipedAll] = useState(false);
@@ -56,6 +59,10 @@ export default function MatchmakingScreen() {
             try {
                 await handleSwipe("right", cardIndex);
                 await sendFriendRequest(targetProfile.user_id); // receiver_id = the other user
+                await sendMatchNotification(
+                    targetProfile.user_id,
+                    `${(user as any).display_name} likes you! Check your matches to connect.`
+                );
             } catch (err) {
                 console.error("Error sending friend request", err);
             }
