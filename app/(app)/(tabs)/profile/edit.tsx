@@ -1,27 +1,24 @@
 import { colors } from "@/assets/colors";
 import CourseSearchModal from "@/components/features/courses/CourseSearchModal";
-import { BlueButton, RedButton } from "@/components/ui/Buttons";
+import { LoginButton } from "@/components/ui/Buttons";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { LoginInput } from "@/components/ui/TextInputs";
 import { yearOptions } from "@/lib/enumFrontend";
 import { parseLastName } from "@/lib/utillities";
-import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
-import { createEnrollments, deleteEnrollments, getCoursesForProfile } from "@/services/enrollmentService";
+import { createEnrollments, deleteEnrollments, getEnrollmentsForProfile } from "@/services/enrollmentService";
 import { getAllMajorsForDropdown, MajorDropDownItem } from "@/services/majorsService";
 import { editProfile, getUserProfile } from "@/services/profileService";
+import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const EditProfileScreen = () => {
-    const { user } = useAuth();
     const router = useRouter();
-
     const [loading, setLoading] = useState(true);
     const [fullName, setFullName] = useState("");
     const [yearOpen, setYearOpen] = useState(false);
@@ -30,34 +27,38 @@ const EditProfileScreen = () => {
     const [majorValue, setMajorValue] = useState<number | null>(null);
     const [majorOptions, setMajorOptions] = useState<MajorDropDownItem[]>([]);
     const [imageUri, setImageUri] = useState<string | null>(null);
-    const [courses, setCourses] = useState<CourseProfDisplay[] | null>(null);
-    const [courseModalVisible, setCourseModalVisible] = useState(false);
+    const [currCourses, setCurrCourses] = useState<CourseProfDisplay[] | null>(null);
+    const [nextCourses, setNextCourses] = useState<CourseProfDisplay[] | null>(null);
+    const [currCourseModalVisible, setCurrCourseModalVisible] = useState(false);
+    const [nextCourseModalVisible, setNextCourseModalVisible] = useState(false);
     const [error, setError] = useState("");
     const enrollmentsToDelete = useRef<number[]>([]);
-    const enrollmentsToAdd = useRef<number[]>([]);
+    const currEnrollmentsToAdd = useRef<number[]>([]);
+    const nextEnrollmentsToAdd = useRef<number[]>([]);
     const handleOpenMajor = () => setYearOpen(false);
     const handleOpenYear = () => setMajorOpen(false);
     const majorsKey = useMemo(() => `majors-${majorOptions.length || 0}`, [majorOptions.length]);
+    const [currAndNextTerm, setCurrAndNextTerm] = useState<[Term, Term] | null>(null);
 
     useEffect(() => {
         let mounted = true;
 
         const run = async () => {
             try {
-                if (!user?.id) {
-                    if (mounted) setLoading(false);
-                    return;
-                }
-
-                const [majors, prof, course] = await Promise.all([
+                const [majors, prof, course, terms] = await Promise.all([
                     getAllMajorsForDropdown(),
-                    getUserProfile(user.id),
-                    getCoursesForProfile(user.id),
+                    getUserProfile(),
+                    getEnrollmentsForProfile(),
+                    getCurrentAndNextTerm(),
                 ]);
 
                 if (!mounted) return;
+                setCurrAndNextTerm(terms);
 
-                setCourses(course);
+                const currTermCourses = course?.filter((enrollment) => enrollment.term === terms?.[0].name) || [];
+                const nextTermCourses = course?.filter((enrollment) => enrollment.term === terms?.[1].name) || [];
+                setCurrCourses(currTermCourses);
+                setNextCourses(nextTermCourses);
 
                 const normalizedMajors: MajorDropDownItem[] = (majors || []).map((m) => ({
                     label: m.label,
@@ -91,39 +92,72 @@ const EditProfileScreen = () => {
         return () => {
             mounted = false;
         };
-    }, [user?.id]);
+    }, []);
 
-    const removeCourse = (courseProfId: number, enrollmentId: number) => {
-        setCourses((prev) => prev?.filter((item) => item.course_prof_id !== courseProfId) ?? null);
+    const removeCurrCourse = (courseProfId: number, enrollmentId: number) => {
+        setCurrCourses((prev) => prev?.filter((item) => item.course_prof_id !== courseProfId) ?? null);
         if (!enrollmentsToDelete.current.includes(enrollmentId)) {
             enrollmentsToDelete.current.push(enrollmentId);
         }
         // If this course was previously queued to add, remove it
-        enrollmentsToAdd.current = enrollmentsToAdd.current.filter((id) => id !== courseProfId);
+        currEnrollmentsToAdd.current = currEnrollmentsToAdd.current.filter((id) => id !== courseProfId);
     };
 
-    const chooseCoursesPress = () => {
-        if (courses && courses.length >= 6) setError("You can only choose 6 courses");
+    const chooseCurrCoursesPress = () => {
+        if (currCourses && currCourses.length >= 6) setError("You can only choose 6 courses");
         else {
             setError("");
-            setCourseModalVisible(true);
+            setCurrCourseModalVisible(true);
         }
     };
 
-    const handleProfessorPicked = useCallback(
+    const handleCurrProfessorPicked = useCallback(
         (courseProf: CourseProfDisplay) => {
-            setCourses((prev) =>
+            setCurrCourses((prev) =>
                 prev?.some((c) => c.course_prof_id === courseProf.course_prof_id) ? prev : [...(prev ?? []), courseProf]
             );
 
-            if (!enrollmentsToAdd.current.includes(courseProf.course_prof_id)) {
-                enrollmentsToAdd.current.push(courseProf.course_prof_id);
+            if (!currEnrollmentsToAdd.current.includes(courseProf.course_prof_id)) {
+                currEnrollmentsToAdd.current.push(courseProf.course_prof_id);
             }
 
             // If previously marked for deletion, remove it from that list
             enrollmentsToDelete.current = enrollmentsToDelete.current.filter((id) => id !== courseProf.course_prof_id);
         },
-        [enrollmentsToAdd]
+        [currEnrollmentsToAdd]
+    );
+
+    const removeNextCourse = (courseProfId: number, enrollmentId: number) => {
+        setNextCourses((prev) => prev?.filter((item) => item.course_prof_id !== courseProfId) ?? null);
+        if (!enrollmentsToDelete.current.includes(enrollmentId)) {
+            enrollmentsToDelete.current.push(enrollmentId);
+        }
+        // If this course was previously queued to add, remove it
+        currEnrollmentsToAdd.current = currEnrollmentsToAdd.current.filter((id) => id !== courseProfId);
+    };
+
+    const chooseNextCoursesPress = () => {
+        if (nextCourses && nextCourses.length >= 6) setError("You can only choose 6 courses");
+        else {
+            setError("");
+            setNextCourseModalVisible(true);
+        }
+    };
+
+    const handleNextProfessorPicked = useCallback(
+        (courseProf: CourseProfDisplay) => {
+            setNextCourses((prev) =>
+                prev?.some((c) => c.course_prof_id === courseProf.course_prof_id) ? prev : [...(prev ?? []), courseProf]
+            );
+
+            if (!currEnrollmentsToAdd.current.includes(courseProf.course_prof_id)) {
+                currEnrollmentsToAdd.current.push(courseProf.course_prof_id);
+            }
+
+            // If previously marked for deletion, remove it from that list
+            enrollmentsToDelete.current = enrollmentsToDelete.current.filter((id) => id !== courseProf.course_prof_id);
+        },
+        [currEnrollmentsToAdd]
     );
 
     const pickImage = async () => {
@@ -146,11 +180,6 @@ const EditProfileScreen = () => {
     };
 
     const updateProfile = async () => {
-        if (!user) {
-            console.error("No user found");
-            return;
-        }
-
         const editedProfile = {
             display_name: fullName,
             major: majorValue,
@@ -159,10 +188,17 @@ const EditProfileScreen = () => {
         };
 
         try {
-            await editProfile(user.id, editedProfile);
+            await editProfile(editedProfile);
             console.log("SAVINFG", enrollmentsToDelete);
-            await createEnrollments(user.id, enrollmentsToAdd.current);
-            await deleteEnrollments(user.id, enrollmentsToDelete.current);
+            if (currAndNextTerm) {
+                await createEnrollments(currEnrollmentsToAdd.current, currAndNextTerm[0].name); //enrollments for current term
+                await createEnrollments(nextEnrollmentsToAdd.current, currAndNextTerm[1].name); //enrollments for next term
+            } else {
+                Alert.alert("Error updating classes", "Could not find current and next term.");
+            }
+
+            await deleteEnrollments(enrollmentsToDelete.current);
+            router.back();
             router.replace({
                 pathname: "/profile",
                 params: { refreshKey: Date.now().toString() },
@@ -173,14 +209,10 @@ const EditProfileScreen = () => {
         }
     };
 
-    const cancel = () => {
-        router.back();
-    };
-
     if (loading) return <LoadingScreen />;
 
     return (
-        <SafeAreaView className="flex-1 bg-colors-background">
+        <View className="flex-1 bg-colors-background">
             <ScrollView
                 contentContainerStyle={{
                     flexGrow: 1,
@@ -197,10 +229,10 @@ const EditProfileScreen = () => {
                             {imageUri ? (
                                 <Image
                                     source={{ uri: imageUri }}
-                                    className="w-72 h-72 rounded-full border-2 border-colors-text"
+                                    className="w-80 h-80 rounded-full border-2 border-colors-text"
                                 />
                             ) : (
-                                <View className="w-72 h-72 rounded-full border-2 border-colors-text items-center justify-center">
+                                <View className="w-80 h-80 rounded-full border-2 border-colors-text items-center justify-center">
                                     <Text className="color-colors-textSecondary">Tap to add photo</Text>
                                 </View>
                             )}
@@ -263,12 +295,13 @@ const EditProfileScreen = () => {
                             listMode="SCROLLVIEW"
                         />
                     </View>
-
-                    {/* Courses */}
+                    {/* Curr Courses */}
                     <View>
                         <View className="flex flex-row items-center gap-2 mb-2">
-                            <Text className=" color-colors-textSecondary">Courses</Text>
-                            <TouchableOpacity onPress={chooseCoursesPress}>
+                            <Text className=" color-colors-textSecondary">
+                                Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
+                            </Text>
+                            <TouchableOpacity onPress={chooseCurrCoursesPress}>
                                 <Ionicons
                                     size={20}
                                     color={colors.text}
@@ -277,19 +310,21 @@ const EditProfileScreen = () => {
                             </TouchableOpacity>
                         </View>
                         <View
-                            className={`flex ${courses && "flex-row"} justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-2 w-full text-colors-text`}
+                            className={`flex ${
+                                currCourses && "flex-row"
+                            } justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-2 w-full text-colors-text`}
                         >
-                            {!courses || courses.length === 0 ? (
+                            {!currCourses || currCourses.length === 0 ? (
                                 <Text className="text-colors-textSecondary text-xl text-left mt-1">No Courses</Text>
                             ) : (
-                                courses.map((item: CourseProfDisplay) => (
+                                currCourses.map((item: CourseProfDisplay) => (
                                     <View
                                         key={item.course_prof_id}
                                         className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
                                     >
                                         <TouchableOpacity
                                             onPress={() =>
-                                                removeCourse(item.course_prof_id, item.enrollmentId as number)
+                                                removeCurrCourse(item.course_prof_id, item.enrollmentId as number)
                                             }
                                         >
                                             <Ionicons
@@ -310,24 +345,87 @@ const EditProfileScreen = () => {
                                 ))
                             )}
                         </View>
-
                         <CourseSearchModal
-                            visible={courseModalVisible}
-                            setVisible={setCourseModalVisible}
-                            handleProfessorPicked={handleProfessorPicked}
-                            selectedCourseProf={courses}
+                            visible={currCourseModalVisible}
+                            setVisible={setCurrCourseModalVisible}
+                            handleProfessorPicked={handleCurrProfessorPicked}
+                            selectedCourseProf={currCourses ?? []}
                         />
                     </View>
+
+                    {/* Next Courses */}
+                    <View>
+                        <View className="flex flex-row items-center gap-2 mb-2">
+                            <Text className=" color-colors-textSecondary">
+                                Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
+                            </Text>
+                            <TouchableOpacity onPress={chooseNextCoursesPress}>
+                                <Ionicons
+                                    size={20}
+                                    color={colors.text}
+                                    name="add-circle-outline"
+                                ></Ionicons>
+                            </TouchableOpacity>
+                        </View>
+                        <View
+                            className={`flex ${
+                                nextCourses && "flex-row"
+                            } justify-center flex-wrap gap-4 min-h-14 border border-colors-text rounded-lg p-2 w-full text-colors-text`}
+                        >
+                            {!nextCourses || nextCourses.length === 0 ? (
+                                <Text className="text-colors-textSecondary text-xl text-left mt-1">No Courses</Text>
+                            ) : (
+                                nextCourses.map((item: CourseProfDisplay) => (
+                                    <View
+                                        key={item.course_prof_id}
+                                        className="flex flex-row gap-2 items-center bg-colors-secondary p-1 pr-4 rounded-md"
+                                    >
+                                        <TouchableOpacity
+                                            onPress={() =>
+                                                removeNextCourse(item.course_prof_id, item.enrollmentId as number)
+                                            }
+                                        >
+                                            <Ionicons
+                                                size={16}
+                                                name="close-circle-outline"
+                                                color={colors.primary}
+                                            />
+                                        </TouchableOpacity>
+                                        <View>
+                                            <Text className="font-semibold text-colors-text text-xl text-center">
+                                                {item.course_code}
+                                            </Text>
+                                            <Text className="text-colors-textSecondary text-xl text-center">
+                                                {parseLastName(item.prof_name)}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                ))
+                            )}
+                        </View>
+                        <CourseSearchModal
+                            visible={nextCourseModalVisible}
+                            setVisible={setNextCourseModalVisible}
+                            handleProfessorPicked={handleNextProfessorPicked}
+                            selectedCourseProf={nextCourses ?? []}
+                        />
+                    </View>
+
                     {error && <Text className="color-colors-error text-center">{error}</Text>}
                 </View>
 
                 {/* Action Buttons */}
-                <View className="flex flex-row justify-center w-3/4 gap-8 mb-10">
-                    <RedButton onPress={cancel}>Cancel</RedButton>
-                    <BlueButton onPress={updateProfile}>Save Changes</BlueButton>
+                <View className="w-full gap-2 p-2">
+                    <LoginButton
+                        bgColor="bg-colors-secondary"
+                        textColor="color-colors-text"
+                        onPress={updateProfile}
+                    >
+                        Save
+                    </LoginButton>
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 

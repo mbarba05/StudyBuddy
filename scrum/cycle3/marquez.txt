@@ -1,0 +1,37 @@
+11/13: My scrum cycle consists of updating the matchmaking screen.
+I am going to make it look more appealing with a new feature of
+highlighting users swiping that share the same major. I will be
+using the colors we have established in a previous cycle. I will
+alos be updatign the format so the picture is better shown and give
+the profiles more of a Tinder-like finish (gradient with name, major,
+year). For testing I will use my Android simulator to check changes to
+the profile screening (what the current swiper sees as well as screening
+if the major is highlighted if shared). Another thing I will be doing is
+adding multiple accounts for further testing and give the app more depth
+(having multiple "active" users with multiple majors). Adding multiple users
+with multiple different majors as well as classes being added to these profiles.
+By doing this I will also be adding more Fresno State classes that have not
+been previously inserted.
+Problems: I have tried using a linear gradient property however it was not
+functioning well with our app so instead I had to manually customize the bar
+towards the bottom of the users profiles where the text would show their name,
+major, etc. I alsop experienced many issues with my android simulator for being
+able to test and visualize my changes. This problem also affected how I added
+more users into the system. Where the code and visuals isn't necessarly wrong 
+but my android simulator would act up (slow loading, having to turn off and on
+multiple times in order for the page to refresh). One thing our group is going to
+do is make it so we can test the app on our phones to make testing easier and more
+sustainable.
+11/20: I have completed updating the matchmaking screen to make it more visually
+appealing (making profile pictures larger, making gradient towards bottom of profile
+to show info, highlighting major if shared between users). I have also successfully
+added multiple users wit different majors into the system for depth and testing (having
+different names, emails, majors, classes, etc.) By adding more users this also allowed
+me to use our feature of adding classes and or majors that aren't previously inputed into
+the system. Also tested whether or not users can input majors or professors that aren't there.
+Challenges I have faced is having to only be able to change the code within the MatchMakingCard
+in order to avoid merging conflicts with my team partners. My androd studio emulator would 
+act up a lot of the time taking time from being able to do more changes. Also pinpointing
+which visual changes need to be made so the profiles on the matchmaking screen show how they
+are suppose to (profile photo takes up most of the screen without being cut off by the tabs at 
+the bottom of the page).

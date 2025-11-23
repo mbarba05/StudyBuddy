@@ -1,0 +1,11 @@
+Carlos (11/13/2025): For this next scrum cycle, I will be attempting to work on the friends list in the profile tab. 
+  It will show the amount of friends a user has and when the user clicks on it, the app will load a new screen in 
+which it shows a list of all of the user’s friends. I will try to make it searchable and have the ability to remove 
+friends from the list as well. I will be working on the friendshipslist branch on github. 
+
+(11/19/2025): For this scrum cycle, I did the friends count on the main profile page of the user. 
+I made it so that it displayed the number of friends a user currently has. I also made it so that 
+when a user taps on the friends count, it would go to another page where it displays a list of friends 
+and there’s a search bar where you can search through the friends list for a specific friend. The counter 
+works if a user sends a friend request and If I accept it, the counter updates as well. 
+

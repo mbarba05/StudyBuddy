@@ -33,7 +33,7 @@ export const LoginButton: React.FC<LoginButtonProps> = ({
 export const RedButton: React.FC<GenericButtonProps> = ({ children, ...props }) => {
     return (
         <TouchableOpacity
-            className="flex flex-row gap-3 bg-colors-primary items-center justify-center w-1/2 h-12 rounded-lg"
+            className="flex flex-row gap-3 bg-colors-primary items-center justify-center w-32 h-12 rounded-lg"
             {...props}
         >
             <Text className="flex flex-row items-center justify-center text-colors-text font-semibold">{children}</Text>
@@ -44,7 +44,7 @@ export const RedButton: React.FC<GenericButtonProps> = ({ children, ...props }) 
 export const BlueButton: React.FC<GenericButtonProps> = ({ children, ...props }) => {
     return (
         <TouchableOpacity
-            className="flex flex-row gap-3 bg-colors-secondary items-center justify-center w-1/2 h-12 rounded-lg"
+            className="flex flex-row gap-3 bg-colors-secondary items-center justify-center w-32 h-12 rounded-lg"
             {...props}
         >
             <Text className="flex flex-row items-center justify-center text-colors-text font-semibold">{children}</Text>

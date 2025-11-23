@@ -4,7 +4,7 @@ export default {
         name: "studdybuddy",
         slug: "studdybuddy",
         scheme: "studdybuddy",
-        owner: "nickd4vis",
+        owner: "studybuddyfresno",
         android: {
             package: "com.nickd4vis.studdybuddy",
         },
@@ -15,6 +15,9 @@ export default {
             SUPABASE_URL: process.env.SUPABASE_URL,
             SUPABASE_SECRET: process.env.SUPABASE_SECRET,
             SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
+            eas: {
+                projectId: "660b77b5-5be5-4d39-9cb0-5c09b8f98a00",
+            },
         },
     },
 };

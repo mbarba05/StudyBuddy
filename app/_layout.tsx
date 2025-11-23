@@ -10,7 +10,7 @@ export default function RootLayout() {
     return (
         <AuthProvider>
             <ProfileProvider>
-                <StatusBar style="auto" />
+                <StatusBar style="light" />
                 <Slot />
             </ProfileProvider>
         </AuthProvider>
