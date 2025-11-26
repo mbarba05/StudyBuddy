@@ -1,6 +1,8 @@
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { CourseProfDisplay } from "./courseService";
+import { getCurrentTermName } from "./profileService";
+
 
 export interface Enrollment {
     id: number;
@@ -31,7 +33,7 @@ export async function getCoursesForProfile(userId: string | null): Promise<Cours
     }));
 }
 
-export async function createEnrollments(userId: string, courseProfIds: number[]) {
+export async function createEnrollmentsT(userId: string, courseProfIds: number[]) {
     ///TODO: term support for everything here
     if (courseProfIds.length === 0) return;
     const { data, error } = await supabase
@@ -51,6 +53,40 @@ export async function createEnrollments(userId: string, courseProfIds: number[])
 
     return data;
 }
+
+// editing createEnrollments so it writes info to both tables(enrollments and enrollments_with_status)
+export async function createEnrollments(userId: string, courseProfIds: number[]) {
+    // exit if there's no courses
+    if (courseProfIds. length === 0) return;
+
+    // grabing active term name defined as "current" 
+    const termName = await getCurrentTermName();
+    const status = "current";
+
+    //filling the rows of the tables
+    const baseRow = courseProfIds.map((courseProfId) => ({
+        user_id: userId,
+        course_prof_id: courseProfId,
+        term: termName,
+        //status,
+    }));
+
+    // adding to table enrollment
+    const { data, error } = await supabase
+        .from(TABLES.ENROLLMENTS)
+        .insert(baseRow)
+        .select(); 
+
+    if(error){
+        console.error("Inserting enrollments failed: ", error);
+        throw error;
+    }
+    return data;
+}
+
+
+
+
 
 export async function deleteEnrollments(userId: string, enrollmentIds: number[]) {
     console.log("DELETING", enrollmentIds);
