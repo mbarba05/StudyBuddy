@@ -1,7 +1,9 @@
+import { colors } from "@/assets/colors";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
+import { View } from "react-native";
 
 export default function AppLayout() {
     const { user, loading } = useAuth();
@@ -10,64 +12,87 @@ export default function AppLayout() {
     if (!user) return <Redirect href="/(auth)/login" />;
 
     return (
-        <Tabs screenOptions={{ headerShown: false }}>
+        <Tabs
+            screenOptions={{
+                headerShown: false,
+                tabBarActiveBackgroundColor: colors.secondary,
+                tabBarInactiveBackgroundColor: colors.background,
+                tabBarLabelStyle: { color: colors.text },
+                tabBarStyle: { backgroundColor: colors.background },
+            }}
+        >
             <Tabs.Screen
                 name="reviews"
                 options={{
-                    title: "Reviews",
-                    tabBarIcon: ({ focused }) => (
-                        <Ionicons
-                            name="pencil"
-                            size={20}
-                        />
+                    title: "",
+                    tabBarIcon: () => (
+                        <View className="mt-1">
+                            <Ionicons
+                                name="pencil"
+                                size={25}
+                                color={colors.text}
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="matchmaking"
                 options={{
-                    title: "Matchmaking",
+                    title: "",
                     tabBarIcon: () => (
-                        <Ionicons
-                            name="heart-circle"
-                            size={20}
-                        />
+                        <View className="mt-1">
+                            <Ionicons
+                                name="heart"
+                                size={25}
+                                color={colors.text}
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="index"
                 options={{
-                    title: "Home",
-                    tabBarIcon: ({ focused }) => (
-                        <Ionicons
-                            name="home"
-                            size={20}
-                        />
+                    title: "",
+                    tabBarIcon: () => (
+                        <View className="mt-1">
+                            <Ionicons
+                                name="home"
+                                size={25}
+                                color={colors.text}
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="social"
                 options={{
-                    title: "Social",
+                    title: "",
                     tabBarIcon: () => (
-                        <Ionicons
-                            name="chatbox"
-                            size={20}
-                        />
+                        <View className="mt-1">
+                            <Ionicons
+                                name="chatbox"
+                                size={25}
+                                color={colors.text}
+                            />
+                        </View>
                     ),
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
-                    title: "Profile",
+                    title: "",
                     tabBarIcon: () => (
-                        <Ionicons
-                            name="person-circle"
-                            size={20}
-                        />
+                        <View className="mt-1">
+                            <Ionicons
+                                name="person-circle"
+                                size={25}
+                                color={colors.text}
+                            />
+                        </View>
                     ),
                 }}
             />

@@ -1,0 +1,12 @@
+11/8
+I added support for current and next term adding. Now when you pick a class, you pick it for a term, 
+and the term is added to the enrollment
+
+11/14
+Today i beasted most of the review system. Right now it is very basic but the fucntiona;ity is there.
+You can write reviews for classes you have taken and then search them. I had some fun with the 
+review modal by adding emojis to the bar for quality and difficulty. In the future ill add a 
+summary screen for a class that will get average scores and maybe even AI summaries.
+
+11/20: spent the rest of the week fixing bugs and merging code and tying it all together.
+i added tabs with nice formatting to most of the screens so it looks consistent

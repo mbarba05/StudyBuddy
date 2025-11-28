@@ -1,0 +1,11 @@
+For this scrum cycle I will be working on improving the match making algorithm. The old algorithm was only focused on displaying profiles with the same major. 
+for this cycle i will be adding filters and a scoring system. The filters include profiles with same major, same professor and same classes. I also adding same term 
+and status(current, pass, future). The term and status will make sure we are only showing profiles that are in the current school term and not show old profiles.
+The score consists of adding the filters together which is used for arranging them. I'm also allowing profiles with differen major to show. The functionallity of the 
+algorithm will show all the profiles with the highest score first and then the profiles with the same major that have a less score. It will then show all the 
+other profiles that have a different major as the user in order from highest score to least. 
+
+11/20/2025
+I think i completed and achived the overall functionallity of the algorithm. I have the score, overlapping classes and professor filters working how they should be.
+i do have the terms filter working as well, but it is having conflict with the enrollment with status table so i have it commented out for now until the enrollment with
+status table is fix. But overall i think the algrithm is completed. 

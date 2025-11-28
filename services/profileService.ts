@@ -16,8 +16,13 @@ export interface Profile {
     pp_url: string | null;
 }
 
-export const getUserProfile = async (userId: string | null): Promise<Profile | null> => {
-    if (!userId) {
+export const getUserProfile = async (): Promise<Profile | null> => {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
         console.warn("No user in session");
         return null;
     }
@@ -25,7 +30,7 @@ export const getUserProfile = async (userId: string | null): Promise<Profile | n
         .from(TABLES.PROFILES)
         .select("user_id, display_name, major:majors(id, name), year, pp_url")
         //                              ^ join majors by foreign key
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .single();
 
     if (error) {
@@ -187,9 +192,16 @@ type EditProfileInput = {
  * @param updates EditProfileInput
  * @returns Profile (joined with majors)
  */
-export async function editProfile(userId: string, updates: EditProfileInput): Promise<Profile> {
-    if (!userId) throw new Error("No user id provided");
-
+export async function editProfile(updates: EditProfileInput): Promise<Profile | null> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
+        console.warn("No user in session");
+        return null;
+    }
     const payload: Record<string, any> = {};
 
     // Only include keys that are explicitly provided (including null)
@@ -220,7 +232,7 @@ export async function editProfile(userId: string, updates: EditProfileInput): Pr
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .update(payload)
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
         .single();
 
