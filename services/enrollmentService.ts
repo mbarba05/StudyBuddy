@@ -2,6 +2,7 @@ import { Database } from "@/lib/database.types";
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { CourseProfDisplay } from "./courseService";
+import { getCurrentTermName } from "./profileService";
 import { getCurrentAndNextTerm } from "./termsService";
 
 type EnrollmentInsert = Database["public"]["Tables"]["enrollments"]["Insert"];
@@ -52,6 +53,7 @@ export async function getEnrollmentsForProfile(): Promise<CourseProfDisplay[] | 
     }));
 }
 
+    ///TODO: term support for everything here
 export async function getCurrentandNextCoursesForProfile(): Promise<CourseProfDisplay[] | null> {
     const {
         data: { user },
@@ -83,38 +85,36 @@ export async function getCurrentandNextCoursesForProfile(): Promise<CourseProfDi
     }));
 }
 
-export async function createEnrollments(courseProfIds: number[], termName: string) {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) {
-        console.warn("No user in session");
-        return null;
-    }
-    if (courseProfIds.length === 0) return;
+// editing createEnrollments so it writes info to both tables(enrollments and enrollments_with_status)
+export async function createEnrollments(userId: string, courseProfIds: number[]) {
+    // exit if there's no courses
+    if (courseProfIds. length === 0) return;
+
+    // grabing active term name defined as "current" 
+    const termName = await getCurrentTermName();
+    const status = "current";
+
+    //filling the rows of the tables
+    const baseRow = courseProfIds.map((courseProfId) => ({
+        user_id: userId,
+        course_prof_id: courseProfId,
+        term: termName,
+        //status,
+    }));
+
+    // adding to table enrollment
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
-        .insert(
-            courseProfIds.map(
-                (courseProfId): EnrollmentInsert => ({
-                    user_id: user.id,
-                    course_prof_id: courseProfId,
-                    term: termName,
-                })
-            )
-        )
-        .select(); // optional: returns the inserted rows
+        .insert(baseRow)
+        .select(); 
 
-    if (error) {
-        console.error("Error inserting enrollments:", error);
+    if(error){
+        console.error("Inserting enrollments failed: ", error);
         throw error;
     }
-
     return data;
 }
-
+  
 export async function deleteEnrollments(enrollmentIds: number[]) {
     const {
         data: { user },
