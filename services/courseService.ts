@@ -74,7 +74,8 @@ export async function createNewCourse(rawCode: string) {
         }
 
         return false;
+    } else {
+        Alert.alert("Course added", `The course "${code}" has been added successfully.`);
+        return data;
     }
-
-    return data;
 }

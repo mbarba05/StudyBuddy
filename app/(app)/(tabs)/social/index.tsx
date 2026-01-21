@@ -1,10 +1,10 @@
 import { colors } from "@/assets/colors";
-import LoadingScreen from "@/components/ui/LoadingScreen";
 import { ListSeparator } from "@/components/ui/Seperators";
 import { getIncomingFriendRequests } from "@/services/friendshipsService";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { IncomingFriendRequest } from "./requests";
 
@@ -12,25 +12,33 @@ const SocialScreen = () => {
     const [requests, setRequests] = useState<IncomingFriendRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
-    const { refreshKey } = useLocalSearchParams<{ refreshKey?: string }>();
 
-    useEffect(() => {
-        let mounted = true;
-        const getProfile = async () => {
-            setLoading(true);
-            const reqs = await getIncomingFriendRequests();
-            if (mounted) {
-                setRequests(reqs);
-                setLoading(false);
-            }
-        };
-        getProfile();
-        return () => {
-            mounted = false;
-        };
-    }, [refreshKey]);
+    useFocusEffect(
+        useCallback(() => {
+            let mounted = true;
 
-    if (loading) return <LoadingScreen />;
+            const fetchRequests = async () => {
+                try {
+                    setLoading(true);
+                    const reqs = await getIncomingFriendRequests();
+                    if (mounted) {
+                        setRequests(reqs as IncomingFriendRequest[]);
+                    }
+                } finally {
+                    if (mounted) setLoading(false);
+                }
+            };
+
+            fetchRequests();
+
+            // cleanup when screen loses focus
+            return () => {
+                mounted = false;
+            };
+        }, [])
+    );
+
+    //if (loading) return <LoadingScreen />;
 
     return (
         <View className="flex-1 bg-colors-background p-2">

@@ -37,13 +37,14 @@ const SearchReviewsScreen = () => {
                             params: {
                                 profId: String(item.id),
                                 profName: item.name,
+                                totalReviews: item.reviewCount ?? 0,
                             },
                         })
                     }
                 >
                     <View>
                         <Text className="color-colors-text text-2xl font-semibold">{item.name}</Text>
-                        <Text className="color-colors-textSecondary text-lg">X Reviews</Text>
+                        <Text className="color-colors-textSecondary text-lg">{item.reviewCount} Reviews</Text>
                     </View>
 
                     <Ionicons

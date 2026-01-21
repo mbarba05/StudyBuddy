@@ -4,6 +4,7 @@ import supabase from "@/lib/subapase";
 export interface ProfessorForSearch {
     id: number;
     name: string;
+    reviewCount?: number | null;
 }
 
 export async function getProfessorsForSearch(searchTerm: string): Promise<ProfessorForSearch[]> {
@@ -20,7 +21,15 @@ export async function getProfessorsForSearch(searchTerm: string): Promise<Profes
         return [];
     }
 
-    return data ?? [];
+    const profsWithRevCount: ProfessorForSearch[] = [];
+
+    for (const prof of data) {
+        let { data, error } = await supabase.rpc("get_professor_total_reviews", { professor_id: prof.id });
+        if (error) data = 0;
+        profsWithRevCount.push({ name: prof.name, id: prof.id, reviewCount: data });
+    }
+
+    return profsWithRevCount ?? [];
 }
 
 export async function createCourseProf(prof_id: number, course_id: number): Promise<number | null> {
