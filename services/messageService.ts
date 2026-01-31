@@ -11,6 +11,14 @@ export type DMConversation = {
     last_message_at: string | null;
 };
 
+export type Chat = {
+    id: string;
+    content: string;
+    sender_id: string;
+    created_at: string;
+    conversation_id: string;
+};
+
 export async function createConversation(userA: string, userB: string) {
     const { data, error } = await supabase
         .from(TABLES.CONVERSATIONS)
@@ -57,4 +65,48 @@ export async function getChatsWithRecentMessage(): Promise<DMConversation[] | nu
     return data;
 }
 
-export async function sendMessage() {}
+export async function getMessagesForConv(convId: string, offset: number): Promise<Chat[] | null> {
+    const { data, error } = await supabase.rpc("get_dms_for_conversation", {
+        p_conv_id: convId,
+        offst: offset,
+    });
+    if (error) {
+        console.error("Error getting dms for conversation", error);
+        return null;
+    }
+    return data;
+}
+
+export async function sendMessage(clientId: string, message: string, convId: string) {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error("Auth error when sending text", authError);
+        return authError;
+    }
+
+    const { data, error } = await supabase
+        .from(TABLES.MESSAGES)
+        .insert({ id: clientId, content: message, sender_id: user.id, conversation_id: convId })
+        .select("id, created_at")
+        .single();
+
+    if (error) {
+        console.error("Error sending text", error);
+        return error;
+    }
+
+    //TODO: use database trigger to update this
+    const { error: updateConvError } = await supabase
+        .from(TABLES.CONVERSATIONS)
+        .update({ last_message_id: data.id, last_message_at: data.created_at })
+        .eq("id", convId);
+
+    if (updateConvError) {
+        console.error("Error sending text", updateConvError);
+        return updateConvError;
+    }
+}

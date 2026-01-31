@@ -17,10 +17,6 @@ export const validateProfName = (name: string): boolean => {
 export const formatMessageTime = (dmSentAt: string): string => {
     const now = new Date();
     const sent = new Date(dmSentAt);
-    console.log("sent: ", sent);
-    console.log("now: ", now);
-
-    console.log(now.getMinutes() - sent.getMinutes());
 
     if (Number.isNaN(sent.getTime())) return "";
 

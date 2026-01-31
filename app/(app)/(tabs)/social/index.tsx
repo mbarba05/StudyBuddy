@@ -50,8 +50,8 @@ const SocialScreen = () => {
                     className="flex-row items-center justify-between py-2 border-b border-colors-textSecondary w-full"
                     onPress={() =>
                         router.push({
-                            pathname: "",
-                            params: {},
+                            pathname: "/social/chat/[conversationId]",
+                            params: { conversationId: item.conversation_id, dmName: item.dm_name, ppPic: item.pp_url },
                         })
                     }
                 >
