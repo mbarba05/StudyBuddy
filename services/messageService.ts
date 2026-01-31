@@ -20,7 +20,7 @@ export type Chat = {
 };
 
 export async function createConversation(userA: string, userB: string) {
-    const { data, error } = await supabase
+    const { data, error } = await supabase //create conversation
         .from(TABLES.CONVERSATIONS)
         .insert({ type: "dm", created_by: userA })
         .select("id")
@@ -34,6 +34,7 @@ export async function createConversation(userA: string, userB: string) {
     const conversationId = data.id;
 
     const { data: membData, error: membError } = await supabase.from(TABLES.CONVERSATION_MEMBERS).insert([
+        // create conversation members
         { conversation_id: conversationId, user_id: userA },
         { conversation_id: conversationId, user_id: userB },
     ]);
@@ -43,7 +44,14 @@ export async function createConversation(userA: string, userB: string) {
         return;
     }
 
-    return membData;
+    const { error: chatError } = await supabase
+        .from(TABLES.MESSAGES)
+        .insert({ conversation_id: conversationId, content: "I accepted your request", sender_id: userB }); //send message
+
+    if (chatError) {
+        console.error("Error sending chat:", chatError);
+        return;
+    }
 }
 
 export async function getChatsWithRecentMessage(): Promise<DMConversation[] | null> {
@@ -54,14 +62,12 @@ export async function getChatsWithRecentMessage(): Promise<DMConversation[] | nu
 
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
-    console.log(user.id);
     const { data, error } = await supabase.rpc("get_dms_for_user", { p_user_id: user.id });
 
     if (error) {
         console.error("Error getting dms for user", error);
         return null;
     }
-    console.log(data);
     return data;
 }
 
@@ -88,7 +94,7 @@ export async function sendMessage(clientId: string, message: string, convId: str
         return authError;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from(TABLES.MESSAGES)
         .insert({ id: clientId, content: message, sender_id: user.id, conversation_id: convId })
         .select("id, created_at")
@@ -99,14 +105,5 @@ export async function sendMessage(clientId: string, message: string, convId: str
         return error;
     }
 
-    //TODO: use database trigger to update this
-    const { error: updateConvError } = await supabase
-        .from(TABLES.CONVERSATIONS)
-        .update({ last_message_id: data.id, last_message_at: data.created_at })
-        .eq("id", convId);
-
-    if (updateConvError) {
-        console.error("Error sending text", updateConvError);
-        return updateConvError;
-    }
+    //trigger then updates last message
 }

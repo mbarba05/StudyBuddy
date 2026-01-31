@@ -1,20 +1,25 @@
 import { colors } from "@/assets/colors";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { ListSeparator } from "@/components/ui/Seperators";
+import { SearchBar } from "@/components/ui/TextInputs";
 import { formatMessageTime } from "@/lib/utillities";
 import { getIncomingFriendRequests } from "@/services/friendshipsService";
 import { DMConversation, getChatsWithRecentMessage } from "@/services/messageService";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { IncomingFriendRequest } from "./requests";
 
 const SocialScreen = () => {
     const [requests, setRequests] = useState<IncomingFriendRequest[]>([]);
     const [chats, setChats] = useState<DMConversation[] | null>([]);
+    const [shownChats, setShownChats] = useState<DMConversation[] | null>([]);
     const [loading, setLoading] = useState(true);
+    const [filterVal, setFilterVal] = useState("");
+    const [initialLoad, setInitialLoad] = useState(true);
+
     const router = useRouter();
 
     useFocusEffect(
@@ -29,6 +34,8 @@ const SocialScreen = () => {
                     if (mounted) {
                         setRequests(reqs as IncomingFriendRequest[]);
                         setChats(dms as DMConversation[]);
+                        setShownChats(dms);
+                        setInitialLoad(false);
                     }
                 } finally {
                     if (mounted) setLoading(false);
@@ -42,6 +49,19 @@ const SocialScreen = () => {
             };
         }, []),
     );
+
+    useEffect(() => {
+        if (!chats) return;
+
+        if (!filterVal) {
+            setShownChats(chats);
+            return;
+        }
+
+        const filtered = chats.filter((c) => c.dm_name.toLowerCase().includes(filterVal.toLowerCase()));
+
+        setShownChats(filtered);
+    }, [filterVal, chats]);
 
     const ChatListItem = useCallback(
         ({ item }: { item: DMConversation }) => {
@@ -85,10 +105,15 @@ const SocialScreen = () => {
     );
     const keyExtractor = useCallback((item: DMConversation) => String(item.conversation_id), []);
 
-    if (loading) return <LoadingScreen />;
+    if (loading && initialLoad) return <LoadingScreen />;
 
     return (
         <View className="flex-1 bg-colors-background p-2">
+            <SearchBar
+                placeholder="Find Chat"
+                value={filterVal}
+                onChangeText={setFilterVal}
+            />
             {requests.length > 0 && (
                 <TouchableOpacity
                     className="flex items-center justify-center border-b border-b-colors-textSecondary p-2"
@@ -107,10 +132,10 @@ const SocialScreen = () => {
                     <ListSeparator />
                 </TouchableOpacity>
             )}
-            {chats && (
+            {shownChats && (
                 <FlatList
                     keyExtractor={keyExtractor}
-                    data={chats}
+                    data={shownChats}
                     renderItem={ChatListItem}
                 />
             )}
