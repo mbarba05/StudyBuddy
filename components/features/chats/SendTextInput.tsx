@@ -30,6 +30,7 @@ const SendTextInput = ({ convId, setChats }: SendTextInputProps) => {
             content: message,
             conversation_id: convId,
             created_at: "now",
+            count: 0,
         };
 
         setChats((prev) => [messageToSend, ...prev]);

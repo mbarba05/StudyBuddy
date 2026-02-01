@@ -1,13 +1,14 @@
 import { colors } from "@/assets/colors";
 import ChatBubble from "@/components/features/chats/ChatBubble";
 import SendTextInput from "@/components/features/chats/SendTextInput";
+import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Chat, getMessagesForConv } from "@/services/messageService";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ChatRouteParams = {
@@ -16,12 +17,16 @@ type ChatRouteParams = {
     ppPic: string;
 };
 
+//TODO: fetch rest of the conversation when scrolling up
+
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
 
     const tabBarHeight = useBottomTabBarHeight();
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [countLeft, setCountLeft] = useState(0);
     const [chats, setChats] = useState<Chat[]>([]);
     const user = useAuth();
 
@@ -34,8 +39,9 @@ const ConversationScreen = () => {
                     setLoading(true);
                     const chat = await getMessagesForConv(conversationId, 0);
                     if (mounted) {
+                        const count = chat && chat?.length > 0 ? chat[0].count : 0;
+                        if (count > CHAT_PAGE_SIZE) setCountLeft(count - CHAT_PAGE_SIZE);
                         setChats(chat as Chat[]);
-                        console.log(chats);
                     }
                 } finally {
                     if (mounted) setLoading(false);
@@ -78,6 +84,17 @@ const ConversationScreen = () => {
         };
     }, [conversationId]);
 
+    const loadOlderMessages = async () => {
+        if (countLeft <= 0 || loadingMore) return;
+        setLoadingMore(true);
+        const offset = chats ? chats.length : 0;
+        const oldChats = await getMessagesForConv(conversationId, offset);
+        if (!oldChats) return;
+        setChats((prev) => [...prev, ...oldChats]);
+        setCountLeft((prev) => prev - CHAT_PAGE_SIZE);
+        setLoadingMore(false);
+    };
+
     const renderItem = useCallback(
         ({ item }: { item: Chat }) => {
             const isOwn = item.sender_id === user.user?.id;
@@ -118,6 +135,7 @@ const ConversationScreen = () => {
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
                     keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
                 >
+                    {loadingMore && <ActivityIndicator className="mt-4" />}
                     <FlatList
                         className="flex-1"
                         contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
@@ -126,6 +144,7 @@ const ConversationScreen = () => {
                         renderItem={renderItem}
                         inverted
                         keyboardShouldPersistTaps="handled"
+                        onEndReached={loadOlderMessages}
                     />
                     <SendTextInput
                         setChats={setChats}

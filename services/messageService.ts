@@ -17,6 +17,7 @@ export type Chat = {
     sender_id: string;
     created_at: string;
     conversation_id: string;
+    count: number;
 };
 
 export async function createConversation(userA: string, userB: string) {
