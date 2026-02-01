@@ -1,9 +1,6 @@
 import { LoginButton, RedButton } from "@/components/ui/Buttons";
 import { LoginInput } from "@/components/ui/TextInputs";
-import {
-    MIN_PASSWORD_LENGTH,
-    VALID_EMAIL_DOMAIN,
-} from "@/services/auth/authModels";
+import { MIN_PASSWORD_LENGTH, VALID_EMAIL_DOMAIN } from "@/services/auth/authModels";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -28,9 +25,7 @@ export default function CreateAccountScreen() {
     }, [email]);
 
     useEffect(() => {
-        const match =
-            password.length >= MIN_PASSWORD_LENGTH &&
-            password === confirmPassword;
+        const match = password.length >= MIN_PASSWORD_LENGTH && password === confirmPassword;
         setPasswordsMatch(match);
     }, [password, confirmPassword]);
 
@@ -48,9 +43,7 @@ export default function CreateAccountScreen() {
             return;
         }
         if (password.length < MIN_PASSWORD_LENGTH) {
-            setErrorText(
-                `Password length must be at least ${MIN_PASSWORD_LENGTH} characters.`
-            );
+            setErrorText(`Password length must be at least ${MIN_PASSWORD_LENGTH} characters.`);
             return;
         }
         if (!passwordsMatch) {
@@ -61,11 +54,7 @@ export default function CreateAccountScreen() {
 
     const onSignUp = async () => {
         try {
-            if (
-                !fresnoStateEmail ||
-                !passwordsMatch ||
-                password.length < MIN_PASSWORD_LENGTH
-            ) {
+            if (!fresnoStateEmail || !passwordsMatch || password.length < MIN_PASSWORD_LENGTH) {
                 displayError();
                 return;
             }
@@ -83,9 +72,7 @@ export default function CreateAccountScreen() {
     return (
         <SafeAreaView className="flex-1 p-12 justify-center items-center bg-colors-background gap-4">
             <View className="flex flex-row gap-2">
-                <Text className="text-colors-text font-bold text-5xl text-center">
-                    Create Account
-                </Text>
+                <Text className="text-colors-text font-bold text-5xl text-center">Create Account</Text>
                 <Ionicons name="person-add" size={36} color="#fff" />
             </View>
             <Text className="text-colors-textSecondary text-lg text-center font-semibold">

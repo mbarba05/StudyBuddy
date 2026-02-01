@@ -47,9 +47,11 @@ export async function createConversation(userA: string, userB: string) {
         return;
     }
 
-    const { error: chatError } = await supabase
-        .from(TABLES.MESSAGES)
-        .insert({ conversation_id: conversationId, content: "I accepted your request", sender_id: userB }); //send message
+    const { error: chatError } = await supabase.from(TABLES.MESSAGES).insert({
+        conversation_id: conversationId,
+        content: "I accepted your request",
+        sender_id: userB,
+    }); //send message
 
     if (chatError) {
         console.error("Error sending chat:", chatError);
@@ -65,7 +67,9 @@ export async function getChatsWithRecentMessage(): Promise<DMConversation[] | nu
 
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
-    const { data, error } = await supabase.rpc("get_dms_for_user", { p_user_id: user.id });
+    const { data, error } = await supabase.rpc("get_dms_for_user", {
+        p_user_id: user.id,
+    });
 
     if (error) {
         console.error("Error getting dms for user", error);
@@ -99,7 +103,12 @@ export async function sendMessage(clientId: string, message: string, convId: str
 
     const { data, error } = await supabase
         .from(TABLES.MESSAGES)
-        .insert({ id: clientId, content: message, sender_id: user.id, conversation_id: convId })
+        .insert({
+            id: clientId,
+            content: message,
+            sender_id: user.id,
+            conversation_id: convId,
+        })
         .select("id, created_at")
         .single();
 

@@ -48,11 +48,7 @@ const SendTextInput = ({ convId, setChats }: SendTextInputProps) => {
 
     return (
         <View className="flex items-centerr flex-row gap-2 px-2 pb-2">
-            <Ionicons
-                name="add-circle"
-                color={colors.secondary}
-                size={36}
-            />
+            <Ionicons name="add-circle" color={colors.secondary} size={36} />
             <TextInput
                 value={message}
                 onChangeText={(e) => setMessage(e)}
@@ -61,18 +57,9 @@ const SendTextInput = ({ convId, setChats }: SendTextInputProps) => {
                 className="flex-1 text-colors-text rounded-2xl px-2 border-colors-textSecondary border-2 h-12"
             ></TextInput>
             {message ? (
-                <Ionicons
-                    name="arrow-up-circle"
-                    color={colors.secondary}
-                    size={36}
-                    onPress={sendText}
-                />
+                <Ionicons name="arrow-up-circle" color={colors.secondary} size={36} onPress={sendText} />
             ) : (
-                <Ionicons
-                    name="arrow-up-circle-outline"
-                    color={colors.textSecondary}
-                    size={36}
-                />
+                <Ionicons name="arrow-up-circle-outline" color={colors.textSecondary} size={36} />
             )}
         </View>
     );

@@ -121,7 +121,11 @@ const SocialScreen = () => {
 
                 router.push({
                     pathname: "/social/chat/[conversationId]",
-                    params: { conversationId: item.conversation_id, dmName: item.dm_name, ppPic: item.pp_url },
+                    params: {
+                        conversationId: item.conversation_id,
+                        dmName: item.dm_name,
+                        ppPic: item.pp_url,
+                    },
                 });
             };
 
@@ -165,22 +169,14 @@ const SocialScreen = () => {
 
     return (
         <View className="flex-1 bg-colors-background p-2">
-            <SearchBar
-                placeholder="Find Chat"
-                value={filterVal}
-                onChangeText={setFilterVal}
-            />
+            <SearchBar placeholder="Find Chat" value={filterVal} onChangeText={setFilterVal} />
             {requests.length > 0 && (
                 <TouchableOpacity
                     className="flex items-center justify-center border-b border-b-colors-textSecondary p-2"
                     onPress={() => router.push("/(tabs)/social/requests")}
                 >
                     <View className="flex flex-row gap-2">
-                        <Ionicons
-                            name="person-add"
-                            size={24}
-                            color={colors.accent}
-                        />
+                        <Ionicons name="person-add" size={24} color={colors.accent} />
                         <Text className="text-2xl font-semibold color-colors-accent">
                             Pending Friend Requests ({requests.length})
                         </Text>
@@ -188,13 +184,7 @@ const SocialScreen = () => {
                     <ListSeparator />
                 </TouchableOpacity>
             )}
-            {shownChats && (
-                <FlatList
-                    keyExtractor={keyExtractor}
-                    data={shownChats}
-                    renderItem={ChatListItem}
-                />
-            )}
+            {shownChats && <FlatList keyExtractor={keyExtractor} data={shownChats} renderItem={ChatListItem} />}
         </View>
     );
 };

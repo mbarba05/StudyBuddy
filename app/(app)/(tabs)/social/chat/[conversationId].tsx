@@ -111,10 +111,7 @@ const ConversationScreen = () => {
 
     const header = () => (
         <View className="flex flex-row items-center gap-2">
-            <Image
-                source={{ uri: ppPic }}
-                className="w-12 h-12 rounded-full"
-            />
+            <Image source={{ uri: ppPic }} className="w-12 h-12 rounded-full" />
             <Text className="text-colors-text text-2xl font-semibold">{dmName}</Text>
         </View>
     );
@@ -128,10 +125,7 @@ const ConversationScreen = () => {
                     headerStyle: { backgroundColor: colors.background },
                 }}
             />
-            <SafeAreaView
-                className="flex-1 bg-colors-background"
-                edges={["left", "right"]}
-            >
+            <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
                 <KeyboardAvoidingView
                     className="flex-1"
                     behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -148,10 +142,7 @@ const ConversationScreen = () => {
                         keyboardShouldPersistTaps="handled"
                         onEndReached={loadOlderMessages}
                     />
-                    <SendTextInput
-                        setChats={setChats}
-                        convId={conversationId}
-                    />
+                    <SendTextInput setChats={setChats} convId={conversationId} />
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </>
