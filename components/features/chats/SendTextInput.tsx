@@ -39,7 +39,7 @@ const SendTextInput = ({ convId, setChats }: SendTextInputProps) => {
         setMessage("");
 
         if (error) {
-            // 5) rollback or mark failed
+            // rollback or mark failed
             setChats((prev) => prev.filter((m) => m.id !== messageToSend.id));
             // optionally restore input text or show toast
             return;

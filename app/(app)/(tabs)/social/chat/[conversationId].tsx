@@ -6,6 +6,7 @@ import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Chat, getMessagesForConv } from "@/services/messageService";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import * as Haptics from "expo-haptics";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
@@ -75,6 +76,7 @@ const ConversationScreen = () => {
                         if (prev.some((m) => m.id === newMsg.id)) return prev;
                         return [newMsg, ...prev];
                     });
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
                 },
             )
             .subscribe();

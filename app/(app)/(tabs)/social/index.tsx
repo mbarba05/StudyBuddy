@@ -2,11 +2,13 @@ import { colors } from "@/assets/colors";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { ListSeparator } from "@/components/ui/Seperators";
 import { SearchBar } from "@/components/ui/TextInputs";
+import supabase from "@/lib/subapase";
 import { formatMessageTime } from "@/lib/utillities";
 import { getIncomingFriendRequests } from "@/services/friendshipsService";
-import { DMConversation, getChatsWithRecentMessage } from "@/services/messageService";
+import { DMConversation, getChatsWithRecentMessage, updateReadMessage } from "@/services/messageService";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
@@ -14,8 +16,8 @@ import { IncomingFriendRequest } from "./requests";
 
 const SocialScreen = () => {
     const [requests, setRequests] = useState<IncomingFriendRequest[]>([]);
-    const [chats, setChats] = useState<DMConversation[] | null>([]);
-    const [shownChats, setShownChats] = useState<DMConversation[] | null>([]);
+    const [chats, setChats] = useState<DMConversation[]>([]);
+    const [shownChats, setShownChats] = useState<DMConversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterVal, setFilterVal] = useState("");
     const [initialLoad, setInitialLoad] = useState(true);
@@ -34,13 +36,14 @@ const SocialScreen = () => {
                     if (mounted) {
                         setRequests(reqs as IncomingFriendRequest[]);
                         setChats(dms as DMConversation[]);
-                        setShownChats(dms);
+                        setShownChats(dms as DMConversation[]);
                         setInitialLoad(false);
                     }
                 } finally {
                     if (mounted) setLoading(false);
                 }
             };
+
             fetchRequests();
 
             // cleanup when screen loses focus
@@ -63,17 +66,69 @@ const SocialScreen = () => {
         setShownChats(filtered);
     }, [filterVal, chats]);
 
+    const refetchInbox = useCallback(async () => {
+        const dms = await getChatsWithRecentMessage();
+        setChats(dms as DMConversation[]);
+
+        // keep filtering behavior consistent
+        setShownChats((prevShown) => {
+            const next = dms as DMConversation[];
+            if (!filterVal) return next;
+            return next.filter((c) => c.dm_name.toLowerCase().includes(filterVal.toLowerCase()));
+        });
+    }, [filterVal]);
+
+    useEffect(() => {
+        if (chats.length === 0) return;
+
+        // one channel per conversation row
+        const channels = chats.map((chat) =>
+            supabase
+                .channel(`conv:${chat.conversation_id}`)
+                .on(
+                    "postgres_changes",
+                    {
+                        event: "UPDATE",
+                        schema: "public",
+                        table: "conversations",
+                        filter: `id=eq.${chat.conversation_id}`,
+                    },
+                    () => {
+                        // refetch inbox whenever that conversation updates
+                        refetchInbox();
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+                    },
+                )
+                .subscribe(),
+        );
+
+        return () => {
+            channels.forEach((ch) => supabase.removeChannel(ch));
+        };
+    }, [refetchInbox, chats]);
+
     const ChatListItem = useCallback(
         ({ item }: { item: DMConversation }) => {
+            const openChat = async (item: DMConversation) => {
+                await updateReadMessage(item.last_message_id, item.conversation_id);
+                item.read = true;
+
+                setChats((prev) =>
+                    prev.map((chat) =>
+                        chat.conversation_id === item.conversation_id ? { ...chat, read: true } : chat,
+                    ),
+                );
+
+                router.push({
+                    pathname: "/social/chat/[conversationId]",
+                    params: { conversationId: item.conversation_id, dmName: item.dm_name, ppPic: item.pp_url },
+                });
+            };
+
             return (
                 <TouchableOpacity
                     className="flex-row items-center justify-between py-2 border-b border-colors-textSecondary w-full"
-                    onPress={() =>
-                        router.push({
-                            pathname: "/social/chat/[conversationId]",
-                            params: { conversationId: item.conversation_id, dmName: item.dm_name, ppPic: item.pp_url },
-                        })
-                    }
+                    onPress={() => openChat(item)}
                 >
                     <View className="flex-row gap-4 flex-1">
                         <Image
@@ -83,7 +138,7 @@ const SocialScreen = () => {
                         <View className="flex-1">
                             <Text className="color-colors-text text-2xl font-semibold">{item.dm_name}</Text>
                             <Text
-                                className="color-colors-textSecondary text-lg"
+                                className={`${item.read ? "color-colors-textSecondary" : "color-colors-text font-semibold"} text-lg`}
                                 numberOfLines={1}
                                 ellipsizeMode="tail"
                             >
@@ -91,12 +146,13 @@ const SocialScreen = () => {
                             </Text>
                         </View>
                     </View>
-                    <View>
+                    <View className="flex flex-row items-center gap-2">
                         {item.last_message_at && (
                             <Text className="color-colors-textSecondary text-lg">
                                 {formatMessageTime(item.last_message_at)}
                             </Text>
                         )}
+                        {!item.read && <View className="rounded-full w-3 h-3 bg-colors-accent" />}
                     </View>
                 </TouchableOpacity>
             );

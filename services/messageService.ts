@@ -9,6 +9,8 @@ export type DMConversation = {
     type: "dm";
     last_message: string | null;
     last_message_at: string | null;
+    last_message_id: string | null;
+    read: boolean;
 };
 
 export type Chat = {
@@ -34,7 +36,7 @@ export async function createConversation(userA: string, userB: string) {
 
     const conversationId = data.id;
 
-    const { data: membData, error: membError } = await supabase.from(TABLES.CONVERSATION_MEMBERS).insert([
+    const { error: membError } = await supabase.from(TABLES.CONVERSATION_MEMBERS).insert([
         // create conversation members
         { conversation_id: conversationId, user_id: userA },
         { conversation_id: conversationId, user_id: userB },
@@ -95,7 +97,7 @@ export async function sendMessage(clientId: string, message: string, convId: str
         return authError;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from(TABLES.MESSAGES)
         .insert({ id: clientId, content: message, sender_id: user.id, conversation_id: convId })
         .select("id, created_at")
@@ -105,6 +107,30 @@ export async function sendMessage(clientId: string, message: string, convId: str
         console.error("Error sending text", error);
         return error;
     }
-
+    //updateReadMessage(data.id, convId); //mark the sent message as read so its not highlighted in the inboxs
     //trigger then updates last message
+}
+
+export async function updateReadMessage(messageId: string | null, convId: string) {
+    if (!messageId) return;
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error("Auth error when updating read", authError);
+        return authError;
+    }
+
+    const { error } = await supabase
+        .from(TABLES.CONVERSATION_MEMBERS)
+        .update({ last_read_message_id: messageId })
+        .eq("user_id", user.id)
+        .eq("conversation_id", convId);
+
+    if (error) {
+        console.error("Error when updating read", error);
+        return error;
+    }
 }
