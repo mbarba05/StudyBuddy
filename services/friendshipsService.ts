@@ -1,5 +1,6 @@
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
+import { createConversation } from "./messageService";
 
 export type FriendStatus = "pending" | "accepted" | "rejected";
 
@@ -63,7 +64,7 @@ export async function getIncomingFriendRequests() {
         year,
         major:major_id(name)
       )
-    `
+    `,
         )
         .eq("receiver_id", user.id)
         .eq("status", "pending");
@@ -87,7 +88,7 @@ export async function getOutgoingFriendRequests(user_id: string) {
         display_name,
         pp_url
       )
-    `
+    `,
         )
         .eq("sender_id", user_id)
         .eq("status", "pending");
@@ -101,7 +102,7 @@ export async function acceptFriendRequest(request: FriendRequest) {
     console.log("Req", request.id);
 
     // Update request to "accepted"
-    const { data, error: updateErr } = await supabase
+    const { error: updateErr } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
         .update({ status: "accepted" })
         .eq("id", request.id);
@@ -123,6 +124,8 @@ export async function acceptFriendRequest(request: FriendRequest) {
     ]);
 
     if (insertErr) throw insertErr;
+
+    await createConversation(request.sender_id, request.receiver_id);
 }
 
 // Reject friend request
@@ -144,7 +147,7 @@ export async function removeFriend(friend_id: string) {
         .from(TABLES.FRIENDSHIPS)
         .delete()
         .or(
-            `and(user_id.eq.${user.id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user.id})`
+            `and(user_id.eq.${user.id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user.id})`,
         );
 
     if (error) throw error;
@@ -215,7 +218,7 @@ export async function getAllFriends() {
         major: major_id (name),
         year
       )
-    `
+    `,
         )
         .or(`user_id.eq.${user.id}`)
         .eq("status", "accepted");

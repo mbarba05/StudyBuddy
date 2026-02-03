@@ -89,7 +89,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
                     prof:prof_id (name)
                 )
             )
-        `
+        `,
         )
         .eq("enrollment.user_id", userId);
 
@@ -133,7 +133,7 @@ export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]
                     course:course_id (*)
                 )
             )
-        `
+        `,
         )
         .in("enrollment_id", enrollmentIds);
 

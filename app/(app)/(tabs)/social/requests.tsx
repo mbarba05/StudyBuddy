@@ -7,7 +7,6 @@ import {
     getIncomingFriendRequests,
     rejectFriendRequest,
 } from "@/services/friendshipsService";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Swiper from "react-native-deck-swiper";
@@ -23,7 +22,6 @@ export type IncomingFriendRequest = FriendRequest & {
 };
 
 export default function RequestsScreen() {
-    const router = useRouter();
     const [requests, setRequests] = useState<IncomingFriendRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasSwipedAll, setHasSwipedAll] = useState(false);
@@ -53,7 +51,7 @@ export default function RequestsScreen() {
             try {
                 await acceptFriendRequest(req);
                 // remove this request from local state
-                setRequests((prev) => prev.filter((_, i) => i !== cardIndex));
+                //setRequests((prev) => prev.filter((_, i) => i !== cardIndex));
             } catch (err) {
                 console.error("Error accepting friend request", err);
             }
@@ -68,7 +66,7 @@ export default function RequestsScreen() {
             try {
                 await rejectFriendRequest(req.id);
                 // remove this request from local state
-                setRequests((prev) => prev.filter((_, i) => i !== cardIndex));
+                //setRequests((prev) => prev.filter((_, i) => i !== cardIndex));
             } catch (err) {
                 console.error("Error rejecting friend request", err);
             }

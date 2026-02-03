@@ -7,7 +7,6 @@ import { BUCKETS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { Major } from "./majorsService";
 
-
 export interface Profile {
     user_id: string;
     display_name: string;
@@ -255,24 +254,23 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
 
 // this is used to have users with the highest "score" show first.
 export type MatchRow = Profile & {
-
-    same_major: boolean;      //checks to see if profiles have same major
-    overlapping_classes: number;     // checks how many courses the profiles share
-    overlapping_professors: number;   // checks how many professors the profiles shares
-    score: number;       // total sum(points) for overlap in proflies. used to arrange the profiles
+    same_major: boolean; //checks to see if profiles have same major
+    overlapping_classes: number; // checks how many courses the profiles share
+    overlapping_professors: number; // checks how many professors the profiles shares
+    score: number; // total sum(points) for overlap in proflies. used to arrange the profiles
 };
 
 // grabbing profiles with filters (major for now)
 export async function getPotentialMatches(
-    termId?: number | string, 
+    termId?: number | string,
     opts?: {
         limit?: number;
         offset?: number;
         minimumOverlap?: number;
         left_swipe_cooldown?: number;
         right_swipe_cooldown?: number;
-    }
-): Promise<MatchRow[]>{
+    },
+): Promise<MatchRow[]> {
     return majorMatching(termId, {
         limit: opts?.limit,
         offset: opts?.offset,
@@ -300,46 +298,40 @@ async function grabCurr_UserId(): Promise<string> {
 
 // function to grab major id of a given user
 async function grabMajorIds(user_id: string): Promise<number | null> {
-    const { data, error } = await supabase
-    .from("profiles")
-    .select("major_id")
-    .eq("user_id", user_id)
-    .maybeSingle();
+    const { data, error } = await supabase.from("profiles").select("major_id").eq("user_id", user_id).maybeSingle();
     if (error) throw error;
     return data?.major_id ?? null;
 }
 
-// excluding and adding a cooldown on passed interacted profiles 
+// excluding and adding a cooldown on passed interacted profiles
 async function getExcludedUserIds(
     swiperId: string,
     opts?: {
         // swipped left users would re-appear in the match making after a certain amount of time in hours
-        // left swips i have it at after 1 hours for now 
+        // left swips i have it at after 1 hours for now
         // right swips at forever (can add a condition later if removed friends then activate a 24 hour cooldown
         // before adding back into the poll)
         left_swipe_cooldown?: number;
-        right_swipe_cooldown?:number;
-    }
-): Promise<string[]>{
+        right_swipe_cooldown?: number;
+    },
+): Promise<string[]> {
     // where cooldown timers are set (in hours)
     const left_swipe_cooldown = opts?.left_swipe_cooldown ?? 1;
-    const right_swipe_cooldown = opts?.right_swipe_cooldown; // no time so right swiped profiles are hidden forever 
+    const right_swipe_cooldown = opts?.right_swipe_cooldown; // no time so right swiped profiles are hidden forever
 
     // grabbing current time
     const now = Date.now();
 
     // determining cooldown time
-    const left_cutOff = new Date(
-        now - left_swipe_cooldown * 60 * 60 * 1000
-    ).toISOString();
+    const left_cutOff = new Date(now - left_swipe_cooldown * 60 * 60 * 1000).toISOString();
 
-    const { data: leftRows, error: leftErr} = await supabase
+    const { data: leftRows, error: leftErr } = await supabase
         .from("user_swipes")
         .select("target_id")
         .eq("swiper_id", swiperId)
         .eq("direction", "left")
         .gte("created_at", left_cutOff); //creates the cooldown
-    if(leftErr) throw leftErr;
+    if (leftErr) throw leftErr;
 
     let rightQuery = supabase
         .from("user_swipes")
@@ -347,62 +339,60 @@ async function getExcludedUserIds(
         .eq("swiper_id", swiperId)
         .eq("direction", "right");
 
-    if(typeof right_swipe_cooldown === "number"){
-        const right_cutOff = new Date(
-            now - right_swipe_cooldown * 60 * 60 * 1000
-        ).toISOString();
+    if (typeof right_swipe_cooldown === "number") {
+        const right_cutOff = new Date(now - right_swipe_cooldown * 60 * 60 * 1000).toISOString();
         rightQuery = rightQuery.gte("created_at", right_cutOff);
     }
 
-    const {data: rightRows, error: rightErr} = await rightQuery;
-    if(rightErr) throw rightErr;
+    const { data: rightRows, error: rightErr } = await rightQuery;
+    if (rightErr) throw rightErr;
 
-    //profiles to keep out poll 
+    //profiles to keep out poll
     const exclude = new Set<string>();
-    for(const r of leftRows ?? []) exclude.add((r as any).target_id);
-    for(const r of rightRows ?? []) exclude.add((r as any).target_id);
+    for (const r of leftRows ?? []) exclude.add((r as any).target_id);
+    for (const r of rightRows ?? []) exclude.add((r as any).target_id);
 
     return Array.from(exclude);
 }
 
 // finding current term based on current date
-async function getCurrentTerm(): Promise<{id: number;name: string}>{
-     const todays_date = new Date().toISOString().slice(0,10); // format year-month,day
+async function getCurrentTerm(): Promise<{ id: number; name: string }> {
+    const todays_date = new Date().toISOString().slice(0, 10); // format year-month,day
 
-     const { data, error } = await supabase
-     .from("terms")
-     .select("id, name, start_date, end_date")
-     .lte("start_date", todays_date)
-     .gte("end_date", todays_date)
-     .order("start_date", {ascending: false})
-     .limit(1)
-     .maybeSingle();
+    const { data, error } = await supabase
+        .from("terms")
+        .select("id, name, start_date, end_date")
+        .lte("start_date", todays_date)
+        .gte("end_date", todays_date)
+        .order("start_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-     if(error) throw error;
-     if(!data){
+    if (error) throw error;
+    if (!data) {
         throw new Error("No active term found");
-     }
+    }
 
-    return {id:data.id as number, name: data.name as string}
+    return { id: data.id as number, name: data.name as string };
 }
 
-export async function getCurrentTermId(): Promise<number>{
+export async function getCurrentTermId(): Promise<number> {
     const { id } = await getCurrentTerm();
     return id;
 }
 
-export async function getCurrentTermName(): Promise<string>{
+export async function getCurrentTermName(): Promise<string> {
     const { name } = await getCurrentTerm();
     return name;
 }
 
-export async function matchMajor(limit = 50): Promise<MatchRow[]>{
+export async function matchMajor(limit = 50): Promise<MatchRow[]> {
     // grabing curren term
     const currentTermId = await getCurrentTermId();
 
     return majorMatching(currentTermId, {
-        limit, 
-        offset:0,
+        limit,
+        offset: 0,
         minimumOverlap: 0,
         left_swipe_cooldown: 24,
     });
@@ -412,7 +402,7 @@ export async function matchMajor(limit = 50): Promise<MatchRow[]>{
 // counts classes and professors both users are taking
 // gets a score and uses score to show profiles to current user (greatest score(most overlaping) -> least score(least overlaping) )
 // Only does this with current term.
-// doesn't show profiles already interacted with using cooldown 
+// doesn't show profiles already interacted with using cooldown
 export async function majorMatching(
     termId?: number | string,
     opts?: {
@@ -421,13 +411,12 @@ export async function majorMatching(
         offset?: number;
         left_swipe_cooldown?: number;
         right_swipe_cooldown?: number;
-    }
+    },
 ): Promise<MatchRow[]> {
-
-    if(termId == null){
+    if (termId == null) {
         termId = await getCurrentTermId();
     }
-    
+
     const minOverlap = opts?.minimumOverlap ?? 0;
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
@@ -435,15 +424,11 @@ export async function majorMatching(
     //used for matching users terms
     let termName: string;
 
-    if(typeof termId === "number"){
-        const { data: termRow, error: termErr } = await supabase
-            .from("terms")
-            .select("name")
-            .eq("id", termId)
-            .single();
-        if(termErr) throw termErr;
+    if (typeof termId === "number") {
+        const { data: termRow, error: termErr } = await supabase.from("terms").select("name").eq("id", termId).single();
+        if (termErr) throw termErr;
         termName = termRow.name;
-    } else{
+    } else {
         termName = termId;
     }
 
@@ -459,7 +444,7 @@ export async function majorMatching(
     });
 
     const excludeSet = new Set<string>(swipedIds);
-    excludeSet.add(user_id);; //hide yourself
+    excludeSet.add(user_id); //hide yourself
     const excludeIds = Array.from(excludeSet);
 
     // grabbing some user profiles
@@ -484,10 +469,10 @@ export async function majorMatching(
 
     // grabing current user classes and professors on current term
     const { data: myEnrolls, error: myEnrollErr } = await supabase
-        .from("enrollments_with_status")  
+        .from("enrollments_with_status")
         .select("course_prof_id")
         .eq("user_id", user_id)
-        .eq("term", termName) 
+        .eq("term", termName)
         .eq("status", "current");
     if (myEnrollErr) throw myEnrollErr;
 
@@ -517,11 +502,11 @@ export async function majorMatching(
 
     for (const ids of chunk(pos_profile_ids, 25)) {
         const { data: ce, error: ceErr } = await supabase
-            .from("enrollments_with_status")  
+            .from("enrollments_with_status")
             .select("user_id, course_prof_id")
             .in("user_id", ids)
-            .eq("term", termName) // adding filter to the same term 
-            .eq("status", "current");                             
+            .eq("term", termName) // adding filter to the same term
+            .eq("status", "current");
         if (ceErr) throw ceErr;
         candEnrolls.push(...(ce ?? []));
     }
@@ -583,11 +568,11 @@ export async function majorMatching(
         for (const x of theirProfs) if (myProfSet.has(x)) op++;
         //if major overlaps (bool 1 if yes, 0 if no)
         const userMajorId = Number((c.major as any)?.id);
-        const ifSame_major= !Number.isNaN(userMajorId) && userMajorId === user_major_id;
+        const ifSame_major = !Number.isNaN(userMajorId) && userMajorId === user_major_id;
         const overlapping_major = ifSame_major ? 1 : 0;
 
         // overlapping score
-        // major + courses + professors 
+        // major + courses + professors
         const score = overlapping_major + oc + op;
         const totalOverlapScore = score;
 
@@ -610,8 +595,8 @@ export async function majorMatching(
         const aMajor = a.same_major ? 1 : 0;
         const bMajor = b.same_major ? 1 : 0;
 
-        return(
-            bMajor - aMajor ||  // pioritize major then 
+        return (
+            bMajor - aMajor || // pioritize major then
             b.score - a.score || //score
             b.overlapping_classes - a.overlapping_classes ||
             b.overlapping_professors - a.overlapping_professors ||
@@ -636,7 +621,7 @@ export async function passUser(target_User_id: string): Promise<void> {
             // makes sure it's one swipe per pair
             onConflict: "swiper_id, target_id",
             ignoreDuplicates: false,
-        }
+        },
     );
     if (error) throw error;
 }

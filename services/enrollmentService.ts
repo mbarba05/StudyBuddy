@@ -2,7 +2,6 @@ import { Database } from "@/lib/database.types";
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { CourseProfDisplay } from "./courseService";
-import { getCurrentTermName } from "./profileService";
 import { getCurrentAndNextTerm } from "./termsService";
 
 type EnrollmentInsert = Database["public"]["Tables"]["enrollments"]["Insert"];
@@ -53,7 +52,7 @@ export async function getEnrollmentsForProfile(): Promise<CourseProfDisplay[] | 
     }));
 }
 
-    ///TODO: term support for everything here
+///TODO: term support for everything here
 export async function getCurrentandNextCoursesForProfile(): Promise<CourseProfDisplay[] | null> {
     const {
         data: { user },
@@ -86,35 +85,34 @@ export async function getCurrentandNextCoursesForProfile(): Promise<CourseProfDi
 }
 
 // editing createEnrollments so it writes info to both tables(enrollments and enrollments_with_status)
-export async function createEnrollments(userId: string, courseProfIds: number[]) {
-    // exit if there's no courses
-    if (courseProfIds. length === 0) return;
+export async function createEnrollments(courseProfIds: number[], termName: string) {
+    if (courseProfIds.length === 0) return;
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) {
+        console.warn("No user in session");
+        return null;
+    }
 
-    // grabing active term name defined as "current" 
-    const termName = await getCurrentTermName();
-    const status = "current";
-
-    //filling the rows of the tables
     const baseRow = courseProfIds.map((courseProfId) => ({
-        user_id: userId,
+        user_id: user.id,
         course_prof_id: courseProfId,
         term: termName,
-        //status,
     }));
 
     // adding to table enrollment
-    const { data, error } = await supabase
-        .from(TABLES.ENROLLMENTS)
-        .insert(baseRow)
-        .select(); 
+    const { data, error } = await supabase.from(TABLES.ENROLLMENTS).insert(baseRow).select();
 
-    if(error){
+    if (error) {
         console.error("Inserting enrollments failed: ", error);
         throw error;
     }
     return data;
 }
-  
+
 export async function deleteEnrollments(enrollmentIds: number[]) {
     const {
         data: { user },
@@ -170,7 +168,7 @@ export async function getReviewableEnrollments(): Promise<ReviewableEnrollment[]
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
         .select(
-            `id, term, review_written, course_prof:course_prof_id (id, professor:prof_id (id, name), course:course_id (id, code))`
+            `id, term, review_written, course_prof:course_prof_id (id, professor:prof_id (id, name), course:course_id (id, code))`,
         )
         .eq("user_id", user.data.user.id)
         .eq("review_written", false)

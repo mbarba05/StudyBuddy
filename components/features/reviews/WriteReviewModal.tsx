@@ -97,11 +97,7 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
                 <View>
                     <View className="flex flex-row gap-1">
                         <Text className="text-4xl text-colors-text font-semibold text-center">Reviewing</Text>
-                        <Ionicons
-                            name="pencil"
-                            size={28}
-                            color={colors.text}
-                        />
+                        <Ionicons name="pencil" size={28} color={colors.text} />
                     </View>
                     <Text className="text-2xl text-colors-text font-semibold text-center">
                         {selectedEnrollment.course.code}

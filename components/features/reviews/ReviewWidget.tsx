@@ -44,38 +44,22 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
             <View className="flex flex-row justify-between border-colors-textSecondary border-t pt-2">
                 <View className="flex-row gap-4 items-center">
                     <TouchableOpacity className="flex-row gap-1 items-center">
-                        <Ionicons
-                            name="chatbox-outline"
-                            color={colors.text}
-                            size={24}
-                        />
+                        <Ionicons name="chatbox-outline" color={colors.text} size={24} />
                         <Text className="color-colors-text text-lg">1</Text>
                         {/*TODO: add comment section*/}
                     </TouchableOpacity>
                     <TouchableOpacity>
-                        <Ionicons
-                            name="paper-plane-outline"
-                            color={colors.text}
-                            size={24}
-                        />
+                        <Ionicons name="paper-plane-outline" color={colors.text} size={24} />
                     </TouchableOpacity>
                     {/*TODO: add sharing posts*/}
                 </View>
                 <View className="flex-row gap-2 items-center">
                     <TouchableOpacity>
-                        <Ionicons
-                            name="arrow-up-circle"
-                            color={colors.text}
-                            size={28}
-                        />
+                        <Ionicons name="arrow-up-circle" color={colors.text} size={28} />
                     </TouchableOpacity>
                     <Text className="color-colors-text text-lg">1</Text>
                     <TouchableOpacity>
-                        <Ionicons
-                            name="arrow-down-circle"
-                            color={colors.text}
-                            size={28}
-                        />
+                        <Ionicons name="arrow-down-circle" color={colors.text} size={28} />
                     </TouchableOpacity>
                     {/*TODO: add liking posts*/}
                 </View>

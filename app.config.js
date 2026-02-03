@@ -19,5 +19,6 @@ export default {
                 projectId: "660b77b5-5be5-4d39-9cb0-5c09b8f98a00",
             },
         },
+        plugins: ["expo-router", "expo-web-browser"],
     },
 };
