@@ -137,7 +137,7 @@ const CourseSearchModal = ({
         if (!validateClassInput(code)) {
             Alert.alert(
                 "Please enter a valid input",
-                "2-6 letters, followed by a space, followed by 1-3 digits, followed by 1 optional letter. Ex: CSCI 152E."
+                "2-6 letters, followed by a space, followed by 1-3 digits, followed by 1 optional letter. Ex: CSCI 152E.",
             );
             return;
         }
@@ -400,7 +400,7 @@ const CourseSearchModal = ({
             profSearchResults,
             isDebouncing,
             loading,
-        ]
+        ],
     );
 
     return (

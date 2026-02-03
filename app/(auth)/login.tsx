@@ -26,23 +26,17 @@ export default function LoginScreen() {
 
     return (
         <SafeAreaView className="flex-1 p-12 justify-center bg-colors-background gap-2">
-            <Text className="text-colors-textSecondary text-center text-4xl">
-                Welcome To
-            </Text>
+            <Text className="text-colors-textSecondary text-center text-4xl">Welcome To</Text>
             <View className="flex flex-row items-center justify-center gap-4">
                 <Ionicons name="school" size={36} color="#fff" />
-                <Text className="text-colors-text font-bold text-5xl text-center">
-                    Study Buddy
-                </Text>
+                <Text className="text-colors-text font-bold text-5xl text-center">Study Buddy</Text>
                 <Ionicons name="people" size={36} color="#fff" />
             </View>
             <Text className="text-colors-textSecondary text-center text-xl mb-12">
                 Made by Fresno State students, for Fresno State Students
             </Text>
             <View className="flex gap-2.5">
-                <Text className="text-colors-text text-xl font-semibold">
-                    Sign In
-                </Text>
+                <Text className="text-colors-text text-xl font-semibold">Sign In</Text>
                 <View className="flex flex-row items-center gap-2">
                     <LoginInput
                         autoCapitalize="none"
@@ -63,11 +57,7 @@ export default function LoginScreen() {
                         placeholderTextColor="darkgray"
                     />
                 </View>
-                <LoginButton
-                    bgColor="bg-colors-primary"
-                    textColor="text-colors-text"
-                    onPress={onSignIn}
-                >
+                <LoginButton bgColor="bg-colors-primary" textColor="text-colors-text" onPress={onSignIn}>
                     Log In
                 </LoginButton>
             </View>

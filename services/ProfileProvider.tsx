@@ -1,12 +1,6 @@
 import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
-import React, {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 type ProfileCtx = {
     profileReady: boolean; //true when we’ve tried fetching (or user is null)
@@ -20,19 +14,13 @@ const Ctx = createContext<ProfileCtx>({
     refreshProfile: async () => {},
 });
 
-export const ProfileProvider: React.FC<React.PropsWithChildren> = ({
-    children,
-}) => {
+export const ProfileProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const { user, authReady } = useAuth();
     const [profileReady, setProfileReady] = useState(false);
     const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
     const fetchOnce = useCallback(async (uid: string) => {
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("user_id")
-            .eq("user_id", uid)
-            .single();
+        const { data, error } = await supabase.from("profiles").select("user_id").eq("user_id", uid).single();
 
         //“No rows found” isn’t a fatal error — treat as no profile
         if (error && error.code !== "PGRST116") {
@@ -75,11 +63,7 @@ export const ProfileProvider: React.FC<React.PropsWithChildren> = ({
         };
     }, [user, authReady, fetchOnce]);
 
-    return (
-        <Ctx.Provider value={{ profileReady, hasProfile, refreshProfile }}>
-            {children}
-        </Ctx.Provider>
-    );
+    return <Ctx.Provider value={{ profileReady, hasProfile, refreshProfile }}>{children}</Ctx.Provider>;
 };
 
 export const useProfileGate = () => useContext(Ctx);
