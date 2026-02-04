@@ -1,0 +1,4 @@
+1/27/26: My scrum cycle consists of creating review ratings. Where users 
+can rate other users reviews within the reviews tab. There will be an upvote and downvote
+capability where users can only upvote once or downvote once for one review (meaning they
+cannot spam like or dislike on a review). 
