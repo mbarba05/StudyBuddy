@@ -7,4 +7,7 @@ module.exports = defineConfig([
     {
         ignores: ["dist/*"],
     },
+    {
+        extends: ["prettier"],
+    },
 ]);

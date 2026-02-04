@@ -124,23 +124,26 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
     <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
       <View className="flex-row justify-between">
         <View>
-          <Text className="color-colors-text text-2xl font-semibold">{review.code}</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.code}
+          </Text>
           <Text className="color-colors-textSecondary text-lg">
             {parseLastName(review.profName)}
           </Text>
         </View>
-
         <View>
-          <Text className="color-colors-text text-2xl font-semibold">{review.term}</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.term}
+          </Text>
           <Text className="color-colors-textSecondary text-lg text-right">
-            {parseLastName(review.reviewDate)}
+            {review.reviewDate}
           </Text>
         </View>
       </View>
 
-      <View>
-        <Text className="color-colors-text text-center text-lg">{review.reviewText}</Text>
-      </View>
+      <Text className="color-colors-text text-center text-lg">
+        {review.reviewText}
+      </Text>
 
       <View className="flex flex-row justify-between">
         <View className="flex items-center">
@@ -149,7 +152,6 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
             {review.courseDiff}/10
           </Text>
         </View>
-
         <View className="flex items-center">
           <Text className="color-colors-textSecondary text-lg">Quality</Text>
           <Text className="color-colors-text text-2xl font-semibold">
@@ -251,6 +253,33 @@ const ReviewWidget = ({ review }: ReviewWidgetProps) => {
           </View>
         </View>
       </Modal>
+        <View className="flex items-center">
+          <Text className="color-colors-textSecondary text-lg">Grade</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.grade}
+          </Text>
+        </View>
+      </View>
+
+      <View className="flex flex-row justify-end gap-3 border-t border-colors-textSecondary pt-2">
+        <TouchableOpacity
+          onPress={() => handleVote(1)}
+          disabled={busy}
+        >
+          <Ionicons name="arrow-up-circle" size={28} color={colors.text} />
+        </TouchableOpacity>
+
+        <Text className="color-colors-text text-lg">{upvotes}</Text>
+
+        <TouchableOpacity
+          onPress={() => handleVote(-1)}
+          disabled={busy}
+        >
+          <Ionicons name="arrow-down-circle" size={28} color={colors.text} />
+        </TouchableOpacity>
+
+        <Text className="color-colors-text text-lg">{downvotes}</Text>
+      </View>
     </View>
   );
 };

@@ -27,11 +27,7 @@ export default function AppLayout() {
                     title: "",
                     tabBarIcon: () => (
                         <View className="mt-1">
-                            <Ionicons
-                                name="pencil"
-                                size={25}
-                                color={colors.text}
-                            />
+                            <Ionicons name="pencil" size={25} color={colors.text} />
                         </View>
                     ),
                 }}
@@ -42,11 +38,7 @@ export default function AppLayout() {
                     title: "",
                     tabBarIcon: () => (
                         <View className="mt-1">
-                            <Ionicons
-                                name="heart"
-                                size={25}
-                                color={colors.text}
-                            />
+                            <Ionicons name="heart" size={25} color={colors.text} />
                         </View>
                     ),
                 }}
@@ -57,11 +49,7 @@ export default function AppLayout() {
                     title: "",
                     tabBarIcon: () => (
                         <View className="mt-1">
-                            <Ionicons
-                                name="home"
-                                size={25}
-                                color={colors.text}
-                            />
+                            <Ionicons name="home" size={25} color={colors.text} />
                         </View>
                     ),
                 }}
@@ -72,11 +60,7 @@ export default function AppLayout() {
                     title: "",
                     tabBarIcon: () => (
                         <View className="mt-1">
-                            <Ionicons
-                                name="chatbox"
-                                size={25}
-                                color={colors.text}
-                            />
+                            <Ionicons name="chatbox" size={25} color={colors.text} />
                         </View>
                     ),
                 }}
@@ -87,11 +71,7 @@ export default function AppLayout() {
                     title: "",
                     tabBarIcon: () => (
                         <View className="mt-1">
-                            <Ionicons
-                                name="person-circle"
-                                size={25}
-                                color={colors.text}
-                            />
+                            <Ionicons name="person-circle" size={25} color={colors.text} />
                         </View>
                     ),
                 }}

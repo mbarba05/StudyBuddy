@@ -20,3 +20,5 @@ export const gradeOptions = [
     { label: "D-", value: "D-" },
     { label: "F", value: "F" },
 ];
+
+export const CHAT_PAGE_SIZE = 40;

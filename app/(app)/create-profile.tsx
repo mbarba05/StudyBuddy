@@ -216,11 +216,7 @@ export default function CreateProfileScreen() {
                     <View className="px-6 py-8 gap-3">
                         <View className="flex flex-row justify-center items-center gap-3">
                             <Text className="text-4xl font-bold text-colors-text">Create Your Profile</Text>
-                            <Ionicons
-                                name="person-circle"
-                                color={"#ffff"}
-                                size={36}
-                            />
+                            <Ionicons name="person-circle" color={"#ffff"} size={36} />
                         </View>
                         <Text className="text-colors-textSecondary text-center text-xl">
                             Add your info and profile picture before continuing.
@@ -242,11 +238,7 @@ export default function CreateProfileScreen() {
                                     onPress={pickImage}
                                     className="w-72 h-72 rounded-full border-2 border-colors-text flex justify-center items-center mb-4"
                                 >
-                                    <Ionicons
-                                        name="camera"
-                                        size={32}
-                                        color={"#898989ff"}
-                                    />
+                                    <Ionicons name="camera" size={32} color={"#898989ff"} />
                                 </TouchableOpacity>
                             )}
                         </View>
