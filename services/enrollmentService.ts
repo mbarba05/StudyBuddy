@@ -168,7 +168,7 @@ export async function getReviewableEnrollments(): Promise<ReviewableEnrollment[]
     const { data, error } = await supabase
         .from(TABLES.ENROLLMENTS)
         .select(
-            `id, term, review_written, course_prof:course_prof_id (id, professor:prof_id (id, name), course:course_id (id, code))`
+            `id, term, review_written, course_prof:course_prof_id (id, professor:prof_id (id, name), course:course_id (id, code))`,
         )
         .eq("user_id", user.data.user.id)
         .eq("review_written", false)

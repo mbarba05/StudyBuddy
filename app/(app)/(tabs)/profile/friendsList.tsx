@@ -77,15 +77,11 @@ export default function FriendsListScreen() {
                                                         loadFriends();
                                                     },
                                                 },
-                                            ]
+                                            ],
                                         );
                                     }}
                                 >
-                                    <Ionicons
-                                        name="remove-circle"
-                                        size={30}
-                                        color="#ff3b30"
-                                    />
+                                    <Ionicons name="remove-circle" size={30} color="#ff3b30" />
                                 </TouchableOpacity>
                             </View>
                         )}

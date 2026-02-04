@@ -5,13 +5,8 @@ export type MajorDropDownItem = { label: string; value: number };
 
 export type Major = { id: string; name: string };
 
-export const getAllMajorsForDropdown = async (): Promise<
-    MajorDropDownItem[]
-> => {
-    const { data, error } = await supabase
-        .from(TABLES.MAJORS)
-        .select("id, name")
-        .order("name", { ascending: true });
+export const getAllMajorsForDropdown = async (): Promise<MajorDropDownItem[]> => {
+    const { data, error } = await supabase.from(TABLES.MAJORS).select("id, name").order("name", { ascending: true });
 
     if (error) {
         console.error("Error fetching majors:", error);
