@@ -61,7 +61,7 @@ export default function MatchmakingScreen() {
                 await sendFriendRequest(targetProfile.user_id); // receiver_id = the other user
                 await sendMatchNotification(
                     targetProfile.user_id,
-                    `${(user as any).display_name} likes you! Check your matches to connect.`
+                    `${(user as any).display_name} likes you! Check your matches to connect.`,
                 );
             } catch (err) {
                 console.error("Error sending friend request", err);

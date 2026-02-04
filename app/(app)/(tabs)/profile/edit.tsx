@@ -114,7 +114,9 @@ const EditProfileScreen = () => {
     const handleCurrProfessorPicked = useCallback(
         (courseProf: CourseProfDisplay) => {
             setCurrCourses((prev) =>
-                prev?.some((c) => c.course_prof_id === courseProf.course_prof_id) ? prev : [...(prev ?? []), courseProf]
+                prev?.some((c) => c.course_prof_id === courseProf.course_prof_id)
+                    ? prev
+                    : [...(prev ?? []), courseProf],
             );
 
             if (!currEnrollmentsToAdd.current.includes(courseProf.course_prof_id)) {
@@ -124,7 +126,7 @@ const EditProfileScreen = () => {
             // If previously marked for deletion, remove it from that list
             enrollmentsToDelete.current = enrollmentsToDelete.current.filter((id) => id !== courseProf.course_prof_id);
         },
-        [currEnrollmentsToAdd]
+        [currEnrollmentsToAdd],
     );
 
     const removeNextCourse = (courseProfId: number, enrollmentId: number) => {
@@ -147,7 +149,9 @@ const EditProfileScreen = () => {
     const handleNextProfessorPicked = useCallback(
         (courseProf: CourseProfDisplay) => {
             setNextCourses((prev) =>
-                prev?.some((c) => c.course_prof_id === courseProf.course_prof_id) ? prev : [...(prev ?? []), courseProf]
+                prev?.some((c) => c.course_prof_id === courseProf.course_prof_id)
+                    ? prev
+                    : [...(prev ?? []), courseProf],
             );
 
             if (!currEnrollmentsToAdd.current.includes(courseProf.course_prof_id)) {
@@ -157,7 +161,7 @@ const EditProfileScreen = () => {
             // If previously marked for deletion, remove it from that list
             enrollmentsToDelete.current = enrollmentsToDelete.current.filter((id) => id !== courseProf.course_prof_id);
         },
-        [currEnrollmentsToAdd]
+        [currEnrollmentsToAdd],
     );
 
     const pickImage = async () => {
@@ -302,11 +306,7 @@ const EditProfileScreen = () => {
                                 Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
                             </Text>
                             <TouchableOpacity onPress={chooseCurrCoursesPress}>
-                                <Ionicons
-                                    size={20}
-                                    color={colors.text}
-                                    name="add-circle-outline"
-                                ></Ionicons>
+                                <Ionicons size={20} color={colors.text} name="add-circle-outline"></Ionicons>
                             </TouchableOpacity>
                         </View>
                         <View
@@ -327,11 +327,7 @@ const EditProfileScreen = () => {
                                                 removeCurrCourse(item.course_prof_id, item.enrollmentId as number)
                                             }
                                         >
-                                            <Ionicons
-                                                size={16}
-                                                name="close-circle-outline"
-                                                color={colors.primary}
-                                            />
+                                            <Ionicons size={16} name="close-circle-outline" color={colors.primary} />
                                         </TouchableOpacity>
                                         <View>
                                             <Text className="font-semibold text-colors-text text-xl text-center">
@@ -360,11 +356,7 @@ const EditProfileScreen = () => {
                                 Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
                             </Text>
                             <TouchableOpacity onPress={chooseNextCoursesPress}>
-                                <Ionicons
-                                    size={20}
-                                    color={colors.text}
-                                    name="add-circle-outline"
-                                ></Ionicons>
+                                <Ionicons size={20} color={colors.text} name="add-circle-outline"></Ionicons>
                             </TouchableOpacity>
                         </View>
                         <View
@@ -385,11 +377,7 @@ const EditProfileScreen = () => {
                                                 removeNextCourse(item.course_prof_id, item.enrollmentId as number)
                                             }
                                         >
-                                            <Ionicons
-                                                size={16}
-                                                name="close-circle-outline"
-                                                color={colors.primary}
-                                            />
+                                            <Ionicons size={16} name="close-circle-outline" color={colors.primary} />
                                         </TouchableOpacity>
                                         <View>
                                             <Text className="font-semibold text-colors-text text-xl text-center">
@@ -416,11 +404,7 @@ const EditProfileScreen = () => {
 
                 {/* Action Buttons */}
                 <View className="w-full gap-2 p-2">
-                    <LoginButton
-                        bgColor="bg-colors-secondary"
-                        textColor="color-colors-text"
-                        onPress={updateProfile}
-                    >
+                    <LoginButton bgColor="bg-colors-secondary" textColor="color-colors-text" onPress={updateProfile}>
                         Save
                     </LoginButton>
                 </View>

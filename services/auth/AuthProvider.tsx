@@ -2,9 +2,7 @@
 import supabase from "@/lib/subapase";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type User = NonNullable<
-    Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"]
->;
+type User = NonNullable<Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"]>;
 
 type AuthContextType = {
     user: User | null;
@@ -24,9 +22,7 @@ const AuthContext = createContext<AuthContextType>({
     signOut: async () => {},
 });
 
-export const AuthProvider: React.FC<React.PropsWithChildren> = ({
-    children,
-}) => {
+export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [authReady, setAuthReady] = useState(false);
@@ -46,12 +42,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 
         init();
 
-        const { data: sub } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setUser(session?.user ?? null);
-                setAuthReady(true); // auth state has settled for this tick
-            }
-        );
+        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setAuthReady(true); // auth state has settled for this tick
+        });
 
         return () => {
             mounted = false;
@@ -78,9 +72,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
     };
 
     return (
-        <AuthContext.Provider
-            value={{ user, loading, authReady, signIn, signUp, signOut }}
-        >
+        <AuthContext.Provider value={{ user, loading, authReady, signIn, signUp, signOut }}>
             {children}
         </AuthContext.Provider>
     );

@@ -36,10 +36,7 @@ export async function signInWithGoogle() {
 
         if (!allowed) {
             await supabase.auth.signOut();
-            Alert.alert(
-                "Use your Fresno State email",
-                "Please sign in with your campus account."
-            );
+            Alert.alert("Use your Fresno State email", "Please sign in with your campus account.");
             return null;
         }
 

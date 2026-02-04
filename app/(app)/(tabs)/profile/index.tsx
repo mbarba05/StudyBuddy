@@ -130,10 +130,7 @@ export default function ProfileScreen() {
                     ) : (
                         currCourses.map((item: CourseProfDisplay) => (
                             <View key={item.course_prof_id}>
-                                <CourseProfDisplayWidget
-                                    code={item.course_code}
-                                    name={item.prof_name}
-                                />
+                                <CourseProfDisplayWidget code={item.course_code} name={item.prof_name} />
                             </View>
                         ))
                     )}
@@ -157,10 +154,7 @@ export default function ProfileScreen() {
                     ) : (
                         nextCourses.map((item: CourseProfDisplay) => (
                             <View key={item.course_prof_id}>
-                                <CourseProfDisplayWidget
-                                    code={item.course_code}
-                                    name={item.prof_name}
-                                />
+                                <CourseProfDisplayWidget code={item.course_code} name={item.prof_name} />
                             </View>
                         ))
                     )}
@@ -175,11 +169,7 @@ export default function ProfileScreen() {
                     Edit Profile
                 </LoginButton>
 
-                <LoginButton
-                    bgColor="bg-colors-primary"
-                    textColor="color-colors-text"
-                    onPress={signOut}
-                >
+                <LoginButton bgColor="bg-colors-primary" textColor="color-colors-text" onPress={signOut}>
                     Sign Out
                 </LoginButton>
             </View>
