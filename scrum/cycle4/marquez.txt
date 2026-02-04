@@ -1,4 +1,33 @@
 1/27/26: My scrum cycle consists of creating review ratings. Where users 
 can rate other users reviews within the reviews tab. There will be an upvote and downvote
 capability where users can only upvote once or downvote once for one review (meaning they
-cannot spam like or dislike on a review). 
+cannot spam like or dislike on a review). There will be a feature where if a review has 5
+or more downvotes the user's review will be removed. I will be updating the code as well as
+backend in order to fulfill these capabilites. I will make functions and tables within Supabase
+which will counter any type of vote which doesn't fit up or down as well as if a vote were to have
+5 or more downvotes will be removed. Another feature is that if a user tries clicking one vote and then
+the other the vote, their vote will change. If the user clicks the same vote twice it will remove.
+
+1/29/26: I have experienced problems with the backend using SQL editing in order to add
+tables and functions for the review ratings. I would get error messages with little to
+no understanding how to fix the problem. I eventually figured it out but experienced coding
+problems within Visual Studio where the backend would have to first update the upvotes or downvotes
+and later refresh within our app. I had to fix this by making sure when a user rates the total updates
+automatically and is then sent into SupaBase to be recorded and monitored.
+
+Test Cases: Making sure when I upvote a 1 is added to the upvote side. Making sure when I downvote a 1 is 
+added to the downvote side. Make sure when I click either upvote or downvote twice the vote will be removed.
+Make sure that if I vote either upvote or downvote and then the other vote afterwards the vote would change to
+the other vote (if first voted up then clicked down a 1 will be put in down and removed from up vice versa). Make sure
+if a review has 5 or more downvotes is removed from the reviews. Make sure reviews are automatically added when
+a user inputs them.
+
+2/3/26: I have finished my scrum cycle for the review ratings within our StudyBuddy app.
+Users will be able to only vote once for each user in which is an upvote (like) or downvote (dislike).
+If the review has 5 or more dislikes the review will be removed. If a user attempts to spam like or dislike
+on a user review what will happen is the rating will be taken off (if i hit like once one like is added
+and if a like again my rating is taken off). Also if the user clicks like and then dislike (or vice versa) 
+their rating will change. Some ideas of enhancing this feature for later is adding color to the dislike and like
+buttons. Also changing the upvotes and downvotes to one total votes (so there won't be two numbers but instead
+one number to show the total votes) which would enhance the 5 and below feature for removing reviews.
+Also any more touch ups of bugs I have not caught yet.
