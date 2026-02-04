@@ -352,6 +352,20 @@ async function getExcludedUserIds(
     for (const r of leftRows ?? []) exclude.add((r as any).target_id);
     for (const r of rightRows ?? []) exclude.add((r as any).target_id);
 
+    // removing friends from the pool
+    const { data: friendRows, error: friendErr } = await supabase
+        .from("friendships")
+        .select("user_id, friend_id")
+        .eq("status", "accepted")
+        .or(`user_id.eq.${swiperId},friend_id.eq.${swiperId}`); // if user == swiperId or swiperId == user
+    if (friendErr) throw friendErr;
+
+    // added the friends to the excluded list
+    for (const f of friendRows ?? []) {
+        const otherId = (f as any).user_id === swiperId ? (f as any).friend_id : (f as any).user_id;
+        exclude.add(otherId);
+    }
+
     return Array.from(exclude);
 }
 
