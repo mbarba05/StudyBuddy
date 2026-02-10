@@ -18,8 +18,6 @@ type ChatRouteParams = {
     ppPic: string;
 };
 
-//TODO: fetch rest of the conversation when scrolling up
-
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
 
@@ -71,7 +69,7 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 (payload) => {
-                    const newMsg = payload.new as Chat;
+                    let newMsg = payload.new as Chat;
                     setChats((prev) => {
                         if (prev.some((m) => m.id === newMsg.id)) return prev;
                         return [newMsg, ...prev];
@@ -133,6 +131,7 @@ const ConversationScreen = () => {
                 >
                     {loadingMore && <ActivityIndicator className="mt-4" />}
                     <FlatList
+                        testID="chats"
                         className="flex-1"
                         contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
                         data={chats}
