@@ -5,7 +5,7 @@ import { ReviewSeparator } from "@/components/ui/Seperators";
 import { getReviewsForProf, ReviewDisplay } from "@/services/reviewsService";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, ScrollView, Text } from "react-native";
+import { FlatList, ScrollView, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 //TODO: filter by course, order by date, professor overview with ai summary, quality, grade, course diff average
 const ProfessorReviewsScreen = () => {
@@ -56,6 +56,28 @@ const ProfessorReviewsScreen = () => {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ marginBottom: 12 }}
                 >
+                    {/* "All" Button */}
+                    <TouchableOpacity
+                        onPress={() => setSelectedCourseCode(null)}
+                        style={{
+                            paddingHorizontal: 16,
+                            paddingVertical: 8,
+                            borderRadius: 8,
+                            marginRight: 8,
+                            backgroundColor: selectedCourseCode === null ? colors.secondary : colors.primary,
+                        }}
+                    >
+                        <Text
+                            style={{
+                                color: selectedCourseCode === null ? "#fff" : colors.text,
+                                fontWeight: "600",
+                                fontSize: 16,
+                            }}
+                        >
+                            All
+                        </Text>
+                    </TouchableOpacity>
+
                     {courseOptions.map((course) => (
                         <Text
                             key={course.id}

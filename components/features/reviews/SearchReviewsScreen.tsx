@@ -1,23 +1,16 @@
 import { colors } from "@/assets/colors";
 import { SearchBar } from "@/components/ui/TextInputs";
-import supabase from "@/lib/subapase";
-import { CourseProfDisplay } from "@/services/courseService";
 import { getProfessorsForSearch, ProfessorForSearch } from "@/services/professorService";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
-import CourseSearchModal from "../courses/CourseSearchModal";
 
 const SearchReviewsScreen = () => {
     const [foundProfs, setfoundProfs] = useState<ProfessorForSearch[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const [selectedCourseProf, setSelectedCourseProf] = useState<CourseProfDisplay | null>(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [reviews, setReviews] = useState<any[]>([]);
-    const [reviewsLoading, setReviewsLoading] = useState(false);
 
     useEffect(() => {
         const getProfForSearch = async () => {
@@ -32,48 +25,6 @@ const SearchReviewsScreen = () => {
         }
         getProfForSearch();
     }, [searchTerm]);
-
-    const handleProfessorPicked = (picked: CourseProfDisplay) => {
-        setSelectedCourseProf(picked);
-        setModalVisible(false);
-    };
-
-    useEffect(() => {
-        const fetchFilteredReviews = async () => {
-            if (!selectedCourseProf) return;
-
-            setReviewsLoading(true);
-
-            const { data, error } = await supabase
-                .from("review")
-                .select(
-                    `
-                id,
-                review,
-                course_diff,
-                prof_rating,
-                grade,
-                likes,
-                upvote,
-                downvote,
-                enrollments (
-                    course_prof_id
-                )
-            `,
-                )
-                .eq("enrollments.course_prof_id", selectedCourseProf.course_prof_id);
-
-            if (error) {
-                console.error("Error fetching reviews:", error);
-            } else {
-                setReviews(data);
-            }
-
-            setReviewsLoading(false);
-        };
-
-        fetchFilteredReviews();
-    }, [selectedCourseProf]);
 
     const ProfListItem = useCallback(
         ({ item }: { item: ProfessorForSearch }) => {
@@ -119,24 +70,6 @@ const SearchReviewsScreen = () => {
 
     return (
         <View className="flex-1 bg-colors-background p-4">
-            <TouchableOpacity
-                onPress={() => setModalVisible(true)}
-                style={{
-                    padding: 12,
-                    backgroundColor: colors.secondary,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                }}
-            >
-                <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}>Filter by Courses</Text>
-            </TouchableOpacity>
-            ;
-            <CourseSearchModal
-                visible={modalVisible}
-                setVisible={setModalVisible}
-                handleProfessorPicked={handleProfessorPicked}
-                selectedCourseProf={selectedCourseProf ? [selectedCourseProf] : []}
-            />
             <SearchBar
                 autoCapitalize="words"
                 autoCorrect={false}
