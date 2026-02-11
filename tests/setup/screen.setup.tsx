@@ -47,8 +47,6 @@ let focusEffect: null | (() => void | (() => void)) = null;
     await act(async () => {
         focusEffect?.();
     });
-
-    await (globalThis as any).__flushReact();
 };
 
 export const mockPush = jest.fn();
