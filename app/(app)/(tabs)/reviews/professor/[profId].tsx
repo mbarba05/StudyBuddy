@@ -64,6 +64,7 @@ const ProfessorReviewsScreen = () => {
                             paddingVertical: 8,
                             borderRadius: 8,
                             marginRight: 8,
+                            height: 32,
                             backgroundColor: selectedCourseCode === null ? colors.secondary : colors.primary,
                         }}
                     >
@@ -89,6 +90,7 @@ const ProfessorReviewsScreen = () => {
                                 paddingVertical: 6,
                                 borderRadius: 8,
                                 marginRight: 8,
+                                height: 32,
                                 backgroundColor: selectedCourseCode === course.code ? colors.secondary : colors.primary,
                                 color: selectedCourseCode === course.code ? "#fff" : colors.text,
                                 fontWeight: "600",
