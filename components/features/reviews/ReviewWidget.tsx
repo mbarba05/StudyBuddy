@@ -11,15 +11,15 @@ interface ReviewWidgetProps {
 }
 
 const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
-  const [upvotes, setUpvotes] = useState(review.upvotes);
-  const [downvotes, setDownvotes] = useState(review.downvotes);
+  const [voteScore, setVoteScore] = useState(review.voteScore);
+  const [myVote, setMyVote] = useState<-1 | 0 | 1>(review.myVote ?? 0);
   const [busy, setBusy] = useState(false);
 
   // Keep local state in sync when parent refreshes
   useEffect(() => {
-    setUpvotes(review.upvotes);
-    setDownvotes(review.downvotes);
-  }, [review.upvotes, review.downvotes]);
+    setVoteScore(review.voteScore);
+    setMyVote((review.myVote ?? 0) as -1 | 0 | 1);
+  }, [review.voteScore, review.myVote]);
 
   const handleVote = async (direction: 1 | -1) => {
     if (busy) return;
@@ -35,8 +35,9 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
       }
 
       if (res) {
-        setUpvotes(res.upvotes);
-        setDownvotes(res.downvotes);
+        //RPC returns vote_score + my_vote
+        setVoteScore(res.vote_score);
+        setMyVote((res.my_vote ?? 0) as -1 | 0 | 1);
       }
     } catch (e) {
       console.log("Vote error:", e);
@@ -44,6 +45,9 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
       setBusy(false);
     }
   };
+
+  const upColor = myVote === 1 ? colors.success : colors.text;
+  const downColor = myVote === -1 ? colors.error : colors.text;
 
   return (
     <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
@@ -96,19 +100,17 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
           onPress={() => handleVote(1)}
           disabled={busy}
         >
-          <Ionicons name="arrow-up-circle" size={28} color={colors.text} />
+          <Ionicons name="arrow-up-circle" size={28} color={myVote === 1 ? colors.success : colors.text} />
         </TouchableOpacity>
 
-        <Text className="color-colors-text text-lg">{upvotes}</Text>
+        <Text className="color-colors-text text-lg">{voteScore}</Text>
 
         <TouchableOpacity
           onPress={() => handleVote(-1)}
           disabled={busy}
         >
-          <Ionicons name="arrow-down-circle" size={28} color={colors.text} />
+          <Ionicons name="arrow-down-circle" size={28} color={myVote === -1 ? colors.error : colors.text} />
         </TouchableOpacity>
-
-        <Text className="color-colors-text text-lg">{downvotes}</Text>
       </View>
     </View>
   );
