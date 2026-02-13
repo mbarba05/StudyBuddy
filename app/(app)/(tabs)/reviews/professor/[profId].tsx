@@ -7,7 +7,7 @@ import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { FlatList, ScrollView, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-//TODO: filter by course, order by date, professor overview with ai summary, quality, grade, course diff average
+
 const ProfessorReviewsScreen = () => {
     const { profId, profName } = useLocalSearchParams<{
         profId: string;

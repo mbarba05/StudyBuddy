@@ -12,6 +12,9 @@ export const TABLES = {
     FRIENDSHIPS: "friendships",
     FRIEND_REQUESTS: "friend_requests",
     REVIEWS: "reviews",
+    CONVERSATIONS: "conversations",
+    CONVERSATION_MEMBERS: "conversation_members",
+    MESSAGES: "messages",
 };
 
 export const BUCKETS = { PROFILE_PICS: "profile-pictures" };

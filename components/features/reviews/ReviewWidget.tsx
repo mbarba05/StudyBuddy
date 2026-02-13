@@ -1,87 +1,117 @@
 import { colors } from "@/assets/colors";
 import { parseLastName } from "@/lib/utillities";
-import { ReviewDisplay } from "@/services/reviewsService";
+import { ReviewDisplay, voteOnReview } from "@/services/reviewsService";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 interface ReviewWidgetProps {
-    review: ReviewDisplay;
+  review: ReviewDisplay;
+  onVoted?: () => Promise<void> | void;
 }
 
-const ReviewWidget = ({ review }: ReviewWidgetProps) => {
-    return (
-        <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
-            <View className="flex-row justify-between">
-                <View>
-                    <Text className="color-colors-text text-2xl font-semibold">{review.code}</Text>
-                    <Text className="color-colors-textSecondary text-lg">{parseLastName(review.profName)}</Text>
-                </View>
-                <View>
-                    <Text className="color-colors-text text-2xl font-semibold">{review.term}</Text>
-                    <Text className="color-colors-textSecondary text-lg text-right">
-                        {parseLastName(review.reviewDate)}
-                    </Text>
-                </View>
-            </View>
-            <View>
-                <Text className="color-colors-text text-center text-lg">{review.reviewText}</Text>
-            </View>
-            <View className="flex flex-row justify-between">
-                <View className="flex items-center">
-                    <Text className="color-colors-textSecondary text-lg">Difficulty</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{review.courseDiff}/10</Text>
-                </View>
-                <View className="flex items-center">
-                    <Text className="color-colors-textSecondary text-lg">Quality</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{review.profRating}/10</Text>
-                </View>
-                <View className="flex items-center">
-                    <Text className="color-colors-textSecondary text-lg">Grade</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{review.grade}</Text>
-                </View>
-            </View>
-            <View className="flex flex-row justify-between border-colors-textSecondary border-t pt-2">
-                <View className="flex-row gap-4 items-center">
-                    <TouchableOpacity className="flex-row gap-1 items-center">
-                        <Ionicons
-                            name="chatbox-outline"
-                            color={colors.text}
-                            size={24}
-                        />
-                        <Text className="color-colors-text text-lg">1</Text>
-                        {/*TODO: add comment section*/}
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Ionicons
-                            name="paper-plane-outline"
-                            color={colors.text}
-                            size={24}
-                        />
-                    </TouchableOpacity>
-                    {/*TODO: add sharing posts*/}
-                </View>
-                <View className="flex-row gap-2 items-center">
-                    <TouchableOpacity>
-                        <Ionicons
-                            name="arrow-up-circle"
-                            color={colors.text}
-                            size={28}
-                        />
-                    </TouchableOpacity>
-                    <Text className="color-colors-text text-lg">1</Text>
-                    <TouchableOpacity>
-                        <Ionicons
-                            name="arrow-down-circle"
-                            color={colors.text}
-                            size={28}
-                        />
-                    </TouchableOpacity>
-                    {/*TODO: add liking posts*/}
-                </View>
-            </View>
+const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
+  const [upvotes, setUpvotes] = useState(review.upvotes);
+  const [downvotes, setDownvotes] = useState(review.downvotes);
+  const [busy, setBusy] = useState(false);
+
+  // Keep local state in sync when parent refreshes
+  useEffect(() => {
+    setUpvotes(review.upvotes);
+    setDownvotes(review.downvotes);
+  }, [review.upvotes, review.downvotes]);
+
+  const handleVote = async (direction: 1 | -1) => {
+    if (busy) return;
+    setBusy(true);
+
+    try {
+      const res = await voteOnReview(review.reviewId, direction);
+
+      if (res?.deleted) {
+        // review hit 5 downvotes and was removed
+        await onVoted?.();
+        return;
+      }
+
+      if (res) {
+        setUpvotes(res.upvotes);
+        setDownvotes(res.downvotes);
+      }
+    } catch (e) {
+      console.log("Vote error:", e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
+      <View className="flex-row justify-between">
+        <View>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.code}
+          </Text>
+          <Text className="color-colors-textSecondary text-lg">
+            {parseLastName(review.profName)}
+          </Text>
         </View>
-    );
+        <View>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.term}
+          </Text>
+          <Text className="color-colors-textSecondary text-lg text-right">
+            {review.reviewDate}
+          </Text>
+        </View>
+      </View>
+
+      <Text className="color-colors-text text-center text-lg">
+        {review.reviewText}
+      </Text>
+
+      <View className="flex flex-row justify-between">
+        <View className="flex items-center">
+          <Text className="color-colors-textSecondary text-lg">Difficulty</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.courseDiff}/10
+          </Text>
+        </View>
+        <View className="flex items-center">
+          <Text className="color-colors-textSecondary text-lg">Quality</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.profRating}/10
+          </Text>
+        </View>
+        <View className="flex items-center">
+          <Text className="color-colors-textSecondary text-lg">Grade</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {review.grade}
+          </Text>
+        </View>
+      </View>
+
+      <View className="flex flex-row justify-end gap-3 border-t border-colors-textSecondary pt-2">
+        <TouchableOpacity
+          onPress={() => handleVote(1)}
+          disabled={busy}
+        >
+          <Ionicons name="arrow-up-circle" size={28} color={colors.text} />
+        </TouchableOpacity>
+
+        <Text className="color-colors-text text-lg">{upvotes}</Text>
+
+        <TouchableOpacity
+          onPress={() => handleVote(-1)}
+          disabled={busy}
+        >
+          <Ionicons name="arrow-down-circle" size={28} color={colors.text} />
+        </TouchableOpacity>
+
+        <Text className="color-colors-text text-lg">{downvotes}</Text>
+      </View>
+    </View>
+  );
 };
 
 export default ReviewWidget;

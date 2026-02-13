@@ -47,11 +47,7 @@ const SearchReviewsScreen = () => {
                         <Text className="color-colors-textSecondary text-lg">{item.reviewCount} Reviews</Text>
                     </View>
 
-                    <Ionicons
-                        name="arrow-forward"
-                        color={colors.text}
-                        size={24}
-                    />
+                    <Ionicons name="arrow-forward" color={colors.text} size={24} />
                 </TouchableOpacity>
             );
         },

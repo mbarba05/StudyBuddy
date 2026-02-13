@@ -1,0 +1,4 @@
+1/27/2026: This cycle I will work on creating a comment section for the professor reviews. I will want to incorporate this so that users will be able to leave a comment on a professor review of a class they have already taken. Supabase table must be added to store the comments. 
+
+
+2/6/2026: This cycle I managed to create the comment section for the professor reviews. Users must click on the comment section icon and it allows them to leave a comment on the professor review that a different user left. I also created a comment section table in Supabase to store the user comments that everyone has left. 
