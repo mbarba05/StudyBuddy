@@ -140,7 +140,7 @@ const SendTextInput = ({ convId, setChatsById, setOrder }: SendTextInputProps) =
                                 />
 
                                 {isImagePickerAsset(att) ? (
-                                    <ResizeImage width={56} url={att.uri} />
+                                    <ResizeImage aspectRatio={att.width / att.height} width={56} url={att.uri} />
                                 ) : (
                                     <View className="h-24 w-24 rounded-lg bg-gray-200 items-center justify-center">
                                         <Ionicons name="document" size={32} color="gray" />

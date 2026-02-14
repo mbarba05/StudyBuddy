@@ -93,8 +93,6 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 (payload) => {
-                    console.log("MESSAGE INSERT", payload);
-
                     let newMsg = payload.new as MessagesTable;
                     setChatsById((prev) => {
                         if (prev[newMsg.id]) return prev;
@@ -155,6 +153,7 @@ const ConversationScreen = () => {
                             path: newAtt.path,
                             mime_type: newAtt.mime_type,
                             created_at: newAtt.created_at,
+                            aspect_ratio: newAtt.aspect_ratio,
                         };
 
                         return {
@@ -243,6 +242,7 @@ const ConversationScreen = () => {
                         inverted
                         keyboardShouldPersistTaps="handled"
                         onEndReached={loadOlderMessages}
+                        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                     />
                     <SendTextInput setChatsById={setChatsById} setOrder={setOrder} convId={conversationId} />
                 </KeyboardAvoidingView>

@@ -2,6 +2,7 @@ import { BUCKETS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { DocumentPickerAsset } from "expo-document-picker";
 import { ImagePickerAsset } from "expo-image-picker";
+import { Image } from "react-native";
 
 export type DMConversation = {
     conversation_id: string;
@@ -32,6 +33,7 @@ export type LoadedAttachment = {
     path: string;
     mime_type: string;
     created_at: string;
+    aspect_ratio: number;
 };
 
 export type MessageAttachmentTable = {
@@ -42,6 +44,7 @@ export type MessageAttachmentTable = {
     path: string;
     mime_type: string;
     created_at: string;
+    aspect_ratio: number;
 };
 
 export type MessagesTable = {
@@ -117,7 +120,6 @@ export async function getMessagesForConv(convId: string, offset: number): Promis
         console.error("Error getting dms for conversation", error);
         return null;
     }
-    //console.log("MESSAGES", data);
     return data;
 }
 
@@ -149,7 +151,6 @@ export async function sendMessage(clientId: string, message: string, convId: str
     }
 
     createAttachment(uris, convId, data.id);
-    //updateReadMessage(data.id, convId); //mark the sent message as read so its not highlighted in the inboxs
     //trigger then updates last message
 }
 
@@ -182,24 +183,45 @@ export type ChatAttachment = ImagePickerAsset | DocumentPickerAsset;
 export async function createAttachment(uris: ChatAttachment[], convId: string, messageId: string) {
     const { data, error: authError } = await supabase.auth.getUser();
     const user = data?.user;
+    if (authError || !user) throw authError ?? new Error("No user");
 
-    if (authError || !user) {
-        throw authError ?? new Error("No user");
-    }
+    // Compute aspect ratios from the *local* assets BEFORE upload
+    const aspectRatios = await Promise.all(
+        uris.map(async (a) => {
+            if (!isImageMime((a as any).mimeType ?? (a as any).mime)) return null;
 
-    // Upload all, then insert all
+            // If it's an ImagePickerAsset, use width/height directly (fastest, no IO)
+            if (isImagePickerAsset(a) && a.width > 0 && a.height > 0) {
+                return a.width / a.height;
+            }
+
+            // Fallback: use local uri (file://...) for Image.getSize
+            const localUri = (a as any).uri ?? (a as any).localUri ?? (a as any).file ?? null;
+
+            if (!localUri) return null;
+
+            try {
+                return await getImageAspectRatio(localUri);
+            } catch {
+                return null;
+            }
+        }),
+    );
+
+    // Upload
     const uploaded = await Promise.all(uris.map((u) => uploadAttachmentToStorage(u, convId)));
 
-    const rows = uploaded.map((u) => ({
+    // Build rows (NO async map here)
+    const rows = uploaded.map((u, idx) => ({
         conversation_id: convId,
         sender_id: user.id,
         message_id: messageId,
         path: u.path,
         mime_type: u.mime,
+        aspect_ratio: aspectRatios[idx], // number | null
     }));
 
     const { error } = await supabase.from(TABLES.MESSAGE_ATTACHMENTS).insert(rows);
-
     if (error) throw error;
 
     return rows;
@@ -223,6 +245,14 @@ export function isImageMime(mime?: string) {
 
 export function fileNameFromPath(path: string) {
     return path.split("/").pop() ?? "file";
+}
+
+export async function getImageAspectRatio(uri: string): Promise<number> {
+    const { width, height } = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+        Image.getSize(uri, (w, h) => resolve({ width: w, height: h }), reject);
+    });
+
+    return width / height;
 }
 
 export async function uploadAttachmentToStorage(
@@ -272,11 +302,41 @@ export async function uploadAttachmentToStorage(
 //ATTACHMENTS will be stored in a private bucket, so we need to create a signed url (a url with a token that expires)
 //then use cache and use that url to display images
 
-export async function getAttachmentSignedUrl(path: string, expiresInSeconds = 60 * 30) {
-    const { data, error } = await supabase.storage.from(BUCKETS.ATTACHMENTS).createSignedUrl(path, expiresInSeconds);
+type SignedUrlCacheEntry = { signedUrl: string; expiresAtMs: number };
 
-    if (error) throw error;
-    if (!data?.signedUrl) throw new Error("No signedUrl returned");
+const signedUrlCache = new Map<string, SignedUrlCacheEntry>();
+const inflight = new Map<string, Promise<string>>();
+const SKEW_MS = 60_000; // refresh 1 min early
 
-    return data.signedUrl;
+export async function getAttachmentSignedUrlCached(path: string, expiresInSeconds = 60 * 30) {
+    const now = Date.now();
+
+    const cached = signedUrlCache.get(path);
+    if (cached && cached.expiresAtMs - SKEW_MS > now) return cached.signedUrl;
+
+    const pending = inflight.get(path);
+    if (pending) return pending;
+
+    const p = (async () => {
+        try {
+            const { data, error } = await supabase.storage
+                .from(BUCKETS.ATTACHMENTS)
+                .createSignedUrl(path, expiresInSeconds);
+
+            if (error) throw error;
+            if (!data?.signedUrl) throw new Error("No signedUrl returned");
+
+            signedUrlCache.set(path, {
+                signedUrl: data.signedUrl,
+                expiresAtMs: now + expiresInSeconds * 1000,
+            });
+
+            return data.signedUrl;
+        } finally {
+            inflight.delete(path);
+        }
+    })();
+
+    inflight.set(path, p);
+    return p;
 }

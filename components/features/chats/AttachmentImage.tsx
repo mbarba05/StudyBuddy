@@ -1,8 +1,11 @@
+import { colors } from "@/assets/colors";
 import FileAttachment from "@/components/ui/FileAttachment";
 import { ResizeImage } from "@/components/ui/ResizeImage";
-import { getAttachmentSignedUrl, isImageMime, LoadedAttachment } from "@/services/messageService";
+import { getAttachmentSignedUrlCached, isImageMime, LoadedAttachment } from "@/services/messageService";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { Image, View } from "react-native";
+
+const ratioCache = new Map<string, number>();
 
 const AttachmentImages = ({ attachments }: { attachments: LoadedAttachment[] }) => {
     const [urls, setUrls] = useState<Record<string, string>>({});
@@ -12,7 +15,16 @@ const AttachmentImages = ({ attachments }: { attachments: LoadedAttachment[] }) 
         const hydrate = async () => {
             const entries = await Promise.all(
                 attachments.map(async (a) => {
-                    const signedUrl = await getAttachmentSignedUrl(a.path);
+                    const signedUrl = await getAttachmentSignedUrlCached(a.path);
+                    // Warm the image cache (best-effort)
+                    if (isImageMime(a.mime_type)) {
+                        try {
+                            await Image.prefetch(signedUrl);
+                        } catch {
+                            // ignore
+                        }
+                    }
+
                     return [a.path, signedUrl] as const;
                 }),
             );
@@ -37,12 +49,24 @@ const AttachmentImages = ({ attachments }: { attachments: LoadedAttachment[] }) 
         <>
             {attachments.map((a) => {
                 const url = urls[a.path];
+                const BOX_WIDTH = 156;
 
-                if (!url) return null; // could show a spinner placeholder
                 return (
-                    <View key={a.path}>
-                        {isImageMime(a.mime_type) ? (
-                            <ResizeImage width={156} url={url} />
+                    <View
+                        key={a.path}
+                        style={{
+                            width: BOX_WIDTH,
+                            aspectRatio: a.aspect_ratio,
+                            borderRadius: 12,
+                            overflow: "hidden",
+                            backgroundColor: colors.secondary,
+                            marginBottom: 8,
+                        }}
+                    >
+                        {!url ? (
+                            <View style={{ flex: 1, opacity: 0.3 /* or a skeleton */ }} />
+                        ) : isImageMime(a.mime_type) ? (
+                            <ResizeImage width={BOX_WIDTH} url={url} aspectRatio={a.aspect_ratio} />
                         ) : (
                             <FileAttachment mime_type={a.mime_type} path={a.path} />
                         )}

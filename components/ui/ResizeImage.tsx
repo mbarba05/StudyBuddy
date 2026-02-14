@@ -1,26 +1,18 @@
-import { useEffect, useState } from "react";
-import { Image } from "react-native";
+import { Image } from "expo-image";
 
-//this component dynamically calculates the aspect ratio of an image before it displays it
-
-export function ResizeImage({ url, width }: { url: string; width: number }) {
-    const [ratio, setRatio] = useState(1);
-
-    useEffect(() => {
-        Image.getSize(url, (width, height) => {
-            setRatio(width / height);
-        });
-    }, [url]);
-
+export function ResizeImage({ url, width, aspectRatio }: { url: string; width: number; aspectRatio: number }) {
+    const blurhash =
+        "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[";
     return (
         <Image
             source={{ uri: url }}
             style={{
-                width: width,
-                aspectRatio: ratio,
+                width,
+                aspectRatio,
                 borderRadius: 12,
             }}
-            resizeMode="cover"
+            cachePolicy={"memory-disk"}
+            placeholder={{ blurhash }}
         />
     );
 }

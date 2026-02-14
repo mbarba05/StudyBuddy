@@ -1,4 +1,4 @@
-import { fileNameFromPath, getAttachmentSignedUrl } from "@/services/messageService";
+import { fileNameFromPath, getAttachmentSignedUrlCached } from "@/services/messageService";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
@@ -10,7 +10,7 @@ const FileAttachment = ({ path, mime_type }: { path: string; mime_type?: string 
         let cancelled = false;
 
         (async () => {
-            const signed = await getAttachmentSignedUrl(path);
+            const signed = await getAttachmentSignedUrlCached(path);
             if (!cancelled) setUrl(signed);
         })();
 
