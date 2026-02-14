@@ -15,6 +15,7 @@ export const TABLES = {
     CONVERSATIONS: "conversations",
     CONVERSATION_MEMBERS: "conversation_members",
     MESSAGES: "messages",
+    MESSAGE_ATTACHMENTS: "message_attachments",
 };
 
-export const BUCKETS = { PROFILE_PICS: "profile-pictures" };
+export const BUCKETS = { PROFILE_PICS: "profile-pictures", ATTACHMENTS: "chat-attatchments" };

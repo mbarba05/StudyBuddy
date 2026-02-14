@@ -1,5 +1,7 @@
-import { TABLES } from "@/lib/enumBackend";
+import { BUCKETS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
+import { DocumentPickerAsset } from "expo-document-picker";
+import { ImagePickerAsset } from "expo-image-picker";
 
 export type DMConversation = {
     conversation_id: string;
@@ -14,12 +16,40 @@ export type DMConversation = {
 };
 
 export type Chat = {
+    //this is what is returned from the supabase function in getMessagesForConv
     id: string;
-    content: string;
+    content: string | null;
     sender_id: string;
     created_at: string;
     conversation_id: string;
     count: number;
+    attachments: LoadedAttachment[];
+};
+
+export type LoadedAttachment = {
+    //also from supabase rpc
+    id: string;
+    path: string;
+    mime_type: string;
+    created_at: string;
+};
+
+export type MessageAttachmentTable = {
+    id: string;
+    conversation_id: string;
+    sender_id: string;
+    message_id: string;
+    path: string;
+    mime_type: string;
+    created_at: string;
+};
+
+export type MessagesTable = {
+    id: string;
+    conversation_id: string;
+    sender_id: string;
+    created_at: string;
+    content: string;
 };
 
 export async function createConversation(userA: string, userB: string) {
@@ -87,10 +117,11 @@ export async function getMessagesForConv(convId: string, offset: number): Promis
         console.error("Error getting dms for conversation", error);
         return null;
     }
+    //console.log("MESSAGES", data);
     return data;
 }
 
-export async function sendMessage(clientId: string, message: string, convId: string) {
+export async function sendMessage(clientId: string, message: string, convId: string, uris: ChatAttachment[]) {
     const {
         data: { user },
         error: authError,
@@ -109,13 +140,15 @@ export async function sendMessage(clientId: string, message: string, convId: str
             sender_id: user.id,
             conversation_id: convId,
         })
-        .select("id, created_at")
+        .select("id")
         .single();
 
     if (error) {
         console.error("Error sending text", error);
         return error;
     }
+
+    createAttachment(uris, convId, data.id);
     //updateReadMessage(data.id, convId); //mark the sent message as read so its not highlighted in the inboxs
     //trigger then updates last message
 }
@@ -142,4 +175,108 @@ export async function updateReadMessage(messageId: string | null, convId: string
         console.error("Error when updating read", error);
         return error;
     }
+}
+
+export type ChatAttachment = ImagePickerAsset | DocumentPickerAsset;
+
+export async function createAttachment(uris: ChatAttachment[], convId: string, messageId: string) {
+    const { data, error: authError } = await supabase.auth.getUser();
+    const user = data?.user;
+
+    if (authError || !user) {
+        throw authError ?? new Error("No user");
+    }
+
+    // Upload all, then insert all
+    const uploaded = await Promise.all(uris.map((u) => uploadAttachmentToStorage(u, convId)));
+
+    const rows = uploaded.map((u) => ({
+        conversation_id: convId,
+        sender_id: user.id,
+        message_id: messageId,
+        path: u.path,
+        mime_type: u.mime,
+    }));
+
+    const { error } = await supabase.from(TABLES.MESSAGE_ATTACHMENTS).insert(rows);
+
+    if (error) throw error;
+
+    return rows;
+}
+
+function getExt(name?: string, mime?: string): string {
+    return name?.split(".").pop()?.toLowerCase() || mime?.split("/")[1]?.toLowerCase() || "png";
+}
+
+export function isImagePickerAsset(a: ChatAttachment): a is ImagePickerAsset {
+    return typeof (a as any).width === "number" && typeof (a as any).height === "number";
+}
+
+export function isDocumentPickerAsset(a: ChatAttachment): a is DocumentPickerAsset {
+    return typeof (a as any).name === "string";
+}
+
+export function isImageMime(mime?: string) {
+    return !!mime && (mime.startsWith("image") || mime?.includes("live"));
+}
+
+export function fileNameFromPath(path: string) {
+    return path.split("/").pop() ?? "file";
+}
+
+export async function uploadAttachmentToStorage(
+    file: ChatAttachment,
+    convId: string,
+): Promise<{ path: string; mime: string; name?: string }> {
+    let name: string | undefined;
+    let mime: string | undefined;
+    let body: Uint8Array;
+
+    if (isDocumentPickerAsset(file)) {
+        name = file.name;
+        mime = file.mimeType ?? undefined;
+
+        const resp = await fetch(file.uri);
+        const arrayBuffer = await resp.arrayBuffer();
+        body = new Uint8Array(arrayBuffer);
+    } else if (isImagePickerAsset(file)) {
+        name = file.fileName ?? undefined;
+        mime = file.mimeType ?? undefined;
+
+        const resp = await fetch(file.uri);
+        const arrayBuffer = await resp.arrayBuffer();
+        body = new Uint8Array(arrayBuffer);
+    } else {
+        throw new Error("Unknown attachment type");
+    }
+
+    if (body.byteLength === 0) {
+        throw new Error(`0-byte upload from uri=${file.uri}`);
+    }
+
+    if (!mime) mime = "application/octet-stream";
+
+    const ext = getExt(name, mime);
+    const filePath = `conversations/${convId}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from(BUCKETS.ATTACHMENTS)
+        .upload(filePath, body, { upsert: false, contentType: mime });
+
+    if (uploadError) throw uploadError;
+
+    return { path: filePath, mime, name };
+}
+
+//ATTACHMENTS will be stored in a private bucket, so we need to create a signed url (a url with a token that expires)
+//then use cache and use that url to display images
+
+export async function getAttachmentSignedUrl(path: string, expiresInSeconds = 60 * 30) {
+    const { data, error } = await supabase.storage.from(BUCKETS.ATTACHMENTS).createSignedUrl(path, expiresInSeconds);
+
+    if (error) throw error;
+    if (!data?.signedUrl) throw new Error("No signedUrl returned");
+
+    return data.signedUrl;
 }

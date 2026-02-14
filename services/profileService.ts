@@ -132,9 +132,11 @@ function isLocalUri(uri?: string) {
 }
 
 // adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
-type RNFile = { uri: string; name?: string; type?: string };
+export type RNFile = { uri: string; name?: string; type?: string };
 
-export async function uploadProfilePics(file: File | Blob | RNFile): Promise<string> {
+export type Attachment = File | Blob | RNFile;
+
+export async function uploadProfilePics(file: Attachment): Promise<string> {
     const { data: u, error: authErr } = await supabase.auth.getUser();
     if (authErr) throw authErr;
     const userId = u?.user?.id;

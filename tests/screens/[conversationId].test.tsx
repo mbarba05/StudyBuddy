@@ -117,4 +117,8 @@ describe("[conversationId] realtime", () => {
 
         expect(screen.getByText("yo")).toBeTruthy();
     });
+
+    it("should render an attatchment after the user sends one", () => {});
+
+    it("should render an attatchment sent by another user", () => {});
 });
