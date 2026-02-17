@@ -36,7 +36,6 @@ function buildThread(rows: ReviewCommentPublic[]): ThreadNode[] {
     }
   }
 
-  // Optional: keep replies chronologically sorted
   const sortRec = (nodes: ThreadNode[]) => {
     nodes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     nodes.forEach((n) => sortRec(n.replies));
@@ -47,7 +46,7 @@ function buildThread(rows: ReviewCommentPublic[]): ThreadNode[] {
 }
 
 const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
-  // Your review object sometimes uses reviewId or id; handle either
+  
   const reviewId = (review as any).reviewId ?? (review as any).id;
 
   const [upvotes, setUpvotes] = useState((review as any).upvotes ?? 0);

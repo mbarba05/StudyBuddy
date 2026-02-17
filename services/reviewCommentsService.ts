@@ -47,7 +47,7 @@ export async function addReviewComment(
     parent_comment_id: parentCommentId ?? null,
   };
 
-  // Return ONLY public fields (keeps anonymity in UI)
+// annoynymous 
   const { data, error } = await supabase
     .from("review_comments")
     .insert([payload])
