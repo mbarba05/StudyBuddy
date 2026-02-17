@@ -30,8 +30,10 @@ export interface ReviewDisplay {
   code: string;
   reviewDate: string;
   grade: string;
-  upvotes: number;
-  downvotes: number;
+  //upvotes: number;
+  //downvotes: number;
+  voteScore: number;
+  myVote?: -1 | 0 | 1;
 }
 
 export async function submitReview(fullReview: ReviewInput) {
@@ -58,7 +60,7 @@ export async function submitReview(fullReview: ReviewInput) {
   return data;
 }
 
-export async function voteOnReview(reviewId: number, direction: 1 | -1) {
+/*export async function voteOnReview(reviewId: number, direction: 1 | -1) {
   const { data, error } = await supabase.rpc("vote_on_review", {
     p_review_id: reviewId,
     p_direction: direction,
@@ -72,6 +74,17 @@ export async function voteOnReview(reviewId: number, direction: 1 | -1) {
   const row = Array.isArray(data) ? data[0] : null;
 
   return row as { upvotes: number; downvotes: number; deleted: boolean } | null;
+}*/
+export async function voteOnReview(reviewId: number, direction: 1 | -1) {
+  const { data, error } = await supabase.rpc("vote_on_review", {
+    p_review_id: reviewId,
+    p_direction: direction,
+  });
+
+  if (error) throw error;
+
+  const row = Array.isArray(data) ? data[0] : null;
+  return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
@@ -145,8 +158,9 @@ const normalizeReview = (item: any): ReviewDisplay => {
     profName: item.enrollment?.course_prof?.prof?.name ?? "",
     grade: item.grade ?? "",
     reviewDate,
-    upvotes: item.upvotes ?? 0,
-    downvotes: item.downvotes ?? 0,
+    //upvotes: item.upvotes ?? 0,
+    //downvotes: item.downvotes ?? 0,
+    voteScore: item.vote_score ?? 0,
   };
 };
 
