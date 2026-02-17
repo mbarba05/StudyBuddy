@@ -8,7 +8,13 @@ import {
 } from "@/services/reviewCommentsService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface ReviewWidgetProps {
   review: ReviewDisplay;
@@ -37,7 +43,10 @@ function buildThread(rows: ReviewCommentPublic[]): ThreadNode[] {
   }
 
   const sortRec = (nodes: ThreadNode[]) => {
-    nodes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    nodes.sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
     nodes.forEach((n) => sortRec(n.replies));
   };
   sortRec(roots);
@@ -46,19 +55,24 @@ function buildThread(rows: ReviewCommentPublic[]): ThreadNode[] {
 }
 
 const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
-  
   const reviewId = (review as any).reviewId ?? (review as any).id;
 
-  const [upvotes, setUpvotes] = useState((review as any).upvotes ?? 0);
-  const [downvotes, setDownvotes] = useState((review as any).downvotes ?? 0);
+  // voting 
+  const [voteScore, setVoteScore] = useState(
+    (review as any).voteScore ??
+      (((review as any).upvotes ?? 0) - ((review as any).downvotes ?? 0))
+  );
+  const [myVote, setMyVote] = useState<-1 | 0 | 1>(
+    ((review as any).myVote ?? 0) as -1 | 0 | 1
+  );
   const [busy, setBusy] = useState(false);
 
-  // Comments state
+  // use state for comments section 
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<ReviewCommentPublic[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  // New comment box (top-level)
+ // comment box I messed up lol 
   const [comment, setComment] = useState("");
   const [posting, setPosting] = useState(false);
   const [commentErr, setCommentErr] = useState<string>("");
@@ -67,10 +81,15 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
   const [replyToId, setReplyToId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
 
+
   useEffect(() => {
-    setUpvotes((review as any).upvotes ?? 0);
-    setDownvotes((review as any).downvotes ?? 0);
-  }, [review]);
+    const nextVoteScore =
+      (review as any).voteScore ??
+      (((review as any).upvotes ?? 0) - ((review as any).downvotes ?? 0));
+
+    setVoteScore(nextVoteScore);
+    setMyVote(((review as any).myVote ?? 0) as -1 | 0 | 1);
+  }, [(review as any).voteScore, (review as any).myVote, review]);
 
   const threadedComments = useMemo(() => buildThread(comments), [comments]);
 
@@ -87,8 +106,19 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
       }
 
       if (res) {
-        setUpvotes(res.upvotes);
-        setDownvotes(res.downvotes);
+        if (typeof (res as any).vote_score === "number") {
+          setVoteScore((res as any).vote_score);
+          setMyVote(((res as any).my_vote ?? 0) as -1 | 0 | 1);
+        } else if (
+          typeof (res as any).upvotes === "number" &&
+          typeof (res as any).downvotes === "number"
+        ) {
+          setVoteScore((res as any).upvotes - (res as any).downvotes);
+        } else if (typeof (res as any).voteScore === "number") {
+          
+          setVoteScore((res as any).voteScore);
+          setMyVote(((res as any).myVote ?? 0) as -1 | 0 | 1);
+        }
       }
     } catch (e) {
       console.log("Vote error:", e);
@@ -116,10 +146,8 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
     setCommentErr("");
 
     if (next) {
-      // Opening: fetch comments
       await loadComments();
     } else {
-      // Closing: reset reply UI
       setReplyToId(null);
       setReplyText("");
     }
@@ -163,10 +191,15 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
   };
 
   const renderNode = (node: ThreadNode, depth = 0) => {
-    // Prevent insane indentation; feel free to increase this
     const clampedDepth = Math.min(depth, 3);
     const indentClass =
-      clampedDepth === 0 ? "ml-0" : clampedDepth === 1 ? "ml-6" : clampedDepth === 2 ? "ml-10" : "ml-14";
+      clampedDepth === 0
+        ? "ml-0"
+        : clampedDepth === 1
+        ? "ml-6"
+        : clampedDepth === 2
+        ? "ml-10"
+        : "ml-14";
 
     return (
       <View key={node.id} className={`${indentClass} gap-2`}>
@@ -185,12 +218,15 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
             }}
             className="flex-row items-center gap-2 mt-2"
           >
-            <Ionicons name="return-down-back-outline" size={18} color={colors.text} />
+            <Ionicons
+              name="return-down-back-outline"
+              size={18}
+              color={colors.text}
+            />
             <Text className="color-colors-text">Reply</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Inline reply box */}
         {replyToId === node.id && (
           <View className="gap-2">
             <TextInput
@@ -228,34 +264,40 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
           </View>
         )}
 
-        {/* Render replies */}
         {node.replies?.length ? (
-          <View className="gap-2">
-            {node.replies.map((r) => renderNode(r, depth + 1))}
-          </View>
+          <View className="gap-2">{node.replies.map((r) => renderNode(r, depth + 1))}</View>
         ) : null}
       </View>
     );
   };
 
+  const upColor = myVote === 1 ? colors.success : colors.text;
+  const downColor = myVote === -1 ? colors.error : colors.text;
+
   return (
     <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
       <View className="flex-row justify-between">
         <View>
-          <Text className="color-colors-text text-2xl font-semibold">{(review as any).code}</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {(review as any).code}
+          </Text>
           <Text className="color-colors-textSecondary text-lg">
             {parseLastName((review as any).profName)}
           </Text>
         </View>
         <View>
-          <Text className="color-colors-text text-2xl font-semibold">{(review as any).term}</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {(review as any).term}
+          </Text>
           <Text className="color-colors-textSecondary text-lg text-right">
             {(review as any).reviewDate}
           </Text>
         </View>
       </View>
 
-      <Text className="color-colors-text text-center text-lg">{(review as any).reviewText}</Text>
+      <Text className="color-colors-text text-center text-lg">
+        {(review as any).reviewText}
+      </Text>
 
       <View className="flex flex-row justify-between">
         <View className="flex items-center">
@@ -272,40 +314,57 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
         </View>
         <View className="flex items-center">
           <Text className="color-colors-textSecondary text-lg">Grade</Text>
-          <Text className="color-colors-text text-2xl font-semibold">{(review as any).grade}</Text>
+          <Text className="color-colors-text text-2xl font-semibold">
+            {(review as any).grade}
+          </Text>
         </View>
       </View>
 
-      {/* Bottom row: Comment button (left) + Votes (right) */}
+
       <View className="flex flex-row justify-between items-center border-t border-colors-textSecondary pt-2">
-        <TouchableOpacity onPress={toggleComments} className="flex-row items-center gap-2">
-          <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.text} />
+        <TouchableOpacity
+          onPress={toggleComments}
+          className="flex-row items-center gap-2"
+        >
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={22}
+            color={colors.text}
+          />
           <Text className="color-colors-text text-lg">
             Comment{comments.length ? ` (${comments.length})` : ""}
           </Text>
         </TouchableOpacity>
 
-        <View className="flex flex-row items-center gap-3">
-          <TouchableOpacity onPress={() => handleVote(1)} disabled={busy}>
-            <Ionicons name="arrow-up-circle" size={28} color={colors.text} />
+
+        <View className="flex-row items-center gap-3">
+          <TouchableOpacity
+            testID="vote-up"
+            onPress={() => handleVote(1)}
+            disabled={busy}
+          >
+            <Ionicons name="arrow-up-circle" size={28} color={upColor} />
           </TouchableOpacity>
 
-          <Text className="color-colors-text text-lg">{upvotes}</Text>
+          <Text className="color-colors-text text-lg">{voteScore}</Text>
 
-          <TouchableOpacity onPress={() => handleVote(-1)} disabled={busy}>
-            <Ionicons name="arrow-down-circle" size={28} color={colors.text} />
+          <TouchableOpacity
+            testID="vote-down"
+            onPress={() => handleVote(-1)}
+            disabled={busy}
+          >
+            <Ionicons name="arrow-down-circle" size={28} color={downColor} />
           </TouchableOpacity>
-
-          <Text className="color-colors-text text-lg">{downvotes}</Text>
         </View>
       </View>
 
       {/* Comments section */}
       {showComments && (
         <View className="gap-2">
-          {commentErr ? <Text className="color-colors-textSecondary">{commentErr}</Text> : null}
+          {commentErr ? (
+            <Text className="color-colors-textSecondary">{commentErr}</Text>
+          ) : null}
 
-          {/* Top-level comment input */}
           <TextInput
             value={comment}
             onChangeText={(t) => setComment(t)}
@@ -316,7 +375,11 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
           />
 
           <View className="flex-row justify-between items-center">
-            <TouchableOpacity onPress={loadComments} disabled={commentsLoading} className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={loadComments}
+              disabled={commentsLoading}
+              className="flex-row items-center gap-2"
+            >
               <Ionicons name="refresh" size={18} color={colors.text} />
               <Text className="color-colors-text">Refresh</Text>
             </TouchableOpacity>
@@ -326,11 +389,14 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
               disabled={posting || !comment.trim()}
               className="bg-colors-primary px-4 py-2 rounded-md"
             >
-              {posting ? <ActivityIndicator /> : <Text className="color-colors-text font-semibold">Post</Text>}
+              {posting ? (
+                <ActivityIndicator />
+              ) : (
+                <Text className="color-colors-text font-semibold">Post</Text>
+              )}
             </TouchableOpacity>
           </View>
 
-          {/* Threaded list */}
           {commentsLoading ? (
             <ActivityIndicator />
           ) : comments.length === 0 ? (
