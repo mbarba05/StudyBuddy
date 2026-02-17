@@ -97,6 +97,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
 
       <View className="flex flex-row justify-end gap-3 border-t border-colors-textSecondary pt-2">
         <TouchableOpacity
+          testID="vote-up"
           onPress={() => handleVote(1)}
           disabled={busy}
         >
@@ -106,6 +107,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
         <Text className="color-colors-text text-lg">{voteScore}</Text>
 
         <TouchableOpacity
+          testID="vote-down"
           onPress={() => handleVote(-1)}
           disabled={busy}
         >
