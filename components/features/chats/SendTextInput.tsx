@@ -128,7 +128,6 @@ const SendTextInput = ({ convId, setChatsById, setOrder }: SendTextInputProps) =
                     }}
                 >
                     {attachments.map((att, key) => {
-                        console.log("att", isImagePickerAsset(att));
                         return (
                             <View key={key} className="relative">
                                 <Ionicons
@@ -154,7 +153,13 @@ const SendTextInput = ({ convId, setChatsById, setOrder }: SendTextInputProps) =
             )}
 
             <View className="flex items-center flex-row gap-2 px-2 pb-2">
-                <Ionicons name="add-circle" color={colors.secondary} size={36} onPress={openAttachmentOptions} />
+                <Ionicons
+                    testID="attachmentMenu"
+                    name="add-circle"
+                    color={colors.secondary}
+                    size={36}
+                    onPress={openAttachmentOptions}
+                />
 
                 <TextInput
                     value={message}

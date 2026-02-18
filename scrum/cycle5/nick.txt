@@ -7,3 +7,10 @@ I started working on saving then image after sending now.
 2/12: There is a lot more to this than i thought. I spent a lot of time writing a query to get all the attatchments in a conversation.
 I want it to be secure, so the bucket we are saving it to has to be private. This changes a lot. We will need to save the path
 in the db, then when we want to display the image, we have to make a signedUrl then cache it since it expires.
+
+2/13: Grinded a lot today, got images to stay the same size when loading in by storing their aspect ratio in Supabase. 
+
+2/16: Made it so that images will go fullscreen when you press the, will probably do same for videos as well.
+
+2/17: Wrote tests today, I found out my changes broke previous tests so i had to rewrite those. I will use the next cycle 
+to hopefully clean everything up since its still rough around the edges.

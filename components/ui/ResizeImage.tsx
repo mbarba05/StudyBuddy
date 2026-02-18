@@ -39,6 +39,7 @@ export function ResizeImage({ url, width, aspectRatio }: { url: string; width: n
                         aspectRatio,
                         borderRadius: 12,
                     }}
+                    testID={url}
                     cachePolicy={"memory-disk"}
                     placeholder={{ blurhash }}
                 />
