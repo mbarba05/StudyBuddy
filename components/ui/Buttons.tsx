@@ -5,6 +5,10 @@ interface GenericButtonProps extends TouchableOpacityProps {
     children: React.ReactNode;
 }
 
+interface ClassFilterButtonProps extends GenericButtonProps {
+    selected?: boolean;
+}
+
 interface LoginButtonProps extends TouchableOpacityProps {
     children: React.ReactNode;
     image?: React.ReactNode;
@@ -48,6 +52,17 @@ export const BlueButton: React.FC<GenericButtonProps> = ({ children, ...props })
             {...props}
         >
             <Text className="flex flex-row items-center justify-center text-colors-text font-semibold">{children}</Text>
+        </TouchableOpacity>
+    );
+};
+
+export const ClassFilterButton: React.FC<ClassFilterButtonProps> = ({ selected, children, ...props }) => {
+    return (
+        <TouchableOpacity
+            className={`flex justify-center items-center h-12 px-4 rounded-lg ${selected ? "bg-colors-secondary" : "bg-colors-primary"}`}
+            {...props}
+        >
+            <Text className="text-colors-text font-semibold text-2xl">{children}</Text>
         </TouchableOpacity>
     );
 };
