@@ -10,7 +10,10 @@
         "newArchEnabled": true,
         "ios": {
             "supportsTablet": true,
-            "bundleIdentifier": "com.nickd4vis.studdybuddy"
+            "bundleIdentifier": "com.nickd4vis.studdybuddy",
+            "infoPlist": {
+                "NSPhotoLibraryAddUsageDescription": "Allow this app to save photos."
+            }
         },
         "android": {
             "adaptiveIcon": {

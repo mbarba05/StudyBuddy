@@ -141,7 +141,7 @@ const SocialScreen = () => {
                                 numberOfLines={1}
                                 ellipsizeMode="tail"
                             >
-                                {item.last_message}
+                                {item.last_message && item.last_message?.length > 0 ? item.last_message : "Attachment"}
                             </Text>
                         </View>
                     </View>

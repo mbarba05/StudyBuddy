@@ -20,6 +20,12 @@ module.exports = {
                         "expo-constants",
                         "expo-router",
                         "react-native-safe-area-context",
+                        "expo-media-library",
+                        "expo-file-system",
+                        "expo-image-picker",
+                        "expo-asset",
+                        "expo-image",
+                        "expo-document-picker",
                     ].join("|") +
                     ")/)",
             ],
