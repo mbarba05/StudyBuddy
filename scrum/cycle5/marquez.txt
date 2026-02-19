@@ -1,0 +1,29 @@
+2/11/26: My scrum cycle consists of improving the review rating system to ensure 
+that a user’s vote remains saved even after refreshing the page or leaving and 
+returning to the app. I worked on fixing backend and frontend synchronization 
+issues so that votes stored in the review_votes table are properly fetched and 
+merged when the reviews screen loads. I updated Supabase RLS policies to securely 
+allow users to read and modify only their own votes. I also cleaned up duplicate 
+policies to make the vote system more stable and predictable. On the frontend, I 
+adjusted the fetch logic to wait for authentication to fully restore before 
+retrieving votes, preventing the vote color from disappearing. Now when a user 
+upvotes or downvotes, the color remains green or red consistently.
+
+2/13/26: I experienced problems with vote persistence where the database stored 
+the vote correctly, but the app failed to retrieve it after refresh due to policy 
+and authentication timing issues. I encountered permission errors when editing 
+SQL policies under the wrong role and resolved them by switching to the proper 
+database role. I also fixed frontend timing issues by restructuring the fetch 
+logic to prevent early returns before authentication completed.
+
+Test Cases: Making sure when I upvote the arrow turns green and stays green after 
+refresh. Making sure when I downvote the arrow turns red and stays red after 
+refresh. Make sure switching votes updates correctly. Make sure clicking the same 
+vote twice removes the vote. Make sure votes are stored correctly in the database. 
+Make sure if a review reaches 5 downvotes it is removed.
+
+2/14/26: I have completed the persistence improvements for review ratings within 
+the StudyBuddy app. Users can now vote once per review, change their vote, remove 
+their vote, and have their vote remain saved after leaving and returning to the 
+app. The system is now synchronized between frontend and backend with secure 
+database policies in place.

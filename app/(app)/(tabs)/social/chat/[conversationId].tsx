@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import AttachmentImages from "@/components/features/chats/AttachmentImage";
 import ChatBubble from "@/components/features/chats/ChatBubble";
 import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
@@ -9,7 +10,7 @@ import { sendPushNotification } from "@/services/PushNotifications";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -19,8 +20,6 @@ type ChatRouteParams = {
     ppPic: string;
 };
 
-//TODO: fetch rest of the conversation when scrolling up
-
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
 
@@ -29,7 +28,14 @@ const ConversationScreen = () => {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [countLeft, setCountLeft] = useState(0);
-    const [chats, setChats] = useState<Chat[]>([]);
+
+    //we need to store chats as a record because of the way we subsrcibe to them on supabase
+    //messages and attachments are 2 diff tables, so we need to make 2 realitime subscriptions and
+    //merge the attachments into the messages seperatley
+    const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
+    const [order, setOrder] = useState<string[]>([]);
+    const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
+
     const user = useAuth();
 
     useFocusEffect(
@@ -43,7 +49,17 @@ const ConversationScreen = () => {
                     if (mounted) {
                         const count = chat && chat?.length > 0 ? chat[0].count : 0;
                         if (count > CHAT_PAGE_SIZE) setCountLeft(count - CHAT_PAGE_SIZE);
-                        setChats(chat as Chat[]);
+                        if (!chat) return;
+                        const nextById: Record<string, Chat> = {};
+                        const nextOrder: string[] = [];
+
+                        for (const c of chat) {
+                            nextById[c.id] = c;
+                            nextOrder.push(c.id);
+                        }
+
+                        setChatsById(nextById);
+                        setOrder(nextOrder);
                     }
                 } finally {
                     if (mounted) setLoading(false);
@@ -98,10 +114,20 @@ const ConversationScreen = () => {
     const loadOlderMessages = async () => {
         if (countLeft <= 0 || loadingMore) return;
         setLoadingMore(true);
-        const offset = chats ? chats.length : 0;
+        const offset = order.length;
         const oldChats = await getMessagesForConv(conversationId, offset);
         if (!oldChats) return;
-        setChats((prev) => [...prev, ...oldChats]);
+        const nextById: Record<string, Chat> = {};
+        const nextOrder: string[] = [];
+
+        for (const c of oldChats) {
+            nextById[c.id] = c;
+            nextOrder.push(c.id);
+        }
+
+        setChatsById((prev) => ({ ...prev, ...nextById }));
+        setOrder((prev) => [...prev, ...nextOrder]);
+
         setCountLeft((prev) => prev - CHAT_PAGE_SIZE);
         setLoadingMore(false);
     };
@@ -110,8 +136,9 @@ const ConversationScreen = () => {
         ({ item }: { item: Chat }) => {
             const isOwn = item.sender_id === user.user?.id;
             return (
-                <View className={`mb-2 ${isOwn ? "items-end" : "items-start"}`}>
-                    <ChatBubble isOwn={isOwn}>{item.content}</ChatBubble>
+                <View className={`flex flex-col mb-2 ${isOwn ? "items-end" : "items-start"}`}>
+                    {item.attachments?.length > 0 && <AttachmentImages attachments={item.attachments} />}
+                    {item.content && <ChatBubble isOwn={isOwn}>{item.content}</ChatBubble>}
                 </View>
             );
         },
@@ -142,6 +169,7 @@ const ConversationScreen = () => {
                 >
                     {loadingMore && <ActivityIndicator className="mt-4" />}
                     <FlatList
+                        testID="chats"
                         className="flex-1"
                         contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
                         data={chats}
@@ -150,8 +178,9 @@ const ConversationScreen = () => {
                         inverted
                         keyboardShouldPersistTaps="handled"
                         onEndReached={loadOlderMessages}
+                        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                     />
-                    <SendTextInput setChats={setChats} convId={conversationId} />
+                    <SendTextInput setChatsById={setChatsById} setOrder={setOrder} convId={conversationId} />
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </>
