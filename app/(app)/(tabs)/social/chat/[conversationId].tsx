@@ -5,6 +5,7 @@ import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Chat, getMessagesForConv } from "@/services/messageService";
+import { sendPushNotification } from "@/services/PushNotifications";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -50,7 +51,6 @@ const ConversationScreen = () => {
             };
             fetchChats();
 
-            // cleanup when screen loses focus
             return () => {
                 mounted = false;
             };
@@ -70,13 +70,22 @@ const ConversationScreen = () => {
                     table: "messages",
                     filter: `conversation_id=eq.${conversationId}`,
                 },
-                (payload) => {
+                async (payload) => {
                     const newMsg = payload.new as Chat;
                     setChats((prev) => {
                         if (prev.some((m) => m.id === newMsg.id)) return prev;
                         return [newMsg, ...prev];
                     });
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+                    const currentUserId = user.user?.id;
+
+                    if (!currentUserId) return;
+
+                    //Notify the user if they receive a new message from the other person in the DM
+                    if (newMsg.sender_id !== currentUserId) {
+                        await sendPushNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
+                    }
                 },
             )
             .subscribe();
@@ -84,7 +93,7 @@ const ConversationScreen = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [conversationId]);
+    }, [conversationId, user.user?.id, dmName]);
 
     const loadOlderMessages = async () => {
         if (countLeft <= 0 || loadingMore) return;

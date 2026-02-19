@@ -5,6 +5,7 @@ export default {
         slug: "studdybuddy",
         scheme: "studdybuddy",
         owner: "studybuddyfresno",
+        userInterfaceStyle: "automatic",
         android: {
             package: "com.nickd4vis.studdybuddy",
         },
