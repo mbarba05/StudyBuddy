@@ -10,6 +10,7 @@
         "web": "expo start --web",
         "lint": "expo lint",
         "format": "prettier --write .",
+        "test:match": "jest --selectProjects matchMaking",
         "test": "jest --watch"
     },
     "dependencies": {
