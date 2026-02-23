@@ -1,0 +1,4 @@
+﻿Scrum Cycle 3 
+
+
+During this cycle, I worked on adding push notifications to the Matchmaker feature for pending and accepted friend requests. I set it up so when one user swipes right, the other person gets a notification letting them know they have a new friend request. Then, if both users swipe right on each other, the system recognizes it as a match and sends a notification to both users. This helps make the experience more interactive and keeps users updated about new connections.

@@ -28,6 +28,10 @@ function createThenableBuilder(): Builder {
             }
         },
     };
+    jest.mock('expo-media-library', () => ({
+        requestPermissionsAsync: jest.fn(),
+        getAssetsAsync: jest.fn(),
+    }));
 
     const proxy = new Proxy(core, {
         get(target, prop: string) {

@@ -132,9 +132,11 @@ function isLocalUri(uri?: string) {
 }
 
 // adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
-type RNFile = { uri: string; name?: string; type?: string };
+export type RNFile = { uri: string; name?: string; type?: string };
 
-export async function uploadProfilePics(file: File | Blob | RNFile): Promise<string> {
+export type Attachment = File | Blob | RNFile;
+
+export async function uploadProfilePics(file: Attachment): Promise<string> {
     const { data: u, error: authErr } = await supabase.auth.getUser();
     if (authErr) throw authErr;
     const userId = u?.user?.id;
@@ -260,6 +262,7 @@ export type MatchRow = Profile & {
     score: number; // total sum(points) for overlap in proflies. used to arrange the profiles
 };
 
+// this is the function that gets called to get the alg running
 // grabbing profiles with filters (major for now)
 export async function getPotentialMatches(
     termId?: number | string,
@@ -271,6 +274,10 @@ export async function getPotentialMatches(
         right_swipe_cooldown?: number;
     },
 ): Promise<MatchRow[]> {
+    const userId = await grabCurr_UserId();
+    // once limit is hit nomore profiles so
+    //await lockCan(userId);
+
     return majorMatching(termId, {
         limit: opts?.limit,
         offset: opts?.offset,
@@ -618,24 +625,4 @@ export async function majorMatching(
         );
     });
     return results;
-}
-
-// left swipping on a user. could use this later to recycle the users after a certain amount of time
-export async function passUser(target_User_id: string): Promise<void> {
-    const swiper_id = await grabCurr_UserId();
-    const { error } = await supabase.from("user_swipes").upsert(
-        [
-            {
-                swiper_id, // current user logged in
-                target_id: target_User_id, // who current user swiped on
-                direction: "left", // doing a left swipe
-            },
-        ],
-        {
-            // makes sure it's one swipe per pair
-            onConflict: "swiper_id, target_id",
-            ignoreDuplicates: false,
-        },
-    );
-    if (error) throw error;
 }
