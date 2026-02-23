@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "test": "jest --watch"
+    "test": "jest --watch",
+    "test:match": "jest --selectProjects matchMaking"
   },
   "dependencies": {
     "@expo/react-native-action-sheet": "^4.1.1",

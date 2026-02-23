@@ -1,31 +1,8 @@
 import supabase from "@/lib/subapase";
 
-/*
-export async function recordSwipe(targetId: string, direction: "left" | "right") {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
-
-    const { data, error } = await supabase
-        .from("user_swipes")
-        .insert([{ swiper_id: user.id, target_id: targetId, direction }]);
-
-    if (error) {
-        console.error("Error recording swipe:", error);
-        return null;
-    }
-
-    return data;
-}
-*/
-
 // total number of swipes allowed per day
-const MAX_SWIPES = 15;
-const WINDOW_MS = 24 * 60 * 60 * 1000; // this sets variable to 24 hours
+export const MAX_SWIPES = 15;
+export const WINDOW_MS = 24 * 60 * 60 * 1000; // this sets variable to 24 hours
 //const WINDOW_MS = 15 * 1000; // 15 seconds for testing
 
 export class SwipeLimitErr extends Error {
@@ -39,12 +16,12 @@ export class SwipeLimitErr extends Error {
     }
 }
 
-function windowStartIso(): string {
+export function windowStartIso(): string {
     return new Date(Date.now() - WINDOW_MS).toISOString();
 }
 
 //function to get how many swiped were made in the last 24 hours
-async function swipeTracker(swiperId: string): Promise<number> {
+export async function swipeTracker(swiperId: string): Promise<number> {
     const { count, error } = await supabase
         .from("user_swipes")
         .select("id", { count: "exact", head: true })
@@ -56,7 +33,7 @@ async function swipeTracker(swiperId: string): Promise<number> {
 }
 
 // determining when the count restarts
-async function swipeResetafter24(swiperId: string): Promise<string | undefined> {
+export async function swipeResetafter24(swiperId: string): Promise<string | undefined> {
     const { data, error } = await supabase
         .from("user_swipes")
         .select("created_at")
@@ -89,10 +66,6 @@ export async function getSwipeStatus() {
         const resetAtISO = await swipeResetafter24(user.id);
         return { remaining: 0, resetAtISO };
     }
-
-    //const resetAtISO = remaining === 0 ? await swipeResetafter24(user.id) : undefined;
-
-    //return { used, remaining, resetAtISO };
     return { remaining };
 }
 
