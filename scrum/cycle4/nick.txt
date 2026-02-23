@@ -1,0 +1,13 @@
+1/27/26: This cycle I am going to implement the messaging system. There can be a lot that goes into this,
+especially with group chats and attatchments, so for now i am going to do at least one on one
+messaging. I also need to learn to write test cases as I have never done that before.
+
+1/29: I need to add about 3 tables on supabase. Today i have the inbox done and you can
+navigate to a chat, and see the messages (still need to implement live functionality).
+
+1/31: Chats are now live, supabase made it easier then i though it would be. I added the 
+ability to search through your conversations as well and send a chat automatically after matching.
+
+2/1: I made the inbox update live as well when you are on that screen, and then i 
+implemented pagination for larges conversations so they load as you scroll up. The inbox 
+also shows how long ago someone messaged you as well. 

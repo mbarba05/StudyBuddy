@@ -1,0 +1,8 @@
+scum cycle 4 
+
+01/27/26
+for this cycle i will implement a way to remove the users friends from the matchMaking swipes. If user 1 friends user 2 then user two will 
+not be in the pool anymore and user 1 will also be removed from user 2's pool. 
+
+02/03/26 
+i was able to add the feature. I made it so that friends get added to the excluded profiles for every user. This way the user's friends are removed.
