@@ -1,0 +1,5 @@
+﻿Johnae SCRUM cycle 2
+         
+
+
+        I input almost all of the CSCI courses and professors from the 2025-2026 catalog. This was needed for the test cases to work. I continued on and chose to add some more courses and professors just going down the list alphabetically. These courses were then applied to the profiles we had made to see how the users would be able to add their classes. Also, this played a part in the matchmaking algorithm to see what the users would see based on the algorithm Eli had created and how it would appear on the screen so the user could either swipe left or right on another user.

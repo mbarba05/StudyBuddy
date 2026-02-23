@@ -12,6 +12,7 @@ import {
     MessageAttachmentTable,
     MessagesTable,
 } from "@/services/messageService";
+import { sendPushNotification } from "@/services/PushNotifications";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -92,7 +93,7 @@ const ConversationScreen = () => {
                     table: "messages",
                     filter: `conversation_id=eq.${conversationId}`,
                 },
-                (payload) => {
+                async (payload) => {
                     let newMsg = payload.new as MessagesTable;
                     setChatsById((prev) => {
                         if (prev[newMsg.id]) return prev;
@@ -114,6 +115,15 @@ const ConversationScreen = () => {
                         if (prev.includes(newMsg.id)) return prev;
                         return [newMsg.id, ...prev];
                     });
+
+                    const currentUserId = user.user?.id;
+
+                    if (!currentUserId) return;
+
+                    //Notify the user if they receive a new message from the other person in the DM
+                    if (newMsg.sender_id !== currentUserId) {
+                        await sendPushNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
+                    }
 
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
                 },
@@ -166,6 +176,15 @@ const ConversationScreen = () => {
                     });
 
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+
+                    const currentUserId = user.user?.id;
+
+                    if (!currentUserId) return;
+
+                    //Notify the user if they receive a new message from the other person in the DM
+                    if (newAtt.sender_id !== currentUserId) {
+                        await sendPushNotification(currentUserId, `New message from ${dmName}: New Attachment`);
+                    }
                 },
             )
             .subscribe();
