@@ -1,3 +1,6 @@
+import { File } from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
+
 export const parseLastName = (name: string): string => {
     const parts = name.trim().split(/\s+/);
     return parts[parts.length - 1] || "";
@@ -59,4 +62,31 @@ export const formatMessageTime = (dmSentAt: string): string => {
 
     const years = Math.floor(diffMs / year);
     return `${years} year${years === 1 ? "" : "s"} ago`;
+};
+
+export const requestPermission = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    return status === "granted";
+};
+
+import * as FileSystem from "expo-file-system";
+
+export const saveImage = async (url: string) => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== "granted") return;
+
+    try {
+        // Create a valid file inside cache directory
+        const file = new File(FileSystem.Paths.cache, `image-${Date.now()}.jpg`);
+
+        // Download remote image into that file
+        await File.downloadFileAsync(url, file);
+
+        // Save to camera roll
+        await MediaLibrary.saveToLibraryAsync(file.uri);
+
+        console.log("Saved successfully");
+    } catch (error) {
+        console.log("Error saving image:", error);
+    }
 };

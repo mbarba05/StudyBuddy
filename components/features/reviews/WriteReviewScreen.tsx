@@ -6,6 +6,7 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import CourseProfDisplayWidget from "../courses/CourseProfDisplayWidget";
 import ReviewWidget from "./ReviewWidget";
 import WriteReviewModal from "./WriteReviewModal";
+import supabase from "@/lib/subapase";
 
 const YourReviewsScreen = () => {
     const [reviewableEnrollments, setReviewableEnrollments] = useState<ReviewableEnrollment[] | null>(null);
@@ -13,17 +14,70 @@ const YourReviewsScreen = () => {
     const [selectedEnrollment, setSelectedEnrollment] = useState<ReviewableEnrollment | null>(null);
     const [reviews, setReviews] = useState<ReviewDisplay[] | null>();
     const [loading, setLoading] = useState(true);
-    const getData = async () => {
+    /*const getData = async () => {
         const enrollments = await getReviewableEnrollments();
         const review = await getUserReviews();
         if (enrollments) setReviewableEnrollments(enrollments);
         setReviews(review);
+    };*/
+    const getData = async () => {
+        const enrollments = await getReviewableEnrollments();
+        const reviewList = await getUserReviews();
+
+        if (enrollments) setReviewableEnrollments(enrollments);
+
+        // No reviews → nothing to merge
+        if (!reviewList || reviewList.length === 0) {
+            setReviews(reviewList);
+            return;
+        }
+
+        // Get current user id (needed to fetch THEIR votes)
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+
+        // Not logged in → show reviews but no vote colors
+        if (!userId) {
+            setReviews(reviewList.map(r => ({ ...r, myVote: 0 })));
+            return;
+        }
+
+        // Pull this user's vote rows for the reviews on screen
+        const reviewIds = reviewList.map(r => r.reviewId);
+
+        const { data: voteRows, error } = await supabase
+          .from("review_votes")
+            .select("review_id, vote")
+            .in("review_id", reviewIds)
+            .eq("user_id", userId);
+
+        if (error) {
+            console.log("Error fetching my votes (WriteReviewScreen):", error);
+            setReviews(reviewList.map(r => ({ ...r, myVote: 0 })));
+            return;
+        }
+
+        const myVoteMap = new Map<number, -1 | 1>();
+        for (const row of voteRows ?? []) {
+            myVoteMap.set(row.review_id, row.vote as -1 | 1);
+        }
+
+        const merged = reviewList.map(r => ({
+            ...r,
+            myVote: (myVoteMap.get(r.reviewId) ?? 0) as -1 | 0 | 1,
+        }));
+
+        setReviews(merged);
     };
 
+
     useEffect(() => {
+        const run = async () => {
         setLoading(true);
-        getData();
+        await getData();
         setLoading(false);
+    };
+    run();
     }, []);
 
     const openReviewModal = (enrollment: ReviewableEnrollment) => {
@@ -66,10 +120,10 @@ const YourReviewsScreen = () => {
                         {reviews && reviews.length !== 0 ? (
                             reviews.map((r) => (
                                 <View key={r.reviewId}>
-                                    <ReviewWidget review={r} />
-                                </View>
-                            ))
-                        ) : (
+                                    <ReviewWidget review={r} onVoted={getData} />
+                            </View>
+                        ))
+                    ) : (
                             <Text className="text-2xl text-colors-textSecondary">No Reviews Yet</Text>
                         )}
                     </View>
