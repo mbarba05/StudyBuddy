@@ -17,7 +17,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -42,8 +42,19 @@ const ConversationScreen = () => {
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
     const [order, setOrder] = useState<string[]>([]);
     const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
-
+    const messagesListRef = useRef<FlatList<Chat>>(null);
     const user = useAuth();
+
+    useEffect(() => {
+        if (!order.length) return;
+
+        const id = setTimeout(() => {
+            // inverted list: newest is at offset 0 (visual bottom)
+            messagesListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }, 0);
+
+        return () => clearTimeout(id);
+    }, [order[0]]);
 
     useFocusEffect(
         useCallback(() => {
@@ -264,6 +275,7 @@ const ConversationScreen = () => {
                 >
                     {loadingMore && <ActivityIndicator className="mt-4" />}
                     <FlatList
+                        ref={messagesListRef}
                         testID="chats"
                         className="flex-1"
                         contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
@@ -275,7 +287,7 @@ const ConversationScreen = () => {
                         onEndReached={loadOlderMessages}
                         maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                     />
-                    <SendTextInput setChatsById={setChatsById} setOrder={setOrder} convId={conversationId} />
+                    <SendTextInput convId={conversationId} />
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </>

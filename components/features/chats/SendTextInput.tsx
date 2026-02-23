@@ -12,11 +12,9 @@ import { v4 as uuidv4 } from "uuid";
 
 type SendTextInputProps = {
     convId: string;
-    setChatsById: React.Dispatch<React.SetStateAction<Record<string, Chat>>>;
-    setOrder: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-const SendTextInput = ({ convId, setChatsById, setOrder }: SendTextInputProps) => {
+const SendTextInput = ({ convId }: SendTextInputProps) => {
     const [message, setMessage] = useState<string>("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const user = useAuth();
