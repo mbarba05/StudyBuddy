@@ -15,9 +15,10 @@ import {
 import { sendPushNotification } from "@/services/PushNotifications";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ChatRouteParams = {
@@ -230,7 +231,18 @@ const ConversationScreen = () => {
 
     const header = () => (
         <View className="flex flex-row items-center gap-2">
-            <Image source={{ uri: ppPic }} className="w-12 h-12 rounded-full" />
+            <Image
+                contentFit="cover"
+                source={{ uri: ppPic as string }}
+                style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 27,
+                    borderColor: colors.textSecondary,
+                    borderWidth: 1,
+                }}
+                cachePolicy="memory-disk"
+            />
             <Text className="text-colors-text text-2xl font-semibold">{dmName}</Text>
         </View>
     );

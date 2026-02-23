@@ -3,7 +3,7 @@ import FileAttachment from "@/components/ui/FileAttachment";
 import { ResizeImage } from "@/components/ui/ResizeImage";
 import { getAttachmentSignedUrlCached, isImageMime, LoadedAttachment } from "@/services/messageService";
 import { useEffect, useState } from "react";
-import { Image, View } from "react-native";
+import { View } from "react-native";
 
 const ratioCache = new Map<string, number>();
 
@@ -12,19 +12,14 @@ const AttachmentImages = ({ attachments }: { attachments: LoadedAttachment[] }) 
 
     useEffect(() => {
         let cancelled = false;
-        const hydrate = async () => {
-            const entries = await Promise.all(
-                attachments.map(async (a) => {
-                    const signedUrl = await getAttachmentSignedUrlCached(a.path);
-                    // Warm the image cache (best-effort)
-                    if (isImageMime(a.mime_type)) {
-                        try {
-                            await Image.prefetch(signedUrl);
-                        } catch {
-                            // ignore
-                        }
-                    }
 
+        const hydrate = async () => {
+            const missing = attachments.filter((a) => !urls[a.path]); // only missing
+            if (missing.length === 0) return;
+
+            const entries = await Promise.all(
+                missing.map(async (a) => {
+                    const signedUrl = await getAttachmentSignedUrlCached(a.path);
                     return [a.path, signedUrl] as const;
                 }),
             );
@@ -39,11 +34,10 @@ const AttachmentImages = ({ attachments }: { attachments: LoadedAttachment[] }) 
         };
 
         hydrate();
-
         return () => {
             cancelled = true;
         };
-    }, [attachments]);
+    }, [attachments, urls]);
 
     return (
         <>
