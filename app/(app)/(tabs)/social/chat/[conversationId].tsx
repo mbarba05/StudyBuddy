@@ -5,7 +5,13 @@ import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
-import { Chat, getMessagesForConv } from "@/services/messageService";
+import {
+    Chat,
+    getMessagesForConv,
+    LoadedAttachment,
+    MessageAttachmentTable,
+    MessagesTable,
+} from "@/services/messageService";
 import { sendPushNotification } from "@/services/PushNotifications";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
@@ -67,6 +73,7 @@ const ConversationScreen = () => {
             };
             fetchChats();
 
+            // cleanup when screen loses focus
             return () => {
                 mounted = false;
             };
@@ -87,12 +94,27 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 async (payload) => {
-                    const newMsg = payload.new as Chat;
-                    setChats((prev) => {
-                        if (prev.some((m) => m.id === newMsg.id)) return prev;
-                        return [newMsg, ...prev];
+                    let newMsg = payload.new as MessagesTable;
+                    setChatsById((prev) => {
+                        if (prev[newMsg.id]) return prev;
+
+                        const newChat: Chat = {
+                            attachments: [],
+                            content: newMsg.content,
+                            conversation_id: newMsg.conversation_id,
+                            created_at: newMsg.created_at,
+                            id: newMsg.id,
+                            sender_id: newMsg.sender_id,
+                            count: 0,
+                        };
+                        return { ...prev, [newMsg.id]: newChat };
                     });
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+                    setOrder((prev) => {
+                        if (prev[0] === newMsg.id) return prev;
+                        if (prev.includes(newMsg.id)) return prev;
+                        return [newMsg.id, ...prev];
+                    });
 
                     const currentUserId = user.user?.id;
 
@@ -102,6 +124,8 @@ const ConversationScreen = () => {
                     if (newMsg.sender_id !== currentUserId) {
                         await sendPushNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
                     }
+
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
                 },
             )
             .subscribe();
@@ -109,7 +133,66 @@ const ConversationScreen = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [conversationId, user.user?.id, dmName]);
+    }, [conversationId]);
+
+    useEffect(() => {
+        if (!conversationId) return;
+
+        const channel = supabase
+            .channel(`message_attachments:${conversationId}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "message_attachments",
+                    filter: `conversation_id=eq.${conversationId}`,
+                },
+                async (payload) => {
+                    let newAtt = payload.new as MessageAttachmentTable;
+
+                    setChatsById((prev) => {
+                        const msg = prev[newAtt.message_id];
+                        if (!msg) return prev;
+
+                        const existing = msg.attachments ?? [];
+                        if (existing.some((x) => x.id === newAtt.id)) return prev;
+
+                        const loaded: LoadedAttachment = {
+                            id: newAtt.id,
+                            path: newAtt.path,
+                            mime_type: newAtt.mime_type,
+                            created_at: newAtt.created_at,
+                            aspect_ratio: newAtt.aspect_ratio,
+                        };
+
+                        return {
+                            ...prev,
+                            [newAtt.message_id]: {
+                                ...msg,
+                                attachments: [...existing, loaded],
+                            },
+                        };
+                    });
+
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+
+                    const currentUserId = user.user?.id;
+
+                    if (!currentUserId) return;
+
+                    //Notify the user if they receive a new message from the other person in the DM
+                    if (newAtt.sender_id !== currentUserId) {
+                        await sendPushNotification(currentUserId, `New message from ${dmName}: New Attachment`);
+                    }
+                },
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [conversationId]);
 
     const loadOlderMessages = async () => {
         if (countLeft <= 0 || loadingMore) return;
