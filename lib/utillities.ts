@@ -69,6 +69,12 @@ export const formatTime = (iso: string) => {
     return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 };
 
+export const formatPrettyDate = (key: string) => {
+    const [y, m, d] = key.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+};
+
 export const requestPermission = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
     return status === "granted";

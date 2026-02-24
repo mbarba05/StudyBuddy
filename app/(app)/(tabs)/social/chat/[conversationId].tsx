@@ -3,6 +3,7 @@ import ChatRow from "@/components/features/chats/ChatRow";
 import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
+import { formatPrettyDate } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
 import {
     Chat,
@@ -28,6 +29,8 @@ type ChatRouteParams = {
     ppPic: string;
 };
 
+type ChatListItem = { type: "message"; chat: Chat } | { type: "date"; dateKey: string }; // stable key for a day
+
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
 
@@ -43,8 +46,33 @@ const ConversationScreen = () => {
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
     const [order, setOrder] = useState<string[]>([]);
     const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
-    const messagesListRef = useRef<FlatList<Chat>>(null);
+    const messagesListRef = useRef<FlatList<ChatListItem>>(null);
     const user = useAuth();
+
+    const dateKey = (iso: string) => {
+        const d = new Date(iso);
+        // Use local day boundary; or use UTC if you prefer consistent server time
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const listData: ChatListItem[] = useMemo(() => {
+        const out: ChatListItem[] = [];
+
+        for (let i = 0; i < chats.length; i++) {
+            const chat = chats[i];
+            out.push({ type: "message", chat });
+
+            const cur = dateKey(chat.created_at);
+            const next = chats[i + 1] ? dateKey(chats[i + 1].created_at) : null;
+
+            // When the NEXT message is a different day (or none), we've reached the "top" of this day section
+            if (cur !== next) {
+                out.push({ type: "date", dateKey: cur });
+            }
+        }
+
+        return out;
+    }, [chats]);
 
     useEffect(() => {
         if (!order.length) return;
@@ -249,12 +277,23 @@ const ConversationScreen = () => {
     }, []);
 
     const renderItem = useCallback(
-        ({ item }: { item: Chat }) => {
-            const isOwn = item.sender_id === user.user?.id;
-            return <ChatRow item={item} isOwn={isOwn} globalX={globalX} />;
+        ({ item }: { item: ChatListItem }) => {
+            if (item.type === "date") {
+                return (
+                    <View className="items-center mt-2">
+                        <Text className="text-sm text-colors-textSecondary">{formatPrettyDate(item.dateKey)}</Text>
+                    </View>
+                );
+            }
+
+            const chat = item.chat;
+            const isOwn = chat.sender_id === user.user?.id;
+
+            return <ChatRow item={chat} isOwn={isOwn} globalX={globalX} />;
         },
-        [user.user?.id],
+        [user.user?.id, globalX],
     );
+
     const header = () => (
         <View className="flex flex-row items-center gap-2">
             <Image
@@ -298,13 +337,15 @@ const ConversationScreen = () => {
                             ItemSeparatorComponent={() => <View className="h-1" />}
                             className="flex-1"
                             contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
-                            data={chats}
-                            keyExtractor={(item) => item.id}
+                            data={listData}
+                            keyExtractor={(item) =>
+                                item.type === "message" ? `m:${item.chat.id}` : `d:${item.dateKey}`
+                            }
                             renderItem={renderItem}
-                            inverted
                             keyboardShouldPersistTaps="handled"
                             onEndReached={loadOlderMessages}
                             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                            inverted
                         />
                         <SendTextInput convId={conversationId} />
                     </KeyboardAvoidingView>
