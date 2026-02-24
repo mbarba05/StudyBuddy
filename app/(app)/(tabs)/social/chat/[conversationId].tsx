@@ -1,6 +1,5 @@
 import { colors } from "@/assets/colors";
-import AttachmentImages from "@/components/features/chats/AttachmentImage";
-import ChatBubble from "@/components/features/chats/ChatBubble";
+import ChatRow from "@/components/features/chats/ChatRow";
 import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
@@ -19,6 +18,8 @@ import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useSharedValue, withSpring } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ChatRouteParams = {
@@ -227,19 +228,33 @@ const ConversationScreen = () => {
         setLoadingMore(false);
     };
 
+    const globalX = useSharedValue(0);
+
+    const swipeLeftGesture = useMemo(() => {
+        return (
+            Gesture.Pan()
+                // Only become active when there's meaningful horizontal movement
+                // and don't trigger if user is mostly scrolling vertically.
+                .activeOffsetX([-12, 12])
+                .failOffsetY([-10, 10])
+                .onUpdate((e) => {
+                    // Only allow dragging LEFT
+                    const nextX = Math.min(0, e.translationX);
+                    globalX.value = Math.max(nextX, -60);
+                })
+                .onEnd(() => {
+                    globalX.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.6 });
+                })
+        );
+    }, []);
+
     const renderItem = useCallback(
         ({ item }: { item: Chat }) => {
             const isOwn = item.sender_id === user.user?.id;
-            return (
-                <View className={`flex flex-col mb-2 ${isOwn ? "items-end" : "items-start"}`}>
-                    {item.attachments?.length > 0 && <AttachmentImages attachments={item.attachments} />}
-                    {item.content && <ChatBubble isOwn={isOwn}>{item.content}</ChatBubble>}
-                </View>
-            );
+            return <ChatRow item={item} isOwn={isOwn} globalX={globalX} />;
         },
         [user.user?.id],
     );
-
     const header = () => (
         <View className="flex flex-row items-center gap-2">
             <Image
@@ -258,6 +273,8 @@ const ConversationScreen = () => {
         </View>
     );
 
+    console.log(chats);
+
     return (
         <>
             <Stack.Screen
@@ -267,29 +284,32 @@ const ConversationScreen = () => {
                     headerStyle: { backgroundColor: colors.background },
                 }}
             />
-            <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
-                <KeyboardAvoidingView
-                    className="flex-1"
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
-                >
-                    {loadingMore && <ActivityIndicator className="mt-4" />}
-                    <FlatList
-                        ref={messagesListRef}
-                        testID="chats"
+            <GestureDetector gesture={swipeLeftGesture}>
+                <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
+                    <KeyboardAvoidingView
                         className="flex-1"
-                        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
-                        data={chats}
-                        keyExtractor={(item) => item.id}
-                        renderItem={renderItem}
-                        inverted
-                        keyboardShouldPersistTaps="handled"
-                        onEndReached={loadOlderMessages}
-                        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-                    />
-                    <SendTextInput convId={conversationId} />
-                </KeyboardAvoidingView>
-            </SafeAreaView>
+                        behavior={Platform.OS === "ios" ? "padding" : undefined}
+                        keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
+                    >
+                        {loadingMore && <ActivityIndicator className="mt-4" />}
+                        <FlatList
+                            ref={messagesListRef}
+                            testID="chats"
+                            ItemSeparatorComponent={() => <View className="h-1" />}
+                            className="flex-1"
+                            contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
+                            data={chats}
+                            keyExtractor={(item) => item.id}
+                            renderItem={renderItem}
+                            inverted
+                            keyboardShouldPersistTaps="handled"
+                            onEndReached={loadOlderMessages}
+                            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                        />
+                        <SendTextInput convId={conversationId} />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </GestureDetector>
         </>
     );
 };

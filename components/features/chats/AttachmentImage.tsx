@@ -54,7 +54,6 @@ const AttachmentImages = ({ attachments }: { attachments: LoadedAttachment[] }) 
                             borderRadius: 12,
                             overflow: "hidden",
                             backgroundColor: colors.secondary,
-                            marginBottom: 8,
                         }}
                     >
                         {!url ? (

@@ -64,6 +64,11 @@ export const formatMessageTime = (dmSentAt: string): string => {
     return `${years} year${years === 1 ? "" : "s"} ago`;
 };
 
+export const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
 export const requestPermission = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
     return status === "granted";
