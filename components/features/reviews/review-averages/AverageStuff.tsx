@@ -2,11 +2,19 @@ import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { ReviewDisplay } from "@/services/reviewsService";
 
+/*
+This component is responsible for computing and displaying
+average statistics for a professor's reviews.
+It does NOT fetch data.
+It receives already-fetched reviews from the parent screen.
+ */
 type Props = {
-  reviews: ReviewDisplay[];
-  selectedCourseCode: string | null;
+  reviews: ReviewDisplay[]; // All reviews for the professor
+  selectedCourseCode: string | null; // Currently selected course filter
 };
 
+//Converts letter grades to GPA points so we can compute an average.
+//This allows us to average grades numerically instead of guessing.
 const letterToPoints: Record<string, number> = {
   "A+": 4.0,
   A: 4.0,
@@ -23,6 +31,12 @@ const letterToPoints: Record<string, number> = {
   F: 0.0,
 };
 
+/*
+Safely computes an average while:
+Ignoring null/undefined values
+Returning how many valid values were included
+Returning count allows the UI to show how many reviews contributed.
+*/
 function safeAvg(values: Array<number | null | undefined>) {
   const nums = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
   if (nums.length === 0) return { avg: null as number | null, count: 0 };
@@ -30,10 +44,13 @@ function safeAvg(values: Array<number | null | undefined>) {
   return { avg: sum / nums.length, count: nums.length };
 }
 
+//Formats numbers to 1 decimal place for cleaner UI.
 function fmt1(n: number | null) {
   return n == null ? "—" : n.toFixed(1);
 }
 
+//Converts averaged GPA points back into a representative letter grade.
+//This makes the output more readable for users.
 function pointsToLetter(points: number | null) {
   if (points == null) return "—";
   if (points >= 3.85) return "A";
@@ -50,10 +67,15 @@ function pointsToLetter(points: number | null) {
   return "F";
 }
 
+/*Computes averages from a list of reviews.
+ This is reused for:
+ Overall averages
+ Course-specific averages
+ */
 function computeAverages(list: ReviewDisplay[]) {
   const diff = safeAvg(list.map((r) => r.courseDiff));
   const rating = safeAvg(list.map((r) => r.profRating));
-
+    //Convert each letter grade to GPA points before averaging
   const gpa = safeAvg(
     list.map((r) => {
       const g = (r.grade ?? "").trim().toUpperCase();
@@ -74,8 +96,11 @@ function computeAverages(list: ReviewDisplay[]) {
 }
 
 export default function AverageStuff({ reviews, selectedCourseCode }: Props) {
+  /*useMemo ensures we only recompute averages when reviews actually change.
+   This prevents unnecessary recalculations on every render.
+   */
   const overall = useMemo(() => computeAverages(reviews), [reviews]);
-
+  //If a course filter is selected, compute averages only for that course.
   const courseSpecific = useMemo(() => {
     if (!selectedCourseCode) return null;
     const filtered = reviews.filter((r) => r.code === selectedCourseCode);
@@ -84,7 +109,7 @@ export default function AverageStuff({ reviews, selectedCourseCode }: Props) {
 
   return (
     <View className="w-full items-center">
-      {/* OVERALL CARD */}
+      {/*Overall Card*/}
       <AvgCard
         title="Averages"
         subtitle={`${overall.total} review${overall.total === 1 ? "" : "s"}`}
@@ -97,7 +122,7 @@ export default function AverageStuff({ reviews, selectedCourseCode }: Props) {
         ratingCount={overall.ratingCount}
       />
 
-      {/* COURSE-SPECIFIC CARD (only when a course is selected) */}
+      {/*Course Specific Card (only when a course is selected)*/}
       {selectedCourseCode && courseSpecific && (
         <View className="mt-4">
           <AvgCard
