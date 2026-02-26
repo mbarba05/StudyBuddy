@@ -14,6 +14,7 @@ module.exports = {
                         "(jest-)?react-native",
                         "@react-native",
                         "@react-navigation",
+                        "react-native-css-interop",
                         "expo(nent)?",
                         "@expo(nent)?/.*",
                         "expo-modules-core",
