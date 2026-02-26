@@ -4,7 +4,7 @@ import { render, fireEvent, waitFor } from "@testing-library/react-native";
 // Capture props passed into AverageStuff
 const mockAvgProps = jest.fn();
 
-// --- Mock AverageStuff (so we can assert it rendered + see props) ---
+//Mock AverageStuff (so we can assert it rendered + see props)
 jest.mock("@/components/features/reviews/review-averages/AverageStuff", () => {
   const React = require("react");
   const { Text } = require("react-native");
@@ -14,25 +14,25 @@ jest.mock("@/components/features/reviews/review-averages/AverageStuff", () => {
   };
 });
 
-// --- Prevent NavigationContainer errors from useFocusEffect ---
+//Prevent NavigationContainer errors from useFocusEffect
 jest.mock("@react-navigation/native", () => ({
   useFocusEffect: () => {}, // no-op
 }));
 
-// --- Mock router params so profId exists ---
+//Mock router params so profId exists
 jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
   useLocalSearchParams: () => ({ profId: "1", profName: "Test Prof" }),
 }));
 
-// --- Make LoadingScreen detectable so we can wait until it disappears ---
+// Make LoadingScreen detectable so we can wait until it disappears
 jest.mock("@/components/ui/LoadingScreen", () => {
   const React = require("react");
   const { Text } = require("react-native");
   return () => <Text testID="loading">Loading</Text>;
 });
 
-// --- Lightweight UI mocks ---
+//Lightweight UI mocks
 jest.mock("@/components/features/reviews/ReviewWidget", () => {
   const React = require("react");
   const { Text } = require("react-native");
@@ -59,8 +59,6 @@ jest.mock("react-native-safe-area-context", () => {
   return { SafeAreaView: ({ children }: any) => <View>{children}</View> };
 });
 
-// --- IMPORTANT: supabase is imported as DEFAULT in your screen ---
-// so the mock MUST provide { default: { auth: ... } }
 jest.mock("@/lib/subapase", () => ({
   __esModule: true,
   default: {
@@ -79,7 +77,7 @@ jest.mock("@/lib/subapase", () => ({
   },
 }));
 
-// --- Mock reviews service ---
+//Mock reviews service
 const mockGetReviewsForProf = jest.fn();
 jest.mock("@/services/reviewsService", () => ({
   getReviewsForProf: (...args: any[]) => mockGetReviewsForProf(...args),
@@ -154,8 +152,6 @@ describe("ProfessorReviewsScreen", () => {
     await waitFor(() => {
       const last = mockAvgProps.mock.calls[mockAvgProps.mock.calls.length - 1][0];
       expect(last.selectedCourseCode).toBe("CSCI 130");
-      // NOTE: reviews passed stays ALL reviews if your screen passes reviews={reviews ?? []}
-      // That matches your current [profId].tsx.
       expect(last.reviews.length).toBe(2);
     });
   });
