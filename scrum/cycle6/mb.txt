@@ -1,0 +1,25 @@
+2/24/26:
+This scrum cycle focused on adding a review averages section above the professor reviews page. 
+I created a new component called AverageStuff that calculates and displays the average grade, 
+average course difficulty, and average professor rating based on all the reviews for that professor. 
+I made sure the averages update dynamically when a specific course filter is selected. For grades, I
+converted letter grades into GPA values first so they could be averaged properly, then converted the 
+result back into a readable letter grade. I integrated this component into [profId].tsx using ListHeaderComponent
+so it appears above the reviews without causing scroll issues. I also connected it to the existing course filter 
+so selecting a course automatically updates the averages shown.
+2/25/26:
+While working on this, I ran into some issues with testing and integration. At first, Jest wasn’t recognizing the
+AverageStuff import because of folder naming and module path problems, so I had to fix the import path and adjust 
+the module mapping in the test setup. I also had to make sure the screen finished loading before running assertions 
+in the tests. I used useMemo to prevent the averages from recalculating on every render and made sure edge cases like 
+empty review lists or invalid grades wouldn’t crash the component. After fixing those issues, all tests passed successfully.
+Test Cases:
+Making sure the averages card renders above the reviews. Making sure the total review count displays correctly. Making sure 
+selecting a course shows a course-specific averages card. Making sure selecting “All” removes the course-specific card. 
+Making sure empty review lists do not cause crashes. Making sure letter grades are converted to GPA values before averaging. 
+Making sure invalid or missing grades are ignored safely. Making sure the professor reviews screen passes the correct props 
+to the averages component. Making sure pressing a course filter updates the averages dynamically.
+2/26/26:
+The review averages feature is now fully implemented and tested. The averages update correctly based on selected filters, 
+handle edge cases safely, and do not cause unnecessary re-renders. Both manual and automated tests confirm that the feature 
+works as intended and integrates properly with the professor reviews screen.
