@@ -6,15 +6,7 @@ import Animated, { Extrapolation, interpolate, SharedValue, useAnimatedStyle } f
 import AttachmentImages from "./AttachmentImage";
 import ChatBubble from "./ChatBubble";
 
-export default function ChatRow({
-    item,
-    isOwn,
-    globalX,
-}: {
-    item: Chat;
-    isOwn: boolean;
-    globalX: SharedValue<number>;
-}) {
+const ChatRow = ({ item, isOwn, globalX }: { item: Chat; isOwn: boolean; globalX: SharedValue<number> }) => {
     const revealOpacityStyle = useAnimatedStyle(() => {
         // globalX: 0 -> hidden, -MAX_REVEAL -> fully visible
         const opacity = interpolate(globalX.value, [0, -60], [0, 1], Extrapolation.CLAMP);
@@ -48,4 +40,6 @@ export default function ChatRow({
             </Animated.View>
         </>
     );
-}
+};
+
+export default ChatRow;

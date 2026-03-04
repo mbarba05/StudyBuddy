@@ -8,7 +8,10 @@ type ChatBubbleProps = {
 
 const ChatBubble = ({ children, isOwn }: ChatBubbleProps) => {
     return (
-        <View className={`${isOwn ? "bg-colors-secondary" : "bg-colors-textSecondary"} max-w-[70%] p-3  rounded-xl`}>
+        <View
+            testID="bubble"
+            className={`${isOwn ? "bg-colors-secondary" : "bg-colors-textSecondary"} max-w-[70%] p-3  rounded-xl`}
+        >
             <Text className="text-colors-text">{children}</Text>
         </View>
     );

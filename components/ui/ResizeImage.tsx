@@ -18,6 +18,7 @@ export function ResizeImage({
     return (
         <Pressable onPress={onPress}>
             <Image
+                testID="file://picked.jpg"
                 source={{ uri: url }}
                 style={{ width, aspectRatio, borderRadius: 12 }}
                 cachePolicy="memory-disk"
