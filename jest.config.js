@@ -28,6 +28,7 @@ module.exports = {
                         "@react-native",
                         "@react-navigation",
                         "react-native-reanimated",
+                        "react-native-css-interop",
                         "expo(nent)?",
                         "@expo(nent)?/.*",
                         "expo-modules-core",

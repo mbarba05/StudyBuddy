@@ -1,0 +1,16 @@
+In this scrum cycle i will implemnt barriers on the match making algorithm. I will add  
+a limit to the amount of swipes a user can have> i will also have the limit amount display 
+in the Ui so users can see how many swipes are left. lastly, i will add a countdown timer
+that can display how much longer th user has to wait until the swipes reset. 
+
+
+mid cycle i was having trouble making the app refresh and stop profile cards from showing once the 
+swipe limit was reached. Same thing when the countdown timer that would reset swipes.
+
+
+At the end of this cycle I was able to implement the swipe limiter. I was able to 
+aslo make the swipe count to display in the matchmaking tab. I added the timer 
+counter to display when the swipes will reset. 
+I also did some test cases of these parts of the algorithm. doing these test cases 
+was quite an experience. Was able to learn how to mock supabase database and see if 
+the implementations worked. All the test i created passed. 
