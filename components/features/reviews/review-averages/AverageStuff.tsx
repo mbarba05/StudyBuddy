@@ -111,7 +111,7 @@ export default function AverageStuff({ reviews, selectedCourseCode }: Props) {
     <View className="w-full items-center">
       {/*Overall Card*/}
       <AvgCard
-        title="Averages"
+        title="Total Averages for Professor"
         subtitle={`${overall.total} review${overall.total === 1 ? "" : "s"}`}
         avgGrade={overall.gradeLetter}
         avgGpa={overall.gpaAvg}
