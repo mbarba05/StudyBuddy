@@ -102,7 +102,7 @@ describe("[conversationId]", () => {
         (globalThis as any).__setRouteParams({
             conversationId: "conv-1",
             dmName: "Sam",
-            ppPic: "https://example.com/pic.png",
+            ppPic: "file://picked.jpg",
         });
 
         (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValueOnce({ granted: true });
@@ -133,6 +133,50 @@ describe("[conversationId]", () => {
 
         expect(ImagePicker.requestMediaLibraryPermissionsAsync).toHaveBeenCalled();
         expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalled();
+    });
+
+    it("should show date and time for messages new each day", async () => {
+        /**
+         * Arrange
+         * Two messages on different days.
+         */
+        const day1 = "2026-03-01T18:00:00.000Z";
+        const day2 = "2026-03-02T09:30:00.000Z";
+
+        mockGetMessagesForConv.mockResolvedValueOnce([
+            {
+                id: "m1",
+                sender_id: "user-1",
+                content: "First day message",
+                created_at: day1,
+                attachments: [],
+            },
+            {
+                id: "m2",
+                sender_id: "user-2",
+                content: "Second day message",
+                created_at: day2,
+                attachments: [],
+            },
+        ]);
+
+        const screen = render(<ConversationScreen />);
+
+        await (globalThis as any).__runFocusEffect();
+
+        /**
+         * Assert:
+         * 1. Both messages render
+         * 2. Both day headers render
+         * 3. Each message time renders
+         */
+
+        expect(await screen.findByText("First day message")).toBeTruthy();
+        expect(await screen.findByText("Second day message")).toBeTruthy();
+
+        // Day headers (adjust format to match your UI)
+        expect(screen.getByText("Sun, Mar 1, 2026")).toBeTruthy();
+        expect(screen.getByText("Mon, Mar 2, 2026")).toBeTruthy();
     });
 });
 
@@ -186,7 +230,7 @@ describe("[conversationId] realtime", () => {
         mockGetMessagesForConv.mockResolvedValueOnce([
             { id: "m1", sender_id: "user-1", content: "hello", attachments: [], count: 999 },
         ]);
-        mockGetAttachmentSignedUrlCached.mockResolvedValueOnce("https://example.com/file.jpg");
+        mockGetAttachmentSignedUrlCached.mockResolvedValueOnce("file://picked.jpg");
         mockIsImageMime.mockReturnValue(true);
 
         render(<ConversationScreen />);
@@ -195,7 +239,7 @@ describe("[conversationId] realtime", () => {
 
         expect(messageInsertHandler).toBeDefined();
 
-        const url = "https://example.com/file.jpg";
+        const url = "file://picked.jpg";
         // 3) simulate another user sending a message with atachment (realtime INSERT)
         const newAtachment: MessageAttachmentTable = {
             id: "a2",
