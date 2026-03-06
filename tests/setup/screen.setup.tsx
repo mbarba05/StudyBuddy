@@ -24,7 +24,7 @@ jest.mock("expo-haptics", () => ({
 }));
 
 //Supabase mock
-jest.mock("@/lib/subapase", () => ({
+jest.mock("@/lib/supabase", () => ({
     __esModule: true,
     default: {
         channel: jest.fn(() => ({
