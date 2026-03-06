@@ -5,6 +5,9 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+import { handleRequest, json } from "@/services/aiSummaryCore";
+/*
 // creating blue prints for object
 type ReqBody = {
   profId: number | string;
@@ -19,28 +22,12 @@ function json(data: unknown, status = 200){
     headers: { "Content-Type": "application/json"}, // data getting returning is json 
   });
 }
-
+*/
 // what runs when the endpoint(edge function) is called creating a small HTTP server
 // req is the text that needs to be summarized
 // POST => a request used to send data to a serve so it can create something.. when user
 // creates a profile does something like a Post request since new data is being added
 Deno.serve(async (req) => { 
-  try {  
-//console.log("aiSummary hit: ", { method: req.method, ts: new Date().toISOString() });
-
-    if(req.method !== "POST") return json({ error: "Use POST" }, 405);
-    const body = (await req.json()) as ReqBody; //converting incoing data into javaScript Obj
-//    console.log("body: ", body);
-
-    const { profId, professorName } = body;//creates variables profId and professorName
-
-    const profIdNum = typeof profId === "string" ? Number(profId) : profId;
-//    console.log("parsed: ", {profId, profIdNum, professorName });
-
-    if(!Number.isFinite(profIdNum) || profIdNum <= 0){ //finiate (checks if its a valid number  and >= 0)
-      return json({ error: "Invalid Professor ID" }, 400);
-    }
-
     //grabbing secrets from supabase
     const apiKey = Deno.env.get("GROQ_API_KEY");
     const projectUrl = Deno.env.get("SUPABASE_URL");
@@ -52,9 +39,16 @@ Deno.serve(async (req) => {
     // creating a client/user that can bypass the RLS rules
     const admin = createClient(projectUrl, serviceRole, {
       auth: { persistSession: false}, //do not store user session info
-      global: {header: { Authorization: `Bearer ${serviceRole}`}}, // using serviceRole as authentication
+      global: {headers: { Authorization: `Bearer ${serviceRole}`}}, // using serviceRole as authentication
     });
 
+    return handleRequest(req, { 
+      admin,
+      apiKey,
+      fetchFn: fetch,
+      updateSummaryTH: 7,
+    });
+/*
     // grabbing reviews from supabase using a RPC call
 //    console.log("calling rpc with : ", {p_prof_id: profIdNum });
     const { data: reviewRows, error: reviewErr} = await admin.rpc(
@@ -159,4 +153,5 @@ Deno.serve(async (req) => {
   }catch(e){
    return json({ error: String(e)}, 500);
   }
-});
+});*/
+  }
