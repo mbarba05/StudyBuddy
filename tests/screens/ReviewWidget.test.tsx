@@ -1,9 +1,6 @@
 import React from "react";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import { colors } from "@/assets/colors";
-import ReviewWidget from "@/components/features/reviews/ReviewWidget";
-
 // ---- mock vote service ----
 const mockVoteOnReview = jest.fn();
 
@@ -11,14 +8,56 @@ jest.mock("@/services/reviewsService", () => ({
   voteOnReview: (...args: any[]) => mockVoteOnReview(...args),
 }));
 
+// ReviewWidget imports these too — keep isolated in this file
+jest.mock("@/services/reviewCommentsService", () => ({
+  getReviewComments: jest.fn(),
+  addReviewComment: jest.fn(),
+  voteOnReviewComment: jest.fn(),
+}));
+
+jest.mock("@/assets/colors", () => ({
+  colors: {
+    text: "#fff",
+    textSecondary: "#aaa",
+    background: "#000",
+    primary: "#0f0",
+    secondary: "#111",
+    success: "green",
+    error: "red",
+  },
+}));
+
+jest.mock("@/lib/utillities", () => ({
+  parseLastName: (s: string) => s?.split(" ")?.slice(-1)?.[0] ?? s,
+}));
+
+/**
+ * CRITICAL:
+ * We render Ionicons as Text with the ICON NAME in the text.
+ * That way we can select the review vote icons specifically:
+ * - icon:arrow-up-circle
+ * - icon:arrow-down-circle
+ *
+ * We also forward props so toHaveProp("color", ...) works.
+ */
+jest.mock("@expo/vector-icons", () => {
+  const React = require("react");
+  const { Text } = require("react-native");
+  return {
+    Ionicons: (props: any) => (
+      <Text {...props}>{`icon:${props.name}`}</Text>
+    ),
+  };
+});
+
+import { colors } from "@/assets/colors";
+import ReviewWidget from "@/components/features/reviews/ReviewWidget";
+
 type ReviewDisplayLike = {
   reviewId: string;
-
-  // NEW cycle fields in your widget
   voteScore: number;
   myVote?: -1 | 0 | 1;
 
-  // fields rendered by the widget
   code: string;
   profName: string;
   term: string;
@@ -31,12 +70,11 @@ type ReviewDisplayLike = {
 
 const makeReview = (overrides: Partial<ReviewDisplayLike> = {}): ReviewDisplayLike => ({
   reviewId: "r1",
-
   voteScore: 0,
   myVote: 0,
 
   code: "CSCI 130",
-  profName: "John Smith", // IMPORTANT: parseLastName requires a real string
+  profName: "John Smith",
   term: "Spring 2026",
   reviewDate: "2026-02-16",
   reviewText: "Good overall.",
@@ -52,19 +90,15 @@ describe("ReviewWidget (voteScore + myVote colors + delete)", () => {
   });
 
   function getVoteButtons(screen: ReturnType<typeof render>) {
-  return {
-    upBtn: screen.getByTestId("vote-up"),
-    downBtn: screen.getByTestId("vote-down"),
-  };
-}
-
+    return {
+      upBtn: screen.getByTestId("vote-up"),
+      downBtn: screen.getByTestId("vote-down"),
+    };
+  }
 
   function getIcons(screen: ReturnType<typeof render>) {
-    // Your test setup mocks Ionicons as <Text {...props}>icon</Text>
-    // So we can find both icons via the text "icon" and inspect their props.
-    const icons = screen.getAllByText("icon");
-    expect(icons.length).toBe(2);
-    const [upIcon, downIcon] = icons;
+    const upIcon = screen.getByText("icon:arrow-up-circle");
+    const downIcon = screen.getByText("icon:arrow-down-circle");
     return { upIcon, downIcon };
   }
 
@@ -73,7 +107,6 @@ describe("ReviewWidget (voteScore + myVote colors + delete)", () => {
       <ReviewWidget review={makeReview({ voteScore: 3, myVote: 0 }) as any} />
     );
 
-    // single total vote count displayed
     expect(screen.getByText("3")).toBeTruthy();
 
     const { upIcon, downIcon } = getIcons(screen);
@@ -132,18 +165,16 @@ describe("ReviewWidget (voteScore + myVote colors + delete)", () => {
   });
 
   it("toggle off: pressing the same vote again removes it (myVote -> 0) and returns icons to neutral", async () => {
-    // already upvoted
     const screen = render(
       <ReviewWidget review={makeReview({ voteScore: 1, myVote: 1 }) as any} />
     );
 
-    // backend returns neutral state (vote removed)
     mockVoteOnReview.mockResolvedValueOnce({ vote_score: 0, my_vote: 0 });
 
     const { upBtn } = getVoteButtons(screen);
 
     await act(async () => {
-      fireEvent.press(upBtn); // press up again
+      fireEvent.press(upBtn);
     });
 
     await waitFor(() => {
@@ -164,7 +195,6 @@ describe("ReviewWidget (voteScore + myVote colors + delete)", () => {
       <ReviewWidget review={makeReview({ voteScore: 1, myVote: 1 }) as any} />
     );
 
-    // typical result after switching from up to down
     mockVoteOnReview.mockResolvedValueOnce({ vote_score: -1, my_vote: -1 });
 
     const { downBtn } = getVoteButtons(screen);
@@ -242,11 +272,9 @@ describe("ReviewWidget (voteScore + myVote colors + delete)", () => {
     const r1 = makeReview({ voteScore: 2, myVote: 1 });
     const screen = render(<ReviewWidget review={r1 as any} />);
 
-    // initial state
     expect(screen.getByText("2")).toBeTruthy();
     expect(getIcons(screen).upIcon).toHaveProp("color", colors.success);
 
-    // simulate parent refresh from backend
     const r2 = makeReview({ voteScore: 2, myVote: -1 });
     screen.rerender(<ReviewWidget review={r2 as any} />);
 
