@@ -6,7 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-import { handleRequest, json } from "@/services/aiSummaryCore";
+import { handleRequest, json } from "../../../services/aiSummaryCore.ts";
 /*
 // creating blue prints for object
 type ReqBody = {
@@ -153,5 +153,6 @@ Deno.serve(async (req) => {
   }catch(e){
    return json({ error: String(e)}, 500);
   }
-});*/
-  }
+});
+*/
+  });
