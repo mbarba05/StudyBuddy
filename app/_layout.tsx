@@ -1,4 +1,6 @@
+import InAppNotificationBanner from "@/components/inAppNotificationsBanner";
 import { AuthProvider } from "@/services/auth/AuthProvider";
+import { InAppNotificationProvider } from "@/services/auth/inAppNotifications";
 import { ProfileProvider } from "@/services/ProfileProvider";
 import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import { Slot } from "expo-router";
@@ -13,9 +15,12 @@ export default function RootLayout() {
         <AuthProvider>
             <ProfileProvider>
                 <StatusBar style="light" />
-                <ActionSheetProvider>
-                    <Slot />
-                </ActionSheetProvider>
+                <InAppNotificationProvider>
+                    <ActionSheetProvider>
+                        <Slot />
+                        <InAppNotificationBanner />
+                    </ActionSheetProvider>
+                </InAppNotificationProvider>
             </ProfileProvider>
         </AuthProvider>
     );

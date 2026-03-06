@@ -1,4 +1,8 @@
 // PushNotifications.ts
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient("https://<project>.supabase.co", "<anon_key or sb_publishable_key>");
+
 const sanitizeForLog = (input: string): string => {
     return input.replace(/[\r\n]/g, "");
 };
