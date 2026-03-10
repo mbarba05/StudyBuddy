@@ -1,4 +1,5 @@
 import { colors } from "@/assets/colors";
+import ProfessorSummaryBox from "@/components/features/reviews/ProfessorSummaryBox";
 import ReviewWidget from "@/components/features/reviews/ReviewWidget";
 import AverageStuff from "@/components/features/reviews/review-averages/AverageStuff";
 import { ClassFilterButton } from "@/components/ui/Buttons";
@@ -134,6 +135,14 @@ const ProfessorReviewsScreen = () => {
         </View>
     );
 
+    const reviewsTexts = useMemo(() => {
+        const list = reviews ?? [];
+        return list
+            .map((r) => (r.reviewText ?? "").trim())
+            .filter(Boolean)
+            .slice(0, 120);
+    }, [reviews]);
+
     if (loading) return <LoadingScreen />;
 
     return (
@@ -150,6 +159,10 @@ const ProfessorReviewsScreen = () => {
                 {/* Course filter */}
                 {courseOptions.length > 0 && (
                     <View className="border-y p-2 border-colors-textSecondary w-full">
+                        <View className="w-full mt-3">
+                            <ProfessorSummaryBox profId={Number(profId)} professorName={profName ?? "unknown"} />
+                        </View>
+                        <View className="w-full h-[1px] bg-white/20 mt-3" />
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             <View className="flex-row gap-2">
                                 <Text className="text-colors-textSecondary text-lg font-semibold self-center">

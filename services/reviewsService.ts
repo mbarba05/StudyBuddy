@@ -143,6 +143,18 @@ export const getReviewsForProf = async (
   return normalizeReviews(data ?? []);
 };
 
+// grabbing saved summaries and the data of when it was last updated/created and how many reviews the professor has
+export async function getSavedSummaries(profId: number){
+  const { data, error } = await supabase
+    .from("professor_summaries")
+    .select("summary, review_count, updated_at")
+    .eq("prof_id", profId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ?? null;
+}
+
 const normalizeReview = (item: any): ReviewDisplay => {
   const d = new Date(item.created_at);
   const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
