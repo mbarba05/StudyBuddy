@@ -1,0 +1,10 @@
+3/12/2026
+In this scrum cycle i will add a bio option to the profiles. I will make sure it gives the option to add a bio when creating the account or
+come back to it after the account is created. I'll make the bio visible when a person goes to the profile account. 
+I'll make sure users are able to go back and add/edit the bio at anytime. If the user decides to have no bio, ill make sure the 
+bio space is removed so there won't be an invisible/empty box. I will also make sure the total average and ai summary is only shown when "all" courses 
+is selected and it's remvoed when a spesific course is selected. When a course is selected, the course average will show instead. 
+
+
+
+
