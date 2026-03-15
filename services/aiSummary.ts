@@ -16,7 +16,7 @@ export async function getProfessorSummary(
             const res = (error as any).context as Response | undefined;
             try{
                 // used for debugging 
-               const status = res?.status;
+                const status = res?.status;
                 const reqId = res?.headers?.get?.("sb-request-id") ?? "(no request id)";
                 const bodyText = res ? await res.text() : "(no response)"; 
                 
@@ -25,7 +25,7 @@ export async function getProfessorSummary(
                 console.warn("edge function body:", bodyText);
 
             } catch (e) {
-              console.warn("failed reading edge response body:", e);
+                console.warn("failed reading edge response body:", e);
             }
             return "Summary Unavailable";
         }

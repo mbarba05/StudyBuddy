@@ -110,6 +110,11 @@ export default function ProfileScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    <View>
+                        <Text className="text-left color-colors-textSecondary">Bio</Text>
+                        <Text className="font-semibold text-2xl text-colors-text">{profile?.bio}</Text>
+                    </View>
                 </View>
             </View>
             <View className="w-full">
