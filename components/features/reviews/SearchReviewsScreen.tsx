@@ -38,37 +38,30 @@ const SearchReviewsScreen = () => {
     }, [searchTerm]);
 
     useEffect(() => {
-        const fetchUserRecentSearches = async () => {
+        let isMounted = true;
+
+        const fetchInitialData = async () => {
             setRecentLoading(true);
-            const results = await getRecentSearchesForUser();
-
-            if (results == null) {
-                setRecentLoading(false);
-                return;
-            }
-
-            setRecentSearches(results);
-            setRecentLoading(false);
-        };
-
-        fetchUserRecentSearches();
-    }, []);
-
-    useEffect(() => {
-        const fetchPopularSearches = async () => {
             setPopularLoading(true);
-            const results = await getPopularSearchesByMajor();
 
-            if (results == null) {
-                setRecentLoading(false);
-                return;
-            }
+            const [recentResults, popularResults] = await Promise.all([
+                getRecentSearchesForUser(),
+                getPopularSearchesByMajor(),
+            ]);
 
-            setPopularSearches(results);
+            if (!isMounted) return;
+
+            setRecentSearches(recentResults ?? []);
+            setPopularSearches(popularResults ?? []);
+            setRecentLoading(false);
             setPopularLoading(false);
         };
 
-        fetchPopularSearches();
+        fetchInitialData();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const profListItemPress = (item: ProfessorForSearch) => {
