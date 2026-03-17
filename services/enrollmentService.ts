@@ -180,8 +180,6 @@ export async function getReviewableEnrollments(): Promise<ReviewableEnrollment[]
         throw error;
     }
 
-    console.log("Raw enrollments from Supabase:", data);
-
     // Normalize into your ReviewableEnrollment[]
     const normalizedData: ReviewableEnrollment[] = ((data as any[]) ?? []) //made it any to silence ts, since supabase joins return weird data; it works so we good
         .filter((row) => row.course_prof && row.course_prof.professor && row.course_prof.course)
@@ -205,7 +203,6 @@ export async function getReviewableEnrollments(): Promise<ReviewableEnrollment[]
             };
         });
 
-    console.log("Reviewable enrollments (normalized):", normalizedData);
     return normalizedData;
 }
 
