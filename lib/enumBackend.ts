@@ -20,4 +20,10 @@ export const TABLES = {
     RECENTLY_VIEWED_PROF_GLOBAL: "recently_viewed_prof_global",
 };
 
+export const FUNCTIONS = {
+    GET_PROFILES_FOR_SEARCH: "get_profile_from_search",
+    CHECK_PENDING_REQUEST: "check_pending_request",
+    ARE_FRIENDS: "are_friends",
+};
+
 export const BUCKETS = { PROFILE_PICS: "profile-pictures", ATTACHMENTS: "chat-attatchments" };

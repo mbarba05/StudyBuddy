@@ -626,3 +626,22 @@ export async function majorMatching(
     });
     return results;
 }
+
+export interface ProfileForSearch {
+    user_id: string;
+    display_name: string;
+    pp_url?: string;
+    major: string;
+    year: string;
+}
+
+export const searchForProfile = async (searchTerm: string): Promise<ProfileForSearch[]> => {
+    const { data, error } = await supabase.rpc("get_profile_from_search", { p_search_term: searchTerm });
+
+    if (error) {
+        console.error("searchForProfile: ", error);
+        return [];
+    }
+
+    return data;
+};

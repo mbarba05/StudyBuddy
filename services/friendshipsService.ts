@@ -1,4 +1,4 @@
-import { TABLES } from "@/lib/enumBackend";
+import { FUNCTIONS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { createConversation } from "./messageService";
 
@@ -161,7 +161,9 @@ export async function areFriends(user_id: string, friend_id: string) {
         .or(`and(user_id.eq.${user_id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user_id})`)
         .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+        console.error("areFriends", error);
+    }
     return !!data;
 }
 
@@ -242,3 +244,58 @@ export async function getAllFriends() {
         };
     });
 }
+
+export enum FriendshipStatus {
+    none,
+    friends,
+    self,
+    pendingSent,
+    pendingAccept,
+    error,
+}
+
+export const checkStatus = async (userId: string): Promise<FriendshipStatus> => {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error("User not authenticated");
+        return FriendshipStatus.error;
+    }
+
+    if (userId == user.id) return FriendshipStatus.self;
+
+    const { data: areFriends, error: friendsError } = await supabase.rpc(FUNCTIONS.ARE_FRIENDS, {
+        p_curr_user_id: user.id,
+        p_user_id: userId,
+    });
+
+    if (friendsError) {
+        console.error("checkStatus, are checking if friends", friendsError);
+        return FriendshipStatus.error;
+    }
+
+    console.log("ARE FRINED", areFriends);
+
+    if (areFriends[0].friends) return FriendshipStatus.friends;
+
+    const { data: reqData, error } = await supabase.rpc(FUNCTIONS.CHECK_PENDING_REQUEST, {
+        p_curr_user_id: user.id,
+        p_user_id: userId,
+    });
+
+    if (error) {
+        console.error("checkStatus, error finding pending friend request", error);
+        return FriendshipStatus.error;
+    }
+    console.log("REQ DATA", reqData);
+    if (reqData.length > 0) {
+        if (reqData[0].sender_id == user.id) return FriendshipStatus.pendingSent; // curr user sent a request that is pending
+
+        if (reqData[0].sender_id == userId) return FriendshipStatus.pendingAccept; // curr user has received a request from the user they are viewing
+    }
+
+    return FriendshipStatus.none;
+};
