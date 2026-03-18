@@ -20,6 +20,15 @@ export type FriendRequest = {
     status: FriendStatus;
 };
 
+export type FriendListItem = {
+    friend_id: string;
+    full_name: string;
+    avatar_url: string | null;
+    major: string | null;
+    year: string | null;
+    interactionCount?: number;
+};
+
 export async function sendFriendRequest(receiver_id: string) {
     const {
         data: { user },
@@ -97,11 +106,7 @@ export async function getOutgoingFriendRequests(user_id: string) {
     return data as FriendRequest[];
 }
 
-// Accept incoming friend request
 export async function acceptFriendRequest(request: FriendRequest) {
-    console.log("Req", request.id);
-
-    // Update request to "accepted"
     const { error: updateErr } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
         .update({ status: "accepted" })
@@ -109,7 +114,6 @@ export async function acceptFriendRequest(request: FriendRequest) {
 
     if (updateErr) throw updateErr;
 
-    // Insert mutual friendship entries
     const { error: insertErr } = await supabase.from(TABLES.FRIENDSHIPS).insert([
         {
             user_id: request.sender_id,
@@ -128,21 +132,24 @@ export async function acceptFriendRequest(request: FriendRequest) {
     await createConversation(request.sender_id, request.receiver_id);
 }
 
-// Reject friend request
 export async function rejectFriendRequest(request_id: number) {
-    const { error } = await supabase.from(TABLES.FRIEND_REQUESTS).update({ status: "rejected" }).eq("id", request_id);
+    const { error } = await supabase
+        .from(TABLES.FRIEND_REQUESTS)
+        .update({ status: "rejected" })
+        .eq("id", request_id);
 
     if (error) throw error;
 }
 
-// Removes friends but needss to be checked on mobile
 export async function removeFriend(friend_id: string) {
     const {
         data: { user },
         error: authError,
     } = await supabase.auth.getUser();
+
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
+
     const { error } = await supabase
         .from(TABLES.FRIENDSHIPS)
         .delete()
@@ -153,7 +160,6 @@ export async function removeFriend(friend_id: string) {
     if (error) throw error;
 }
 
-// Checks if two different users are friends already
 export async function areFriends(user_id: string, friend_id: string) {
     const { data, error } = await supabase
         .from(TABLES.FRIENDSHIPS)
@@ -165,12 +171,12 @@ export async function areFriends(user_id: string, friend_id: string) {
     return !!data;
 }
 
-// Friends count for the profile screen
 export async function getFriendsCount() {
     const {
         data: { user },
         error: authError,
     } = await supabase.auth.getUser();
+
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
 
@@ -188,14 +194,15 @@ export async function getFriendsCount() {
     return count || 0;
 }
 
-// Get all friends
-export async function getAllFriends() {
+export async function getAllFriends(): Promise<FriendListItem[]> {
     const {
         data: { user },
         error: authError,
     } = await supabase.auth.getUser();
+
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
+
     const { data, error } = await supabase
         .from(TABLES.FRIENDSHIPS)
         .select(
@@ -215,7 +222,7 @@ export async function getAllFriends() {
         user_id,
         display_name,
         pp_url,
-        major: major_id (name),
+        major:major_id(name),
         year
       )
     `,
@@ -228,17 +235,60 @@ export async function getAllFriends() {
         return [];
     }
 
-    return data.map((row) => {
-        // if I am user_id → friend is friendProfile
+    return (data ?? []).map((row: any) => {
         const isUserSender = row.user_id === user.id;
         const profile: any = isUserSender ? row.friendProfile : row.userProfile;
 
         return {
-            friend_id: profile.user_id,
-            full_name: profile.display_name,
-            avatar_url: profile.pp_url,
-            major: profile.major.name,
-            year: profile.year,
+            friend_id: profile?.user_id,
+            full_name: profile?.display_name ?? "Unknown User",
+            avatar_url: profile?.pp_url ?? null,
+            major: profile?.major?.name ?? null,
+            year: profile?.year ?? null,
         };
     });
+}
+
+export async function getFriendsByInteraction(mode: "most" | "least"): Promise<FriendListItem[]> {
+    const friends = await getAllFriends();
+    if (friends.length === 0) return [];
+
+    const { data, error } = await supabase.rpc("get_friend_interaction_counts");
+
+    if (error) {
+        console.error("getFriendsByInteraction rpc error:", error);
+        return friends;
+    }
+
+    const counts: Record<string, number> = {};
+
+    friends.forEach((friend) => {
+        counts[friend.friend_id] = 0;
+    });
+
+    (data ?? []).forEach((row: any) => {
+        if (row.friend_id) {
+            counts[row.friend_id] = Number(row.interaction_count ?? 0);
+        }
+    });
+
+    const merged = friends.map((friend) => ({
+        ...friend,
+        interactionCount: counts[friend.friend_id] || 0,
+    }));
+
+    merged.sort((a, b) => {
+        const aCount = a.interactionCount || 0;
+        const bCount = b.interactionCount || 0;
+
+        if (mode === "most") {
+            if (bCount !== aCount) return bCount - aCount;
+            return a.full_name.localeCompare(b.full_name);
+        }
+
+        if (aCount !== bCount) return aCount - bCount;
+        return a.full_name.localeCompare(b.full_name);
+    });
+
+    return merged;
 }
