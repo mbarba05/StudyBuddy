@@ -10,9 +10,10 @@ import { Major } from "./majorsService";
 export interface Profile {
     user_id: string;
     display_name: string;
-    major: Major;
+    major: Major;  // adding "| unknown" removes the error on line 46
     year: string | null;
     pp_url: string | null;
+    bio: string | null;
 }
 
 export const getUserProfile = async (): Promise<Profile | null> => {
@@ -27,7 +28,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, major:majors(id, name), year, pp_url")
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, bio")
         //                              ^ join majors by foreign key
         .eq("user_id", user.id)
         .single();
@@ -67,6 +68,7 @@ type CreateProfileInput = {
     majorId: number;
     year: string;
     ppUrl?: string; // can be file:// or public URL
+    bio: string | null;
 };
 
 // function to get profile inputs from the frontend
@@ -98,6 +100,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         display_name: input.displayName,
         major_id: input.majorId,
         year: input.year,
+        bio: input.bio,
         ...(finalUrl ? { pp_url: finalUrl } : {}),
     };
 
@@ -105,7 +108,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .upsert(payload, { onConflict: "user_id" })
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, bio`)
         .single();
 
     if (error) throw error;
@@ -118,6 +121,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         year: data.year,
         pp_url: data.pp_url ?? null,
         major: { id: major.id, name: major.name },
+        bio: data.bio,
     };
 
     return result;
@@ -183,6 +187,7 @@ type EditProfileInput = {
     major?: number | null; // number|null|undefined
     pp_url?: string | null; // if string and local (file://), we upload; if null, we clear; if undefined, ignore
     year?: string | null;
+    bio?: string | null;
 };
 
 /**
@@ -209,6 +214,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
     if (updates.display_name !== undefined) payload.display_name = updates.display_name;
     if (updates.major !== undefined) payload.major_id = updates.major; // can be null to clear
     if (updates.year !== undefined) payload.year = updates.year; // can be null/empty
+    if(updates.bio !== undefined) payload.bio = updates.bio;
 
     // Handle profile picture:
     // - If undefined: leave unchanged.
@@ -234,7 +240,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         .from(TABLES.PROFILES)
         .update(payload)
         .eq("user_id", user.id)
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, bio`)
         .single();
 
     if (error) throw error;
@@ -247,6 +253,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         year: data.year ?? null,
         pp_url: data.pp_url ?? null,
         major: { id: major?.id, name: major?.name },
+        bio: data.bio ?? null,
     };
 
     return result;

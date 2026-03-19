@@ -21,6 +21,7 @@ const EditProfileScreen = () => {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [fullName, setFullName] = useState("");
+    const [bio, setBio] = useState("");
     const [yearOpen, setYearOpen] = useState(false);
     const [yearValue, setYearValue] = useState<string | null>(null);
     const [majorOpen, setMajorOpen] = useState(false);
@@ -70,6 +71,7 @@ const EditProfileScreen = () => {
                     setFullName(prof.display_name ?? "");
                     setImageUri(prof.pp_url ?? null);
                     setYearValue(prof.year ?? null);
+                    setBio(prof.bio ?? "");
 
                     const majorId =
                         typeof prof.major === "object"
@@ -186,6 +188,7 @@ const EditProfileScreen = () => {
     const updateProfile = async () => {
         const editedProfile = {
             display_name: fullName,
+            bio: bio.trim() || null,
             major: majorValue,
             pp_url: imageUri,
             year: yearValue,
@@ -251,6 +254,21 @@ const EditProfileScreen = () => {
                             value={fullName}
                             onChangeText={setFullName}
                             placeholderTextColor="darkgray"
+                        />
+                    </View>
+
+                    <View>
+                        <Text className="mb-2 color-colors-textSecondary">Bio</Text>
+                        <LoginInput
+                            placeholder="Bio (optional)"
+                            value={bio}
+                            onChangeText={setBio}
+                            multiline
+                            numberOfLines={3}
+                            textAlignVertical="top"
+                            style={{
+                                height: 64,
+                            }}
                         />
                     </View>
 
