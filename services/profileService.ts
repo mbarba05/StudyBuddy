@@ -10,7 +10,7 @@ import { Major } from "./majorsService";
 export interface Profile {
     user_id: string;
     display_name: string;
-    major: Major;  // adding "| unknown" removes the error on line 46
+    major: Major; // adding "| unknown" removes the error on line 46
     year: string | null;
     pp_url: string | null;
     bio: string | null;
@@ -214,7 +214,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
     if (updates.display_name !== undefined) payload.display_name = updates.display_name;
     if (updates.major !== undefined) payload.major_id = updates.major; // can be null to clear
     if (updates.year !== undefined) payload.year = updates.year; // can be null/empty
-    if(updates.bio !== undefined) payload.bio = updates.bio;
+    if (updates.bio !== undefined) payload.bio = updates.bio;
 
     // Handle profile picture:
     // - If undefined: leave unchanged.
@@ -608,6 +608,7 @@ export async function majorMatching(
             results.push({
                 user_id: c.user_id,
                 display_name: c.display_name as string,
+                bio: c.bio as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
                 major: c.major as Major,
