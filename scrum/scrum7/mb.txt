@@ -1,2 +1,34 @@
-3/10/26: This cycle is focusing on having the ability to add
-multiple photos to ones profile.
+3/10/26: This scrum cycle focused on expanding the profile feature so users can add multiple photos
+instead of only having one main profile picture. I updated the profile system to support an array of 
+extra image URLs in addition to the existing main profile photo. On the Edit Profile screen, I added 
+a new Extra Profile Photos section where users can pick and remove multiple images before saving. On 
+the Profile screen, I added a Profile Photos section and placed it below the main profile information 
+and above the current term courses so the layout feels more natural. I also reused the existing Supabase 
+profile-pictures bucket and stored the uploaded files inside folders named after each user’s id so everything 
+stays organized.
+
+3/13/26:
+While working on this feature, I ran into some issues with image persistence and web compatibility. At first, 
+the extra profile photos would appear right after being selected, but disappear after refreshing because 
+temporary blob: URLs were being saved instead of real Supabase storage URLs. I fixed this by treating blob: 
+values as local image sources and uploading them before saving the profile data. I also ran into a web build 
+error caused by react-native-pager-view being imported in the chat image component, so I added a separate web-safe 
+version of that component to keep the browser build working. On the testing side, I had to add testIDs to the extra 
+photo add and remove buttons so the Jest tests could target them correctly. After making those fixes, the feature 
+saved and reloaded correctly across sessions.
+
+Test Cases:
+Making sure existing extra profile photos load on the Edit Profile screen. Making sure the add extra photos 
+button opens the image picker. Making sure saving the profile sends photo_urls to editProfile. Making sure removing 
+an extra profile photo updates the saved photo_urls array correctly. Making sure multiple newly selected photos are 
+included in the save payload. Making sure the Profile screen renders the Profile Photos section. Making sure the empty 
+state message appears when no extra profile photos exist. Making sure the Profile Photos section appears below the 
+profile info and above the current term courses. Making sure uploaded images persist after refresh by saving real 
+Supabase URLs instead of temporary blob: URLs.
+
+3/19/26:
+The multiple profile photos feature is now fully implemented and tested. Users can add, remove, and save extra 
+profile photos from the Edit Profile screen, and those images display in the correct place on the Profile screen. 
+The photos now persist after refresh because they are uploaded to Supabase storage and saved as real URLs. Both 
+manual and automated tests confirm that the feature works correctly and integrates properly with the existing profile 
+system.
