@@ -43,7 +43,6 @@ export default function MatchmakingLayout() {
                 options={{
                     headerShown: true,
                     headerTitle: "",
-                    //headerTitleStyle: { color: colors.text, fontSize: 22 },
                     headerStyle: { backgroundColor: colors.background },
                     headerBackVisible: true,
                 }}

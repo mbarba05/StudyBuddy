@@ -1,7 +1,7 @@
 import { colors } from "@/assets/colors";
 import CourseSearchModal from "@/components/features/courses/CourseSearchModal";
 import { LoginButton } from "@/components/ui/Buttons";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { LoginInput } from "@/components/ui/TextInputs";
 import { yearOptions } from "@/lib/enumFrontend";
 import { parseLastName } from "@/lib/utillities";

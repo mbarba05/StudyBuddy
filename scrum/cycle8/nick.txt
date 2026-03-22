@@ -1,0 +1,7 @@
+3/20: Getting a head start this cycle. Ill be adding the feature to search through all profiles on the matchmaking screen
+Ima have it show the matchmaking card when viewing someones profile. From there you can send/accept/decline friend requests
+I also think i can implement mutual friends and show them and prioritize profiles with mutal friends in the search.
+
+3/22: when viewing a user that you search, there are like 4 different possible relationships, 
+(friends, not friends, accept request, cancel request) so ill need to program for that, and some of the old functions for 
+that only work with the request so ill have to remake them

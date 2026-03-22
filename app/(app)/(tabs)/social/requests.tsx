@@ -1,6 +1,6 @@
 // app/(app)/(tabs)/social.tsx
 import MatchMakingCard from "@/components/MatchMakingCard";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import {
     acceptFriendRequest,
     FriendRequest,

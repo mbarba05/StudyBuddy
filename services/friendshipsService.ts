@@ -150,7 +150,12 @@ export async function removeFriend(friend_id: string) {
             `and(user_id.eq.${user.id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user.id})`,
         );
 
-    if (error) throw error;
+    if (error) {
+        console.error("removeFriend:", error);
+        return error;
+    }
+
+    return true;
 }
 
 // Checks if two different users are friends already

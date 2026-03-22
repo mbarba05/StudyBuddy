@@ -77,7 +77,7 @@ const ProfileSearch = () => {
 
     return (
         <View className="flex-1 bg-colors-background p-4">
-            <SearchBar placeholder="Search Users" value={searchTerm} onChangeText={setSearchTerm} />
+            <SearchBar placeholder="Search Users" value={searchTerm} onChangeText={setSearchTerm} autoCorrect={false} />
             {searchLoading ? (
                 <ActivityIndicator className="mt-4" />
             ) : (
