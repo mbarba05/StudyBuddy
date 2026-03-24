@@ -39,8 +39,9 @@ export const InAppNotificationProvider = ({ children }: { children: React.ReactN
     const addNotification = (notification: Notification) => {
         setQueue((prev) => {
             // prevent duplicates
-            if (prev.some((n) => n.id === notification.id)) return prev;
-
+            if (prev.some((n) => n.id === notification.id) || currentNotification?.id === notification.id) {
+                return prev;
+            }
             return [...prev, notification];
         });
     };
