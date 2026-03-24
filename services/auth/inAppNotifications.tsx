@@ -1,5 +1,5 @@
-import supabase from "@/lib/subapase";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import supabase from "../../lib/subapase";
 import { useAuth } from "./AuthProvider";
 
 type Notification = {
