@@ -112,6 +112,12 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </View>
+            <View className="w-full mt-0">
+                {/* <Text className="text-left color-colors-textSecondary mb-1">Bio</Text> */}
+                <Text className="font-semibold text-base text-colors-text">
+                    {profile?.bio?.trim() ? profile.bio : " "}
+                </Text>
+            </View>
             <View className="w-full">
                 <Text className="color-colors-textSecondary text-left mb-1">Profile Photos</Text>
                 <SectionSeperator />

@@ -10,10 +10,11 @@ import { Major } from "./majorsService";
 export interface Profile {
     user_id: string;
     display_name: string;
-    major: Major;
+    major: Major; // adding "| unknown" removes the error on line 46
     year: string | null;
     pp_url: string | null;
     photo_urls: string[] | null;
+    bio: string | null;
 }
 
 export const getUserProfile = async (): Promise<Profile | null> => {
@@ -28,7 +29,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls")
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
         //                              ^ join majors by foreign key
         .eq("user_id", user.id)
         .single();
@@ -69,6 +70,7 @@ type CreateProfileInput = {
     year: string;
     ppUrl?: string; // can be file:// or public URL
     photoUrls?: string[];
+    bio: string | null;
 };
 
 // function to get profile inputs from the frontend
@@ -103,6 +105,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         major_id: input.majorId,
         year: input.year,
         photo_urls: input.photoUrls ?? [],
+        bio: input.bio,
         ...(finalUrl ? { pp_url: finalUrl } : {}),
     };
 
@@ -110,7 +113,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .upsert(payload, { onConflict: "user_id" })
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
         .single();
 
     if (error) throw error;
@@ -124,6 +127,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         pp_url: data.pp_url ?? null,
         photo_urls: data.photo_urls ?? null,
         major: { id: major.id, name: major.name },
+        bio: data.bio,
     };
 
     return result;
@@ -217,6 +221,7 @@ type EditProfileInput = {
     pp_url?: string | null; // if string and local (file://), we upload; if null, we clear; if undefined, ignore
     photo_urls?: string[] | null; // if provided, replaces existing array; if null, clears; if undefined, ignore
     year?: string | null;
+    bio?: string | null;
 };
 
 /**
@@ -243,6 +248,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
     if (updates.display_name !== undefined) payload.display_name = updates.display_name;
     if (updates.major !== undefined) payload.major_id = updates.major; // can be null to clear
     if (updates.year !== undefined) payload.year = updates.year; // can be null/empty
+    if (updates.bio !== undefined) payload.bio = updates.bio;
 
     // Handle profile picture:
     // - If undefined: leave unchanged.
@@ -277,7 +283,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         .from(TABLES.PROFILES)
         .update(payload)
         .eq("user_id", user.id)
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
         .single();
 
     if (error) throw error;
@@ -291,6 +297,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         pp_url: data.pp_url ?? null,
         photo_urls: data.photo_urls ?? null,
         major: { id: major?.id, name: major?.name },
+        bio: data.bio ?? null,
     };
 
     return result;
@@ -645,6 +652,7 @@ export async function majorMatching(
             results.push({
                 user_id: c.user_id,
                 display_name: c.display_name as string,
+                bio: c.bio as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
                 photo_urls: (c.photo_urls ?? null) as string[],

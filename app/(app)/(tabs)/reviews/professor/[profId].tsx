@@ -1,5 +1,4 @@
 import { colors } from "@/assets/colors";
-import ProfessorSummaryBox from "@/components/features/reviews/ProfessorSummaryBox";
 import ReviewWidget from "@/components/features/reviews/ReviewWidget";
 import AverageStuff from "@/components/features/reviews/review-averages/AverageStuff";
 import { ClassFilterButton } from "@/components/ui/Buttons";
@@ -158,10 +157,15 @@ const ProfessorReviewsScreen = () => {
             <SafeAreaView className="flex-1  bg-colors-background" edges={["left", "right"]}>
                 {/* Course filter */}
                 {courseOptions.length > 0 && (
-                    <View className="border-y p-2 border-colors-textSecondary w-full">
-                        <View className="w-full mt-3">
-                            <ProfessorSummaryBox profId={Number(profId)} professorName={profName ?? "unknown"} />
-                        </View>
+                    <View className="border-y p-2 border-colors-textSecondary w-full h-80">
+                        <ScrollView className="w-full self-center mt-3">
+                            <AverageStuff
+                                reviews={reviews ?? []} //pass all fetched reviews
+                                selectedCourseCode={selectedCourseCode} //pass current filter
+                                profId={Number(profId)}
+                                professorName={profName ?? "unknown"}
+                            />
+                        </ScrollView>
                         <View className="w-full h-[1px] bg-white/20 mt-3" />
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             <View className="flex-row gap-2">
@@ -198,9 +202,7 @@ const ProfessorReviewsScreen = () => {
                     <FlatList
                         data={filteredReviews}
                         keyExtractor={(r) => String(r.reviewId)}
-                        renderItem={({ item }) => (
-                            <ReviewWidget review={item} onVoted={fetchReviews} />
-                        )}
+                        renderItem={({ item }) => <ReviewWidget review={item} onVoted={fetchReviews} />}
                         ItemSeparatorComponent={ReviewSeparator}
                         /*
                             ListHeaderComponent allows us to place
@@ -211,10 +213,10 @@ const ProfessorReviewsScreen = () => {
                         */
                         ListHeaderComponent={
                             <View className="w-full items-center pt-2">
-                                <AverageStuff
+                                {/* <AverageStuff
                                     reviews={reviews ?? []} //pass all fetched reviews
                                     selectedCourseCode={selectedCourseCode} //pass current filter
-                                />
+                                /> */}
                                 {/*Add some spacing between averages and first review item.*/}
                                 <View className="h-4" />
                             </View>

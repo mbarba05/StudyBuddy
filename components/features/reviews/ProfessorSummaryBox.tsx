@@ -1,4 +1,5 @@
 import { getProfessorSummary } from "@/services/aiSummary";
+import { ReviewDisplay } from "@/services/reviewsService";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 
@@ -6,6 +7,8 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 type Props = {
     profId: number;
     professorName?: string;
+    reviews: ReviewDisplay[];
+    selectedCourseCode: string | null;
 };
 
 export default function ProfessorSummaryBox({ profId, professorName }: Props) {
@@ -36,7 +39,22 @@ export default function ProfessorSummaryBox({ profId, professorName }: Props) {
         };
     }, [profId]);
     return (
-        <ScrollView className="bg-colors-secondary w-full rounded-lg border border-colors-text p-2 gap-2 shadow-2x1 h-32">
+        //summary without a box
+        // <View>
+        //     <Text className="color-colors-text text-lg font-semibold text-center">AI Professor Summary:</Text>
+        //     {loading ? (
+        //         <View style={{ alignItems: "center" }}>
+        //             <ActivityIndicator />
+        //             <Text className="color-colors-textSecondary text-center">Generating summary...</Text>
+        //         </View>
+        //     ) : error ? (
+        //         <Text className="color-colors-textSecondary text-center">{error}</Text>
+        //     ) : (
+        //         <Text className="color-colors-textSecondary text-center">{summary || "waiting for reviews..."}</Text>
+        //     )}
+        // </View>
+        //this has summary inside a box
+        <ScrollView className=" w-full mt-2 p-3 rounded-lg bg-white/10 border border-white/20 backdrop-blur-md shadow-lg ">
             <Text className="color-colors-text text-lg font-semibold text-center">AI Professor Summary:</Text>
             {loading ? (
                 <View style={{ alignItems: "center" }}>

@@ -1,0 +1,17 @@
+3/12/2026
+In this scrum cycle i will add a bio option to the profiles. I will make sure it gives the option to add a bio when creating the account or
+come back to it after the account is created. I'll make the bio visible when a person goes to the profile account. 
+I'll make sure users are able to go back and add/edit the bio at anytime. If the user decides to have no bio, ill make sure the 
+bio space is removed so there won't be an invisible/empty box. I will also make sure the total average and ai summary is only shown when "all" courses 
+is selected and it's remvoed when a spesific course is selected. When a course is selected, the course average will show instead. 
+
+I was able to organize the averages of class and professors so it can only display one at a time. When the profesor is chosen and all cources show 
+without being filtered it will display the average of the professor across all courses and reviews. it will also display an Ai generated summary 
+that uses all the reviews. When a specific course is selected for that professor, it shows the course average score instead of the total average and summary. 
+
+
+I just finished adding the bio option and now profiles are able to add a bio if they would like or leave it blank. Users are able to later return and edit the
+profile and a bio which will show under friends in the profile tab. 
+
+Now i just need to create some unit testing. 
+
