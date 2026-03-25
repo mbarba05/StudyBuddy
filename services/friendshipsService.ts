@@ -304,3 +304,46 @@ export const checkStatus = async (userId: string): Promise<FriendshipStatus> => 
 
     return FriendshipStatus.none;
 };
+
+export interface MutualFriends {
+    count: number;
+    friends: {
+        display_name: string;
+        friend_id: string;
+    }[];
+}
+
+export const mutualFriends = async (otherUserId: string): Promise<MutualFriends> => {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    const res = { count: 0, friends: [] };
+
+    if (authError || !user) {
+        console.error("mutualFriends, ", authError);
+        return res;
+    }
+
+    console.log("USERID: ", user.id);
+    console.log("OTHERUSERID: ", otherUserId);
+
+    const { data, error } = await supabase.rpc(FUNCTIONS.MUTUAL_FRIENDS, {
+        p_user_id: user.id,
+        p_other_user_id: otherUserId,
+    });
+
+    console.log("FRIENDS", data);
+
+    if (error) {
+        console.error("mutualFriends rpc error:", error);
+        return res;
+    }
+    if (data) {
+        res.count = data.length;
+        res.friends = data;
+    }
+
+    return res;
+};
