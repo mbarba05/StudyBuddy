@@ -28,6 +28,7 @@ const EditProfileScreen = () => {
     const [majorValue, setMajorValue] = useState<number | null>(null);
     const [majorOptions, setMajorOptions] = useState<MajorDropDownItem[]>([]);
     const [imageUri, setImageUri] = useState<string | null>(null);
+    const [extraPhotos, setExtraPhotos] = useState<string[]>([]);
     const [currCourses, setCurrCourses] = useState<CourseProfDisplay[] | null>(null);
     const [nextCourses, setNextCourses] = useState<CourseProfDisplay[] | null>(null);
     const [currCourseModalVisible, setCurrCourseModalVisible] = useState(false);
@@ -71,6 +72,7 @@ const EditProfileScreen = () => {
                     setFullName(prof.display_name ?? "");
                     setImageUri(prof.pp_url ?? null);
                     setYearValue(prof.year ?? null);
+                    setExtraPhotos(prof.photo_urls ?? []);
                     setBio(prof.bio ?? "");
 
                     const majorId =
@@ -185,12 +187,38 @@ const EditProfileScreen = () => {
         }
     };
 
+    const pickExtraPhotos = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Alert.alert("Permission required", "Please allow access to your photos.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            orderedSelection: true,
+            quality: 0.7,
+            selectionLimit: 5,
+    });
+
+    if (!result.canceled && result.assets?.length > 0) {
+        const newUris = result.assets.map((asset) => asset.uri);
+        setExtraPhotos((prev) => [...prev, ...newUris].slice(0, 5));
+    }
+    };
+
+    const removeExtraPhoto = (uri: string) => {
+        setExtraPhotos((prev) => prev.filter((photo) => photo !== uri));
+    };
+
     const updateProfile = async () => {
         const editedProfile = {
             display_name: fullName,
             bio: bio.trim() || null,
             major: majorValue,
             pp_url: imageUri,
+            photo_urls: extraPhotos,
             year: yearValue,
         };
 
@@ -244,6 +272,35 @@ const EditProfileScreen = () => {
                                 </View>
                             )}
                         </TouchableOpacity>
+                    </View>
+                    
+                    {/* Extra Photos */}
+                    <View>
+                        <View className="flex-row items-center justify-between mb-2">
+                            <Text className="color-colors-textSecondary text-lg">Extra Profile Photos</Text>
+                            <TouchableOpacity testID="add-extra-photos-button" onPress={pickExtraPhotos}>
+                                <Ionicons name="add-circle-outline" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="flex-row flex-wrap gap-3 border border-colors-text rounded-lg p-3 min-h-24">
+                            {extraPhotos.length === 0 ? (
+                                <Text className="color-colors-textSecondary">No extra photos added yet.</Text>
+                            ) : (
+                                extraPhotos.map((uri, index) => (
+                                    <View key={`${uri}-${index}`} className="relative">
+                                        <Image source={{ uri }} className="w-24 h-24 rounded-lg" />
+                                        <TouchableOpacity
+                                            testID={`remove-extra-photo-${index}`}
+                                            onPress={() => removeExtraPhoto(uri)}
+                                            className="absolute -top-2 -right-2 bg-colors-background rounded-full"
+                                        >
+                                            <Ionicons name="close-circle" size={22} color={colors.primary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))
+                            )}
+                        </View>
                     </View>
 
                     {/* Full Name */}
