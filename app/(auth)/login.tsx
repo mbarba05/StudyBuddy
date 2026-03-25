@@ -2,22 +2,38 @@ import { LoginButton } from "@/components/ui/Buttons";
 import { TextSeparator } from "@/components/ui/Seperators";
 import { LoginInput } from "@/components/ui/TextInputs";
 import { signInWithGoogle } from "@/lib/google";
+import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { registerForPushNotifications } from "../../services/PushNotifications";
 
 export default function LoginScreen() {
     const router = useRouter();
-    const { signIn } = useAuth();
+    const { signIn, user } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
     const onSignIn = async () => {
         try {
             await signIn(email.trim(), password);
+
+            // Get the authenticated user's ID and register for push notifications
+            const { data } = await supabase.auth.getUser();
+            const currentUser = data.user;
+
+            if (currentUser?.id) {
+                try {
+                    const token = await registerForPushNotifications(currentUser.id);
+                    console.log("Push token registered:", token);
+                } catch (err) {
+                    console.error("Error registering for push notifications:", err);
+                }
+            }
+
             router.replace("/(app)");
         } catch (e: any) {
             Alert.alert("Sign in failed", e.message ?? String(e));
