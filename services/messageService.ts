@@ -244,7 +244,12 @@ export function isImageMime(mime?: string) {
 }
 
 export function fileNameFromPath(path: string) {
-    return path.split("/").pop() ?? "file";
+    const fullName = path.split("/").pop() ?? "file";
+
+    // remove timestamp-random- prefix
+    const parts = fullName.split("-");
+
+    return parts.length > 2 ? parts.slice(2).join("-") : fullName;
 }
 
 export async function getImageAspectRatio(uri: string): Promise<number> {
@@ -253,6 +258,14 @@ export async function getImageAspectRatio(uri: string): Promise<number> {
     });
 
     return width / height;
+}
+
+function sanitizeFileName(name: string) {
+    return name
+        .normalize("NFKD")
+        .replace(/[^\w.\-]/g, "_") // remove unsafe chars
+        .replace(/_+/g, "_")
+        .toLowerCase();
 }
 
 export async function uploadAttachmentToStorage(
@@ -288,7 +301,12 @@ export async function uploadAttachmentToStorage(
     if (!mime) mime = "application/octet-stream";
 
     const ext = getExt(name, mime);
-    const filePath = `conversations/${convId}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+
+    const safeName = sanitizeFileName(name ?? `file.${ext}`);
+
+    const uniquePrefix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const filePath = `conversations/${convId}/${uniquePrefix}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage
         .from(BUCKETS.ATTACHMENTS)

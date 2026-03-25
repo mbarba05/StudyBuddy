@@ -1,6 +1,7 @@
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { markEnrollmentAsReviewed } from "./enrollmentService";
+import { ProfessorForSearch } from "./professorService";
 
 export interface Review {
     id: number;
@@ -141,6 +142,18 @@ export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]
     return normalizeReviews(data ?? []);
 };
 
+// grabbing saved summaries and the data of when it was last updated/created and how many reviews the professor has
+export async function getSavedSummaries(profId: number) {
+    const { data, error } = await supabase
+        .from("professor_summaries")
+        .select("summary, review_count, updated_at")
+        .eq("prof_id", profId)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data ?? null;
+}
+
 const normalizeReview = (item: any): ReviewDisplay => {
     const d = new Date(item.created_at);
     const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
@@ -163,3 +176,147 @@ const normalizeReview = (item: any): ReviewDisplay => {
 };
 
 const normalizeReviews = (rows: any[]): ReviewDisplay[] => rows.map(normalizeReview);
+
+export const updateRecentlyViewedRevForUser = async (profId: number) => {
+    const user = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const recentlyViewedProf = await supabase
+        .from(TABLES.RECENTLY_VIEWED_PROF_FOR_USER)
+        .select("*")
+        .eq("prof_id", profId)
+        .eq("user_id", user.data.user?.id)
+        .single();
+    console.log(recentlyViewedProf);
+
+    if (recentlyViewedProf.data == null) {
+        //add it
+        console.log("ADDING NEW VIEW FOR USER");
+        const res = await supabase.from(TABLES.RECENTLY_VIEWED_PROF_FOR_USER).insert({
+            user_id: user.data.user?.id,
+            prof_id: profId,
+            viewed_at: new Date().toISOString(),
+            viewed_count: 1,
+        });
+
+        if (res.error) console.error("updateRecentlyViewedRev, unable to insert new view for user", res.error);
+    } else {
+        //update it
+        const currViewCount = await supabase
+            .from(TABLES.RECENTLY_VIEWED_PROF_FOR_USER)
+            .select("viewed_count")
+            .eq("prof_id", profId)
+            .eq("user_id", user.data.user?.id)
+            .single(); //find old view count
+
+        if (currViewCount.data == null) {
+            console.error("updateRecentlyViewedRev, error getting the last view count");
+            return;
+        }
+
+        const res = await supabase
+            .from(TABLES.RECENTLY_VIEWED_PROF_FOR_USER)
+            .update({
+                viewed_at: new Date().toISOString(),
+                viewed_count: currViewCount.data.viewed_count + 1,
+            })
+            .eq("prof_id", profId)
+            .eq("user_id", user.data.user?.id)
+            .select();
+
+        console.log("INCREMENTING NEW VIEW FOR USER", res);
+
+        if (res.error) {
+            console.error("updateRecentlyViewedRev, unable to increment view count", res.error);
+            return;
+        }
+    }
+};
+
+export const updateRecentlyViewedRevGlobal = async (profId: number) => {
+    const recentlyViewedProf = await supabase
+        .from(TABLES.RECENTLY_VIEWED_PROF_GLOBAL)
+        .select("*")
+        .eq("prof_id", profId)
+        .maybeSingle();
+
+    console.log(recentlyViewedProf);
+
+    if (recentlyViewedProf.error) {
+        console.error("updateRecentlyViewedRevGlobal, error fetching global row", recentlyViewedProf.error);
+        return;
+    }
+
+    if (recentlyViewedProf.data == null) {
+        console.log("ADDING NEW GLOBAL VIEW");
+
+        const res = await supabase.from(TABLES.RECENTLY_VIEWED_PROF_GLOBAL).insert({
+            prof_id: profId,
+            viewed_at: new Date().toISOString(),
+            viewed_count: 1,
+        });
+
+        if (res.error) {
+            console.error("updateRecentlyViewedRevGlobal, unable to insert new global view", res.error);
+            return;
+        }
+    } else {
+        const res = await supabase
+            .from(TABLES.RECENTLY_VIEWED_PROF_GLOBAL)
+            .update({
+                viewed_at: new Date().toISOString(),
+                viewed_count: recentlyViewedProf.data.viewed_count + 1,
+            })
+            .eq("prof_id", profId)
+            .select();
+
+        console.log("INCREMENTING NEW GLOBAL VIEW", res);
+
+        if (res.error) {
+            console.error("updateRecentlyViewedRevGlobal, unable to increment global view count", res.error);
+            return;
+        }
+    }
+};
+
+export const getRecentSearchesForUser = async (): Promise<ProfessorForSearch[] | null> => {
+    const user = await supabase.auth.getUser();
+    if (user.error) {
+        console.error("getRecentSearchesForUser", user.error);
+        return null;
+    }
+
+    const recentSearches = await supabase.rpc("get_recent_rev_searches_for_user", {
+        p_user_id: user.data.user.id,
+    });
+
+    console.log("RECENT: ", recentSearches);
+
+    if (recentSearches.error) {
+        console.error("getRecentSearchesForUser unable to get user recent searches", recentSearches.error);
+        return null;
+    }
+
+    return recentSearches.data;
+};
+
+export const getPopularSearchesByMajor = async (): Promise<ProfessorForSearch[] | null> => {
+    const user = await supabase.auth.getUser();
+    if (user.error) {
+        console.error("getPopularSearchesForUser", user.error);
+        return null;
+    }
+
+    const popularSearches = await supabase.rpc("get_popular_prof_searches_by_major", {
+        p_user_id: user.data.user.id,
+    });
+
+    console.log("popular", popularSearches);
+
+    if (popularSearches.error) {
+        console.error("getPopularSearchesForUser unable to get user popular searches", popularSearches.error);
+        return null;
+    }
+
+    return popularSearches.data;
+};

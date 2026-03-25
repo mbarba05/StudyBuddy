@@ -10,9 +10,11 @@ import { Major } from "./majorsService";
 export interface Profile {
     user_id: string;
     display_name: string;
-    major: Major;
+    major: Major; // adding "| unknown" removes the error on line 46
     year: string | null;
     pp_url: string | null;
+    photo_urls: string[] | null;
+    bio: string | null;
 }
 
 export const getUserProfile = async (): Promise<Profile | null> => {
@@ -27,7 +29,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, major:majors(id, name), year, pp_url")
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
         //                              ^ join majors by foreign key
         .eq("user_id", user.id)
         .single();
@@ -67,6 +69,8 @@ type CreateProfileInput = {
     majorId: number;
     year: string;
     ppUrl?: string; // can be file:// or public URL
+    photoUrls?: string[];
+    bio: string | null;
 };
 
 // function to get profile inputs from the frontend
@@ -81,11 +85,13 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     let finalUrl: string | undefined = undefined;
     if (input.ppUrl) {
         if (isLocalUri(input.ppUrl)) {
-            finalUrl = await uploadProfilePics({
+            finalUrl = await uploadProfileImage({
                 uri: input.ppUrl,
                 name: "avatar.jpg",
                 type: "image/jpeg",
-            });
+            },
+        "avatar"
+    );
         } else {
             // Already a public URL
             finalUrl = input.ppUrl;
@@ -98,6 +104,8 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         display_name: input.displayName,
         major_id: input.majorId,
         year: input.year,
+        photo_urls: input.photoUrls ?? [],
+        bio: input.bio,
         ...(finalUrl ? { pp_url: finalUrl } : {}),
     };
 
@@ -105,7 +113,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .upsert(payload, { onConflict: "user_id" })
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
         .single();
 
     if (error) throw error;
@@ -117,7 +125,9 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         display_name: data.display_name,
         year: data.year,
         pp_url: data.pp_url ?? null,
+        photo_urls: data.photo_urls ?? null,
         major: { id: major.id, name: major.name },
+        bio: data.bio,
     };
 
     return result;
@@ -128,7 +138,11 @@ function getExt(name?: string, mime?: string): string {
 }
 
 function isLocalUri(uri?: string) {
-    return !!uri && (uri.startsWith("file://") || uri.startsWith("content://"));
+    return !!uri && 
+        (uri.startsWith("file://") || 
+        uri.startsWith("content://") ||
+        uri.startsWith("blob:")
+    );
 }
 
 // adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
@@ -136,7 +150,7 @@ export type RNFile = { uri: string; name?: string; type?: string };
 
 export type Attachment = File | Blob | RNFile;
 
-export async function uploadProfilePics(file: Attachment): Promise<string> {
+export async function uploadProfileImage(file: Attachment, prefix = "avatar"): Promise<string> {
     const { data: u, error: authErr } = await supabase.auth.getUser();
     if (authErr) throw authErr;
     const userId = u?.user?.id;
@@ -163,7 +177,7 @@ export async function uploadProfilePics(file: Attachment): Promise<string> {
 
     if (!mime) mime = "image/jpeg";
     const ext = getExt(name, mime);
-    const filePath = `${userId}/avatar-${Date.now()}.${ext}`;
+    const filePath = `${userId}/${prefix}-${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
         .from(BUCKETS.PROFILE_PICS)
@@ -178,11 +192,36 @@ export async function uploadProfilePics(file: Attachment): Promise<string> {
     return publicUrl;
 }
 
+export async function uploadMultipleProfilePhotos(uris: string[]): Promise<string[]> {
+    const uploadedUrls: string[] = [];
+
+    for (const uri of uris) {
+        if (!uri) continue;
+
+        if (isLocalUri(uri)) {
+            const publicUrl = await uploadProfileImage(
+                {
+                    uri,
+                    name: "extra.jpg",
+                    type: "image/jpeg",
+                },
+                "extra"
+            );
+            uploadedUrls.push(publicUrl);
+        } else {
+            uploadedUrls.push(uri);
+        }
+    }
+    return uploadedUrls;
+}
+
 type EditProfileInput = {
     display_name?: string; // string or undefined -> not provided
     major?: number | null; // number|null|undefined
     pp_url?: string | null; // if string and local (file://), we upload; if null, we clear; if undefined, ignore
+    photo_urls?: string[] | null; // if provided, replaces existing array; if null, clears; if undefined, ignore
     year?: string | null;
+    bio?: string | null;
 };
 
 /**
@@ -209,6 +248,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
     if (updates.display_name !== undefined) payload.display_name = updates.display_name;
     if (updates.major !== undefined) payload.major_id = updates.major; // can be null to clear
     if (updates.year !== undefined) payload.year = updates.year; // can be null/empty
+    if (updates.bio !== undefined) payload.bio = updates.bio;
 
     // Handle profile picture:
     // - If undefined: leave unchanged.
@@ -219,7 +259,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         if (updates.pp_url === null) {
             payload.pp_url = null;
         } else if (isLocalUri(updates.pp_url)) {
-            const publicUrl = await uploadProfilePics({
+            const publicUrl = await uploadProfileImage({
                 uri: updates.pp_url,
                 name: "avatar.jpg",
                 type: "image/jpeg",
@@ -230,11 +270,20 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         }
     }
 
+    if (updates.photo_urls !== undefined) {
+        if (updates.photo_urls === null) {
+            payload.photo_urls = [];
+        } else {
+            const uploadedPhotoUrls = await uploadMultipleProfilePhotos(updates.photo_urls);
+            payload.photo_urls = uploadedPhotoUrls;
+        }
+    }
+
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .update(payload)
         .eq("user_id", user.id)
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
         .single();
 
     if (error) throw error;
@@ -246,7 +295,9 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         display_name: data.display_name,
         year: data.year ?? null,
         pp_url: data.pp_url ?? null,
+        photo_urls: data.photo_urls ?? null,
         major: { id: major?.id, name: major?.name },
+        bio: data.bio ?? null,
     };
 
     return result;
@@ -471,7 +522,7 @@ export async function majorMatching(
     // grabbing some user profiles
     let q = supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, year, pp_url, major:majors(id,name), created_at")
+        .select("user_id, display_name, year, pp_url, photo_urls, major:majors(id,name), created_at")
         .neq("user_id", user_id) // to hid current user from swiping on themself
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
@@ -601,8 +652,10 @@ export async function majorMatching(
             results.push({
                 user_id: c.user_id,
                 display_name: c.display_name as string,
+                bio: c.bio as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
+                photo_urls: (c.photo_urls ?? null) as string[],
                 major: c.major as Major,
                 same_major: ifSame_major,
                 overlapping_classes: oc,

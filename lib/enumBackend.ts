@@ -16,6 +16,8 @@ export const TABLES = {
     CONVERSATION_MEMBERS: "conversation_members",
     MESSAGES: "messages",
     MESSAGE_ATTACHMENTS: "message_attachments",
+    RECENTLY_VIEWED_PROF_FOR_USER: "recently_viewed_prof_for_user",
+    RECENTLY_VIEWED_PROF_GLOBAL: "recently_viewed_prof_global",
 };
 
 export const BUCKETS = { PROFILE_PICS: "profile-pictures", ATTACHMENTS: "chat-attatchments" };

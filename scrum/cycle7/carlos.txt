@@ -1,0 +1,11 @@
+3/10/26: For this scrum cycle, I will be working on adding least interacted/most interacted within the friends list screen
+that's on the profile. I will make sure it pulls from the user's messages and that will be my determinant for which 
+friends a user most or least interacts with. The feature will be two buttons with the previously named labels and list the user's friends in descending 
+  or ascending order. 
+
+3/20/26: I managed to complete the feature and add the buttons within the friends screen. The lists are created by the user's interactions with 
+  their friends within their direct messages. For example if a user has 30 messages with X friend and 28 with Y friend, then X friend is listed at
+the very top of the most interacted with list. If two friends have the same amount of messages with the user, then it's sorted 
+  alphabetically. I also managed to complete the 6 tests with all of them passing. 
+
+  

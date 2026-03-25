@@ -8,9 +8,10 @@ import { getIncomingFriendRequests } from "@/services/friendshipsService";
 import { DMConversation, getChatsWithRecentMessage, updateReadMessage } from "@/services/messageService";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { IncomingFriendRequest } from "./requests";
 
 const SocialScreen = () => {
@@ -131,8 +132,16 @@ const SocialScreen = () => {
                 >
                     <View className="flex-row gap-4 flex-1">
                         <Image
-                            className="w-16 h-16 rounded-full border border-colors-text"
+                            contentFit="cover"
                             source={{ uri: item.pp_url as string }}
+                            style={{
+                                width: 54,
+                                height: 54,
+                                borderRadius: 27,
+                                borderColor: colors.textSecondary,
+                                borderWidth: 1,
+                            }}
+                            cachePolicy="memory-disk"
                         />
                         <View className="flex-1">
                             <Text className="color-colors-text text-2xl font-semibold">{item.dm_name}</Text>

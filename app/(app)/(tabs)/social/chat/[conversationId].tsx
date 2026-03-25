@@ -1,9 +1,9 @@
 import { colors } from "@/assets/colors";
-import AttachmentImages from "@/components/features/chats/AttachmentImage";
-import ChatBubble from "@/components/features/chats/ChatBubble";
+import ChatRow from "@/components/features/chats/ChatRow";
 import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
+import { formatPrettyDate } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
 import {
     Chat,
@@ -15,9 +15,12 @@ import {
 import { sendPushNotification } from "@/services/PushNotifications";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useSharedValue, withSpring } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ChatRouteParams = {
@@ -25,6 +28,8 @@ type ChatRouteParams = {
     dmName: string;
     ppPic: string;
 };
+
+type ChatListItem = { type: "message"; chat: Chat } | { type: "date"; dateKey: string }; // stable key for a day
 
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
@@ -41,8 +46,44 @@ const ConversationScreen = () => {
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
     const [order, setOrder] = useState<string[]>([]);
     const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
-
+    const messagesListRef = useRef<FlatList<ChatListItem>>(null);
     const user = useAuth();
+
+    const dateKey = (iso: string) => {
+        const d = new Date(iso);
+        // Use local day boundary; or use UTC if you prefer consistent server time
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const listData: ChatListItem[] = useMemo(() => {
+        const out: ChatListItem[] = [];
+
+        for (let i = 0; i < chats.length; i++) {
+            const chat = chats[i];
+            out.push({ type: "message", chat });
+
+            const cur = dateKey(chat.created_at);
+            const next = chats[i + 1] ? dateKey(chats[i + 1].created_at) : null;
+
+            // When the NEXT message is a different day (or none), we've reached the "top" of this day section
+            if (cur !== next) {
+                out.push({ type: "date", dateKey: cur });
+            }
+        }
+
+        return out;
+    }, [chats]);
+
+    useEffect(() => {
+        if (!order.length) return;
+
+        const id = setTimeout(() => {
+            // inverted list: newest is at offset 0 (visual bottom)
+            messagesListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }, 0);
+
+        return () => clearTimeout(id);
+    }, [order[0]]);
 
     useFocusEffect(
         useCallback(() => {
@@ -215,25 +256,63 @@ const ConversationScreen = () => {
         setLoadingMore(false);
     };
 
+    const globalX = useSharedValue(0);
+
+    const swipeLeftGesture = useMemo(() => {
+        return (
+            Gesture.Pan()
+                // Only become active when there's meaningful horizontal movement
+                // and don't trigger if user is mostly scrolling vertically.
+                .activeOffsetX([-12, 12])
+                .failOffsetY([-10, 10])
+                .onUpdate((e) => {
+                    // Only allow dragging LEFT
+                    const nextX = Math.min(0, e.translationX);
+                    globalX.value = Math.max(nextX, -60);
+                })
+                .onEnd(() => {
+                    globalX.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.6 });
+                })
+        );
+    }, []);
+
     const renderItem = useCallback(
-        ({ item }: { item: Chat }) => {
-            const isOwn = item.sender_id === user.user?.id;
-            return (
-                <View className={`flex flex-col mb-2 ${isOwn ? "items-end" : "items-start"}`}>
-                    {item.attachments?.length > 0 && <AttachmentImages attachments={item.attachments} />}
-                    {item.content && <ChatBubble isOwn={isOwn}>{item.content}</ChatBubble>}
-                </View>
-            );
+        ({ item }: { item: ChatListItem }) => {
+            if (item.type === "date") {
+                return (
+                    <View className="items-center mt-2">
+                        <Text className="text-sm text-colors-textSecondary">{formatPrettyDate(item.dateKey)}</Text>
+                    </View>
+                );
+            }
+
+            const chat = item.chat;
+            const isOwn = chat.sender_id === user.user?.id;
+
+            return <ChatRow item={chat} isOwn={isOwn} globalX={globalX} />;
         },
-        [user.user?.id],
+        [user.user?.id, globalX],
     );
 
     const header = () => (
         <View className="flex flex-row items-center gap-2">
-            <Image source={{ uri: ppPic }} className="w-12 h-12 rounded-full" />
+            <Image
+                contentFit="cover"
+                source={{ uri: ppPic as string }}
+                style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 27,
+                    borderColor: colors.textSecondary,
+                    borderWidth: 1,
+                }}
+                cachePolicy="memory-disk"
+            />
             <Text className="text-colors-text text-2xl font-semibold">{dmName}</Text>
         </View>
     );
+
+    console.log(chats);
 
     return (
         <>
@@ -244,28 +323,34 @@ const ConversationScreen = () => {
                     headerStyle: { backgroundColor: colors.background },
                 }}
             />
-            <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
-                <KeyboardAvoidingView
-                    className="flex-1"
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
-                >
-                    {loadingMore && <ActivityIndicator className="mt-4" />}
-                    <FlatList
-                        testID="chats"
+            <GestureDetector gesture={swipeLeftGesture}>
+                <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
+                    <KeyboardAvoidingView
                         className="flex-1"
-                        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
-                        data={chats}
-                        keyExtractor={(item) => item.id}
-                        renderItem={renderItem}
-                        inverted
-                        keyboardShouldPersistTaps="handled"
-                        onEndReached={loadOlderMessages}
-                        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-                    />
-                    <SendTextInput setChatsById={setChatsById} setOrder={setOrder} convId={conversationId} />
-                </KeyboardAvoidingView>
-            </SafeAreaView>
+                        behavior={Platform.OS === "ios" ? "padding" : undefined}
+                        keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
+                    >
+                        {loadingMore && <ActivityIndicator className="mt-4" />}
+                        <FlatList
+                            ref={messagesListRef}
+                            testID="chats"
+                            ItemSeparatorComponent={() => <View className="h-1" />}
+                            className="flex-1"
+                            contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
+                            data={listData}
+                            keyExtractor={(item) =>
+                                item.type === "message" ? `m:${item.chat.id}` : `d:${item.dateKey}`
+                            }
+                            renderItem={renderItem}
+                            keyboardShouldPersistTaps="handled"
+                            onEndReached={loadOlderMessages}
+                            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                            inverted
+                        />
+                        <SendTextInput convId={conversationId} />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </GestureDetector>
         </>
     );
 };

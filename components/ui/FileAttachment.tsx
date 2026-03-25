@@ -1,3 +1,4 @@
+import { colors } from "@/assets/colors";
 import { fileNameFromPath, getAttachmentSignedUrlCached } from "@/services/messageService";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
@@ -23,15 +24,11 @@ const FileAttachment = ({ path, mime_type }: { path: string; mime_type?: string 
 
     return (
         <Pressable disabled={!url} onPress={() => url && Linking.openURL(url)} style={{ opacity: url ? 1 : 0.6 }}>
-            <View className="flex-row items-center gap-3 p-3 rounded-xl bg-colors-card w-72">
-                <Ionicons name="document-text-outline" size={22} />
-                <View className="flex-1">
-                    <Text numberOfLines={1} className="text-colors-text font-semibold">
-                        {filename}
-                    </Text>
-                    <Text className="text-colors-textSecondary text-xs">{mime_type ?? "file"}</Text>
-                </View>
-                <Ionicons name="open-outline" size={18} />
+            <View className="flex flex-col items-center gap-3 p-3 rounded-xl bg-colors-card w-fit">
+                <Ionicons name="document-text-outline" size={100} color={colors.text} />
+                <Text numberOfLines={1} className="text-colors-text font-semibold">
+                    {filename}
+                </Text>
             </View>
         </Pressable>
     );

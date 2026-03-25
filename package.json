@@ -11,7 +11,8 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "test": "jest --watch",
-    "test:match": "jest --selectProjects matchMaking"
+    "test:match": "jest --selectProjects matchMaking",
+    "test:aiSummary": "jest --selectProjects aiSummary"
   },
   "dependencies": {
     "@expo/react-native-action-sheet": "^4.1.1",
