@@ -1,5 +1,5 @@
 // functions for mocking supabase
-jest.mock("@/lib/subapase", () => ({
+jest.mock("@/lib/supabase", () => ({
     //mocking supabase
     __esModule: true, // means ES module syntax (export defualt)
     default: {

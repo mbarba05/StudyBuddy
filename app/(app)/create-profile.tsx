@@ -36,6 +36,7 @@ export default function CreateProfileScreen() {
     const { user, signOut } = useAuth();
     const { refreshProfile } = useProfileGate();
     const [fullName, setFullName] = useState("");
+    const [bio, setBio] = useState("");
     const [yearValue, setYearValue] = useState("");
     const [yearOpen, setYearOpen] = useState(false);
     const [majorOpen, setMajorOpen] = useState(false);
@@ -162,6 +163,7 @@ export default function CreateProfileScreen() {
                 majorId: majorValue as number,
                 year: yearValue,
                 ppUrl: imageUri as string,
+                bio: bio.trim() || null,
             };
 
             const courseProdIds = selectedCourseProf.map((courseProf) => courseProf.course_prof_id);
@@ -248,6 +250,17 @@ export default function CreateProfileScreen() {
                             value={fullName}
                             onChangeText={setFullName}
                             placeholderTextColor="darkgray"
+                        />
+                        <LoginInput
+                            placeholder="Bio (optional)"
+                            value={bio}
+                            onChangeText={setBio}
+                            multiline
+                            numberOfLines={3}
+                            textAlignVertical="top"
+                            style={{
+                                height: 64,
+                            }}
                         />
 
                         {/* Major Selection */}

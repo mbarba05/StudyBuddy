@@ -112,6 +112,32 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </View>
+            <View className="w-full mt-0">
+                {/* <Text className="text-left color-colors-textSecondary mb-1">Bio</Text> */}
+                <Text className="font-semibold text-base text-colors-text">
+                    {profile?.bio?.trim() ? profile.bio : " "}
+                </Text>
+            </View>
+            <View className="w-full">
+                <Text className="color-colors-textSecondary text-left mb-1">Profile Photos</Text>
+                <SectionSeperator />
+
+                <View className="flex-row flex-wrap gap-3 mt-4 justify-center">
+                    {!profile?.photo_urls || profile.photo_urls.length === 0 ? (
+                        <Text className="text-colors-textSecondary text-lg text-center">
+                            No extra profile photos added yet.
+                        </Text>
+                    ) : (
+                        profile.photo_urls.map((photo, index) => (
+                            <Image
+                                key={`${photo}-${index}`}
+                                source={{ uri: photo }}
+                                className="w-32 h-32 rounded-xl border border-colors-text"
+                            />
+                        ))
+                    )}
+                </View>
+            </View>
             <View className="w-full">
                 <Text className=" color-colors-textSecondary text-left mb-1">
                     Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
@@ -136,6 +162,7 @@ export default function ProfileScreen() {
                     )}
                 </View>
             </View>
+
             <View className="w-full">
                 <Text className=" color-colors-textSecondary text-left mb-1">
                     Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})

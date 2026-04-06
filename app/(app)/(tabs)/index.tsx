@@ -110,7 +110,7 @@ export default function HomeScreen() {
                                     Edit Profile
                                 </Text>
                                 <Text className="text-xs mt-1" style={{ color: colors.text, opacity: 0.8 }}>
-                                    Update your major, classes, and preferences.
+                                    Update your major, bio, classes, and preferences.
                                 </Text>
                             </View>
                             <Ionicons name="person-circle" size={26} color={colors.text} />
