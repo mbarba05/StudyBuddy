@@ -5,3 +5,6 @@ I also think i can implement mutual friends and show them and prioritize profile
 3/22: when viewing a user that you search, there are like 4 different possible relationships, 
 (friends, not friends, accept request, cancel request) so ill need to program for that, and some of the old functions for 
 that only work with the request so ill have to remake them
+
+4/7: after a log and restful break, i return and did some work. today i added recent searches like instagram, and then i 
+optimized the search by adding debounce time, and making a better query that didnt call the mutual friends everytime
