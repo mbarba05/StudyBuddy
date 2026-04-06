@@ -3,7 +3,7 @@
 //i think it would be easiest to split them by data model
 //(profile, reviews, classes, professors)
 
-import { BUCKETS, TABLES } from "@/lib/enumBackend";
+import { BUCKETS, FUNCTIONS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { Major } from "./majorsService";
 
@@ -644,6 +644,42 @@ export const searchForProfile = async (searchTerm: string): Promise<ProfileForSe
     }
 
     return data;
+};
+
+export interface ProfileWithMutuals extends ProfileForSearch {
+    mutual_count: number;
+    mutual_friends: { friend_id: string; display_name: string }[];
+}
+
+export const searchForProfileWithMutuals = async (searchTerm: string): Promise<ProfileWithMutuals[]> => {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+        console.error("searchForProfileWithMutuals auth error:", authError);
+        return [];
+    }
+
+    const { data, error } = await supabase.rpc(FUNCTIONS.SEARCH_PROFILES_WITH_MUTUALS, {
+        p_search_term: searchTerm,
+        p_user_id: user.id,
+    });
+
+    if (error) {
+        console.error("searchForProfileWithMutuals:", error);
+        return [];
+    }
+
+    return (data ?? []).map((row: any) => ({
+        user_id: row.user_id,
+        display_name: row.display_name,
+        major: row.major,
+        year: row.year,
+        pp_url: row.pp_url,
+        mutual_count: row.mutual_count,
+        mutual_friends: row.mutual_friends ?? [],
+    }));
 };
 
 // ── Recent user searches ──

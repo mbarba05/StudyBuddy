@@ -1,27 +1,26 @@
 import { colors } from "@/assets/colors";
 import { SearchBar } from "@/components/ui/TextInputs";
-import { mutualFriends, MutualFriends } from "@/services/friendshipsService";
 import {
     clearRecentSearch,
     getRecentSearches,
     ProfileForSearch,
+    ProfileWithMutuals,
     RecentSearchWithProfile,
-    searchForProfile,
+    searchForProfileWithMutuals,
     upsertRecentSearch,
 } from "@/services/profileService";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 
-type ProfilerWMutuals = ProfileForSearch & MutualFriends;
-
 const ProfileSearch = () => {
-    const [searchResults, setSearchResults] = useState<ProfilerWMutuals[]>([]);
+    const [searchResults, setSearchResults] = useState<ProfileWithMutuals[]>([]);
     const [recentSearches, setRecentSearches] = useState<RecentSearchWithProfile[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchLoading, setSearchLoading] = useState(false);
+    const searchRef = useRef(0);
     const router = useRouter();
 
     // Load recent searches on mount
@@ -35,37 +34,30 @@ const ProfileSearch = () => {
     };
 
     useEffect(() => {
-        const fetchResults = async () => {
-            if (searchTerm.length === 0) {
-                setSearchResults([]);
-                return;
-            }
-
-            setSearchLoading(true);
-
-            const results = await searchForProfile(searchTerm);
-
-            const resWMutuals: ProfilerWMutuals[] = await Promise.all(
-                results.map(async (r) => {
-                    const mutuals = await mutualFriends(r.user_id);
-
-                    return {
-                        count: mutuals.count,
-                        friends: mutuals.friends,
-                        display_name: r.display_name,
-                        major: r.major,
-                        user_id: r.user_id,
-                        year: r.year,
-                        pp_url: r.pp_url,
-                    };
-                }),
-            );
-
-            setSearchResults(resWMutuals);
+        if (searchTerm.length === 0) {
+            setSearchResults([]);
             setSearchLoading(false);
-        };
+            return;
+        }
+        if (searchTerm.length < 2) return;
 
-        fetchResults();
+        setSearchLoading(true);
+        const id = ++searchRef.current;
+
+        const timeoutId = setTimeout(async () => {
+            try {
+                const results = await searchForProfileWithMutuals(searchTerm);
+                if (searchRef.current === id) {
+                    setSearchResults(results);
+                }
+            } finally {
+                if (searchRef.current === id) {
+                    setSearchLoading(false);
+                }
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
     }, [searchTerm]);
 
     const viewProfileCard = (user: ProfileForSearch) => {
@@ -88,7 +80,7 @@ const ProfileSearch = () => {
     };
 
     const renderItem = useCallback(
-        ({ item }: { item: ProfilerWMutuals }) => {
+        ({ item }: { item: ProfileWithMutuals }) => {
             return (
                 <TouchableOpacity
                     className="flex-row items-center justify-between py-2 border-b border-colors-textSecondary w-full max-h-24"
@@ -109,14 +101,14 @@ const ProfileSearch = () => {
                         />
                         <View className="flex-1">
                             <Text className="color-colors-text text-2xl font-semibold">{item.display_name}</Text>
-                            {item.count > 0 && (
+                            {item.mutual_count > 0 && (
                                 <Text
                                     className="color-colors-textSecondary text-lg"
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                 >
-                                    {item.count} {item.count == 1 ? "Mutual: " : item.count > 1 ? "Mutuals: " : null}
-                                    {item.friends.map((f) => f.display_name).join(", ")}
+                                    {item.mutual_count} {item.mutual_count == 1 ? "Mutual: " : "Mutuals: "}
+                                    {item.mutual_friends.map((f) => f.display_name).join(", ")}
                                 </Text>
                             )}
                         </View>

@@ -326,15 +326,10 @@ export const mutualFriends = async (otherUserId: string): Promise<MutualFriends>
         return res;
     }
 
-    console.log("USERID: ", user.id);
-    console.log("OTHERUSERID: ", otherUserId);
-
     const { data, error } = await supabase.rpc(FUNCTIONS.MUTUAL_FRIENDS, {
         p_user_id: user.id,
         p_other_user_id: otherUserId,
     });
-
-    console.log("FRIENDS", data);
 
     if (error) {
         console.error("mutualFriends rpc error:", error);

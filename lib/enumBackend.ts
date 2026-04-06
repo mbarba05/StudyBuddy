@@ -23,6 +23,7 @@ export const TABLES = {
 
 export const FUNCTIONS = {
     GET_PROFILES_FOR_SEARCH: "get_profile_from_search",
+    SEARCH_PROFILES_WITH_MUTUALS: "search_profiles_with_mutuals",
     CHECK_PENDING_REQUEST: "check_pending_request",
     ARE_FRIENDS: "are_friends",
     MUTUAL_FRIENDS: "mutual_friends",
