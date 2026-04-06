@@ -1,6 +1,6 @@
 import CourseProfDisplayWidget from "@/components/features/courses/CourseProfDisplayWidget";
 import { LoginButton } from "@/components/ui/Buttons";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { SectionSeperator } from "@/components/ui/Seperators";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";

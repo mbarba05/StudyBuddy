@@ -1,4 +1,4 @@
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import supabase from "@/lib/subapase";
 import { getReviewableEnrollments, ReviewableEnrollment } from "@/services/enrollmentService";
 import { getUserReviews, ReviewDisplay } from "@/services/reviewsService";

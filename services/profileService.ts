@@ -3,7 +3,7 @@
 //i think it would be easiest to split them by data model
 //(profile, reviews, classes, professors)
 
-import { BUCKETS, TABLES } from "@/lib/enumBackend";
+import { BUCKETS, FUNCTIONS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { Major } from "./majorsService";
 
@@ -678,4 +678,181 @@ export async function majorMatching(
         );
     });
     return results;
+}
+
+export interface ProfileForSearch {
+    user_id: string;
+    display_name: string;
+    pp_url?: string;
+    major: string;
+    year: string;
+}
+
+export const searchForProfile = async (searchTerm: string): Promise<ProfileForSearch[]> => {
+    const { data, error } = await supabase.rpc("get_profile_from_search", { p_search_term: searchTerm });
+
+    if (error) {
+        console.error("searchForProfile: ", error);
+        return [];
+    }
+
+    return data;
+};
+
+export interface ProfileWithMutuals extends ProfileForSearch {
+    mutual_count: number;
+    mutual_friends: { friend_id: string; display_name: string }[];
+}
+
+export const searchForProfileWithMutuals = async (searchTerm: string): Promise<ProfileWithMutuals[]> => {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+        console.error("searchForProfileWithMutuals auth error:", authError);
+        return [];
+    }
+
+    const { data, error } = await supabase.rpc(FUNCTIONS.SEARCH_PROFILES_WITH_MUTUALS, {
+        p_search_term: searchTerm,
+        p_user_id: user.id,
+    });
+
+    if (error) {
+        console.error("searchForProfileWithMutuals:", error);
+        return [];
+    }
+
+    return (data ?? []).map((row: any) => ({
+        user_id: row.user_id,
+        display_name: row.display_name,
+        major: row.major,
+        year: row.year,
+        pp_url: row.pp_url,
+        mutual_count: row.mutual_count,
+        mutual_friends: row.mutual_friends ?? [],
+    }));
+};
+
+// ── Recent user searches ──
+
+export interface RecentUserSearch {
+    id: number;
+    user_id: string;
+    other_user_id: string;
+    created_at: string;
+    viewed_at: string;
+    viewed_count: number;
+    cleared: boolean;
+}
+
+export type RecentSearchWithProfile = RecentUserSearch & {
+    profile: ProfileForSearch;
+};
+
+/** Get the last 20 non-cleared recent searches for the current user, with profile info. */
+export async function getRecentSearches(): Promise<RecentSearchWithProfile[]> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from(TABLES.RECENT_USER_SEARCH)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("cleared", false)
+        .order("viewed_at", { ascending: false })
+        .limit(20);
+
+    if (error) {
+        console.error("getRecentSearches:", error);
+        return [];
+    }
+    if (!data || data.length === 0) return [];
+
+    const otherIds = data.map((r: any) => r.other_user_id);
+
+    const { data: profiles, error: profErr } = await supabase
+        .from(TABLES.PROFILES)
+        .select("user_id, display_name, major:majors(id, name), year, pp_url")
+        .in("user_id", otherIds);
+
+    if (profErr) {
+        console.error("getRecentSearches profiles:", profErr);
+        return [];
+    }
+
+    const profileMap = new Map<string, ProfileForSearch>();
+    for (const p of profiles ?? []) {
+        const maj = (p as any).major;
+        profileMap.set(p.user_id, {
+            user_id: p.user_id,
+            display_name: p.display_name,
+            pp_url: p.pp_url ?? undefined,
+            major: maj?.name ?? "",
+            year: p.year ?? "",
+        });
+    }
+
+    return data
+        .filter((r: any) => profileMap.has(r.other_user_id))
+        .map((r: any) => ({
+            ...r,
+            profile: profileMap.get(r.other_user_id)!,
+        }));
+}
+
+/** Record or update a recent search when the user taps a profile. */
+export async function upsertRecentSearch(otherUserId: string): Promise<void> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+    if (authError) throw authError;
+    if (!user) return;
+
+    // Check if a row already exists
+    const { data: existing, error: fetchErr } = await supabase
+        .from(TABLES.RECENT_USER_SEARCH)
+        .select("id, viewed_count")
+        .eq("user_id", user.id)
+        .eq("other_user_id", otherUserId)
+        .maybeSingle();
+
+    if (fetchErr) {
+        console.error("upsertRecentSearch fetch:", fetchErr);
+        return;
+    }
+
+    if (existing) {
+        const { error } = await supabase
+            .from(TABLES.RECENT_USER_SEARCH)
+            .update({
+                viewed_at: new Date().toISOString(),
+                viewed_count: (existing.viewed_count ?? 0) + 1,
+                cleared: false,
+            })
+            .eq("id", existing.id);
+        if (error) console.error("upsertRecentSearch update:", error);
+    } else {
+        const { error } = await supabase.from(TABLES.RECENT_USER_SEARCH).insert({
+            user_id: user.id,
+            other_user_id: otherUserId,
+            viewed_at: new Date().toISOString(),
+            viewed_count: 1,
+            cleared: false,
+        });
+        if (error) console.error("upsertRecentSearch insert:", error);
+    }
+}
+
+/** Mark a recent search as cleared. */
+export async function clearRecentSearch(recentSearchId: number): Promise<void> {
+    const { error } = await supabase.from(TABLES.RECENT_USER_SEARCH).update({ cleared: true }).eq("id", recentSearchId);
+
+    if (error) console.error("clearRecentSearch:", error);
 }

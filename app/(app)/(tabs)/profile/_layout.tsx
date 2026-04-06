@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getUserProfile, Profile } from "@/services/profileService";
 import { Stack } from "expo-router";

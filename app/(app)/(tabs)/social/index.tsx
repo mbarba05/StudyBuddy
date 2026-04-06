@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { ListSeparator } from "@/components/ui/Seperators";
 import { SearchBar } from "@/components/ui/TextInputs";
 import supabase from "@/lib/subapase";

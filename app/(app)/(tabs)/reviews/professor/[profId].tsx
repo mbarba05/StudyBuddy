@@ -2,7 +2,7 @@ import { colors } from "@/assets/colors";
 import ReviewWidget from "@/components/features/reviews/ReviewWidget";
 import AverageStuff from "@/components/features/reviews/review-averages/AverageStuff";
 import { ClassFilterButton } from "@/components/ui/Buttons";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { ReviewSeparator } from "@/components/ui/Seperators";
 import supabase from "@/lib/subapase";
 import { getReviewsForProf, ReviewDisplay } from "@/services/reviewsService";

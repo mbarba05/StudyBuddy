@@ -1,3 +1,5 @@
+import { colors } from "@/assets/colors";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, TouchableOpacityProps } from "react-native";
 
@@ -14,6 +16,11 @@ interface LoginButtonProps extends TouchableOpacityProps {
     image?: React.ReactNode;
     textColor?: string;
     bgColor?: string;
+}
+
+interface HeaderButtonProps extends TouchableOpacityProps {
+    text?: string;
+    iconName?: keyof typeof Ionicons.glyphMap;
 }
 
 export const LoginButton: React.FC<LoginButtonProps> = ({
@@ -63,6 +70,15 @@ export const ClassFilterButton: React.FC<ClassFilterButtonProps> = ({ selected, 
             {...props}
         >
             <Text className="text-colors-text font-semibold text-2xl">{children}</Text>
+        </TouchableOpacity>
+    );
+};
+
+export const HeaderButton: React.FC<HeaderButtonProps> = ({ text, iconName, children, ...props }) => {
+    return (
+        <TouchableOpacity className="flex flex-row items-center" {...props}>
+            {text && <Text className="color-colors-text text-lg font-medium px-2">{text}</Text>}
+            {iconName && <Ionicons size={20} color={colors.text} name={iconName} />}
         </TouchableOpacity>
     );
 };

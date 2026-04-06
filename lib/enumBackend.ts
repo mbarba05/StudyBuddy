@@ -18,6 +18,15 @@ export const TABLES = {
     MESSAGE_ATTACHMENTS: "message_attachments",
     RECENTLY_VIEWED_PROF_FOR_USER: "recently_viewed_prof_for_user",
     RECENTLY_VIEWED_PROF_GLOBAL: "recently_viewed_prof_global",
+    RECENT_USER_SEARCH: "recent_user_search",
+};
+
+export const FUNCTIONS = {
+    GET_PROFILES_FOR_SEARCH: "get_profile_from_search",
+    SEARCH_PROFILES_WITH_MUTUALS: "search_profiles_with_mutuals",
+    CHECK_PENDING_REQUEST: "check_pending_request",
+    ARE_FRIENDS: "are_friends",
+    MUTUAL_FRIENDS: "mutual_friends",
 };
 
 export const BUCKETS = { PROFILE_PICS: "profile-pictures", ATTACHMENTS: "chat-attatchments" };

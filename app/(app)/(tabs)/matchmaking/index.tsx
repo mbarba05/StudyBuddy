@@ -1,5 +1,5 @@
 import MatchMakingCard from "@/components/MatchMakingCard";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { sendFriendRequest } from "@/services/friendshipsService";
 import { getPotentialMatches } from "@/services/profileService";

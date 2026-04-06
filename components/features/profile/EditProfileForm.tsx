@@ -1,4 +1,4 @@
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { getAllMajorsForDropdown, MajorDropDownItem } from "@/services/majorsService";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
