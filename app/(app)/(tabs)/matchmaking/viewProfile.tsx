@@ -97,7 +97,7 @@ const ViewProfile = () => {
                     headerRight: renderRightHeader,
                 }}
             />
-            <View className="bg-colors-background flex-1 p-4 justify-center">
+            <View className="bg-colors-background flex-1 p-4 pt-14 justify-center">
                 <MatchMakingCard name={display_name} imageUrl={pp_url} major={major} year={year} />
             </View>
         </>

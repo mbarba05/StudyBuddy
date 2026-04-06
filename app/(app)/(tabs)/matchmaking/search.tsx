@@ -1,7 +1,15 @@
 import { colors } from "@/assets/colors";
 import { SearchBar } from "@/components/ui/TextInputs";
 import { mutualFriends, MutualFriends } from "@/services/friendshipsService";
-import { ProfileForSearch, searchForProfile } from "@/services/profileService";
+import {
+    clearRecentSearch,
+    getRecentSearches,
+    ProfileForSearch,
+    RecentSearchWithProfile,
+    searchForProfile,
+    upsertRecentSearch,
+} from "@/services/profileService";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -11,9 +19,20 @@ type ProfilerWMutuals = ProfileForSearch & MutualFriends;
 
 const ProfileSearch = () => {
     const [searchResults, setSearchResults] = useState<ProfilerWMutuals[]>([]);
+    const [recentSearches, setRecentSearches] = useState<RecentSearchWithProfile[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchLoading, setSearchLoading] = useState(false);
     const router = useRouter();
+
+    // Load recent searches on mount
+    useEffect(() => {
+        loadRecentSearches();
+    }, []);
+
+    const loadRecentSearches = async () => {
+        const recents = await getRecentSearches();
+        setRecentSearches(recents);
+    };
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -50,6 +69,7 @@ const ProfileSearch = () => {
     }, [searchTerm]);
 
     const viewProfileCard = (user: ProfileForSearch) => {
+        upsertRecentSearch(user.user_id).then(() => loadRecentSearches());
         router.push({
             pathname: "/matchmaking/viewProfile",
             params: {
@@ -62,8 +82,10 @@ const ProfileSearch = () => {
         });
     };
 
-    //have this get recent user searches for other users
-    const ListEmptyComponent = () => <Text></Text>;
+    const handleClearRecent = async (recentId: number) => {
+        await clearRecentSearch(recentId);
+        setRecentSearches((prev) => prev.filter((r) => r.id !== recentId));
+    };
 
     const renderItem = useCallback(
         ({ item }: { item: ProfilerWMutuals }) => {
@@ -105,11 +127,58 @@ const ProfileSearch = () => {
         [viewProfileCard],
     );
 
+    const renderRecentItem = useCallback(
+        ({ item }: { item: RecentSearchWithProfile }) => {
+            return (
+                <TouchableOpacity
+                    className="flex-row items-center justify-between py-2 border-b border-colors-textSecondary w-full max-h-24"
+                    onPress={() => viewProfileCard(item.profile)}
+                >
+                    <View className="flex-row gap-4 flex-1">
+                        <Image
+                            contentFit="cover"
+                            source={{ uri: item.profile.pp_url as string }}
+                            style={{
+                                width: 54,
+                                height: 54,
+                                borderRadius: 27,
+                                borderColor: colors.textSecondary,
+                                borderWidth: 1,
+                            }}
+                            cachePolicy="memory-disk"
+                        />
+                        <View className="flex-1 justify-center">
+                            <Text className="color-colors-text text-2xl font-semibold">
+                                {item.profile.display_name}
+                            </Text>
+                            <Text className="color-colors-textSecondary text-lg">{item.profile.major}</Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity onPress={() => handleClearRecent(item.id)} className="p-2">
+                        <Ionicons name="close" size={22} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            );
+        },
+        [viewProfileCard, handleClearRecent],
+    );
+
+    const showRecents = searchTerm.length === 0 && recentSearches.length > 0;
+
     return (
         <View className="flex-1 bg-colors-background p-4">
             <SearchBar placeholder="Search Users" value={searchTerm} onChangeText={setSearchTerm} autoCorrect={false} />
             {searchLoading ? (
                 <ActivityIndicator className="mt-4" />
+            ) : showRecents ? (
+                <View className="mt-4">
+                    <Text className="color-colors-textSecondary text-lg mb-2">Recent Searches</Text>
+                    <FlatList
+                        data={recentSearches}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={renderRecentItem}
+                    />
+                </View>
             ) : (
                 <FlatList data={searchResults} renderItem={renderItem} />
             )}
