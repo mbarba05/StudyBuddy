@@ -194,14 +194,6 @@ const ProfessorReviewsScreen = () => {
                     </View>
                 )}
 
-                {/* Review Score Display */}
-                <View className="flex-row justify-between px-4 py-2">
-                    <Text className="text-lg font-semibold text-colors-textSecondary">
-                        Reviews written: {reviewCount}
-                    </Text>
-                    <Text className="text-lg font-semibold text-colors-text">Total points: {totalPoints}</Text>
-                </View>
-
                 {/* Reviews list */}
                 {filteredReviews && filteredReviews.length > 0 ? (
                     <FlatList
