@@ -522,7 +522,7 @@ export async function majorMatching(
     // grabbing some user profiles
     let q = supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, year, pp_url, photo_urls, major:majors(id,name), created_at")
+        .select("user_id, display_name, year, pp_url, photo_urls, bio, major:majors(id,name), created_at")
         .neq("user_id", user_id) // to hid current user from swiping on themself
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
@@ -652,10 +652,11 @@ export async function majorMatching(
             results.push({
                 user_id: c.user_id,
                 display_name: c.display_name as string,
-                bio: c.bio as string,
+                //bio: c.bio as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
                 photo_urls: (c.photo_urls ?? null) as string[],
+                bio: (c.bio ?? null) as string | null,
                 major: c.major as Major,
                 same_major: ifSame_major,
                 overlapping_classes: oc,
