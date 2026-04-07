@@ -3,61 +3,61 @@ import supabase from "@/lib/subapase";
 import { markEnrollmentAsReviewed } from "./enrollmentService";
 
 export interface Review {
-  id: number;
-  enrollmentId: number;
-  review: string;
-  courseDiff: number;
-  profRating: number;
-  likes: number;
+    id: number;
+    enrollmentId: number;
+    review: string;
+    courseDiff: number;
+    profRating: number;
+    likes: number;
 }
 
 export interface ReviewInput {
-  enrollmentId: number;
-  review: string;
-  courseDiff: number;
-  profRating: number;
-  grade: string;
+    enrollmentId: number;
+    review: string;
+    courseDiff: number;
+    profRating: number;
+    grade: string;
 }
 
 export interface ReviewDisplay {
-  reviewId: number;
-  reviewText: string;
-  courseDiff: number;
-  profRating: number;
-  term: string;
-  likes: number;
-  profName: string;
-  code: string;
-  reviewDate: string;
-  grade: string;
-  //upvotes: number;
-  //downvotes: number;
-  voteScore: number;
-  myVote?: -1 | 0 | 1;
+    reviewId: number;
+    reviewText: string;
+    courseDiff: number;
+    profRating: number;
+    term: string;
+    likes: number;
+    profName: string;
+    code: string;
+    reviewDate: string;
+    grade: string;
+    //upvotes: number;
+    //downvotes: number;
+    voteScore: number;
+    myVote?: -1 | 0 | 1;
 }
 
 export async function submitReview(fullReview: ReviewInput) {
-  const user = await supabase.auth.getUser();
-  if (!user) return null;
+    const user = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const reviewed = await markEnrollmentAsReviewed(fullReview.enrollmentId);
-  if (!reviewed) return null;
+    const reviewed = await markEnrollmentAsReviewed(fullReview.enrollmentId);
+    if (!reviewed) return null;
 
-  const { data, error } = await supabase
-    .from("reviews")
-    .insert({
-      enrollment_id: fullReview.enrollmentId,
-      review: fullReview.review,
-      course_diff: fullReview.courseDiff,
-      prof_rating: fullReview.profRating,
-      likes: 0,
-      grade: fullReview.grade,
-    })
-    .select()
-    .single();
+    const { data, error } = await supabase
+        .from("reviews")
+        .insert({
+            enrollment_id: fullReview.enrollmentId,
+            review: fullReview.review,
+            course_diff: fullReview.courseDiff,
+            prof_rating: fullReview.profRating,
+            likes: 0,
+            grade: fullReview.grade,
+        })
+        .select()
+        .single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
 }
 
 /*export async function voteOnReview(reviewId: number, direction: 1 | -1) {
@@ -76,25 +76,25 @@ export async function submitReview(fullReview: ReviewInput) {
   return row as { upvotes: number; downvotes: number; deleted: boolean } | null;
 }*/
 export async function voteOnReview(reviewId: number, direction: 1 | -1) {
-  const { data, error } = await supabase.rpc("vote_on_review", {
-    p_review_id: reviewId,
-    p_direction: direction,
-  });
+    const { data, error } = await supabase.rpc("vote_on_review", {
+        p_review_id: reviewId,
+        p_direction: direction,
+    });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const row = Array.isArray(data) ? data[0] : null;
-  return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
+    const row = Array.isArray(data) ? data[0] : null;
+    return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData?.user) return [];
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) return [];
 
-  const { data, error } = await supabase
-    .from(TABLES.REVIEWS)
-    .select(
-      `
+    const { data, error } = await supabase
+        .from(TABLES.REVIEWS)
+        .select(
+            `
       *,
       enrollment:enrollment_id!inner (
         *,
@@ -103,30 +103,46 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
           prof:prof_id (name)
         )
       )
-    `
-    )
-    .eq("enrollment.user_id", userData.user.id);
+    `,
+        )
+        .eq("enrollment.user_id", userData.user.id);
 
-  if (error) return [];
-  return normalizeReviews(data ?? []);
+    if (error) return [];
+    return normalizeReviews(data ?? []);
 }
 
-export const getReviewsForProf = async (
-  profId: number
-): Promise<ReviewDisplay[]> => {
-  const { data: enrollments } = await supabase
-    .from(TABLES.ENROLLMENTS)
-    .select(`id, course_prof:course_prof_id!inner (prof_id)`)
-    .eq("course_prof.prof_id", profId);
+// Will count all the reviews user writes and sum up their upvotes
+export async function getUserReviewScore(
+    userId: string,
+): Promise<{ reviewCount: number; upvoteCount: number; totalPoints: number }> {
+    const { data, error } = await supabase.from(TABLES.REVIEWS).select("id, likes").eq("user_id", userId);
 
-  if (!enrollments || enrollments.length === 0) return [];
+    if (error || !data) {
+        console.error("Error fetching user review score:", error);
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
 
-  const enrollmentIds = enrollments.map((e) => e.id as number);
+    const reviewCount = data.length;
+    const upvoteCount = data.reduce((sum, review) => sum + (review.likes || 0), 0);
+    const totalPoints = reviewCount + upvoteCount;
 
-  const { data, error } = await supabase
-    .from(TABLES.REVIEWS)
-    .select(
-      `
+    return { reviewCount, upvoteCount, totalPoints };
+}
+
+export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
+    const { data: enrollments } = await supabase
+        .from(TABLES.ENROLLMENTS)
+        .select(`id, course_prof:course_prof_id!inner (prof_id)`)
+        .eq("course_prof.prof_id", profId);
+
+    if (!enrollments || enrollments.length === 0) return [];
+
+    const enrollmentIds = enrollments.map((e) => e.id as number);
+
+    const { data, error } = await supabase
+        .from(TABLES.REVIEWS)
+        .select(
+            `
       *,
       enrollment:enrollment_id (
         *,
@@ -135,34 +151,33 @@ export const getReviewsForProf = async (
           course:course_id (*)
         )
       )
-    `
-    )
-    .in("enrollment_id", enrollmentIds);
+    `,
+        )
+        .in("enrollment_id", enrollmentIds);
 
-  if (error) throw error;
-  return normalizeReviews(data ?? []);
+    if (error) throw error;
+    return normalizeReviews(data ?? []);
 };
 
 const normalizeReview = (item: any): ReviewDisplay => {
-  const d = new Date(item.created_at);
-  const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+    const d = new Date(item.created_at);
+    const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
 
-  return {
-    reviewId: item.id,
-    reviewText: item.review,
-    courseDiff: item.course_diff,
-    profRating: item.prof_rating,
-    likes: item.likes,
-    term: item.enrollment?.term ?? "",
-    code: item.enrollment?.course_prof?.course?.code ?? "",
-    profName: item.enrollment?.course_prof?.prof?.name ?? "",
-    grade: item.grade ?? "",
-    reviewDate,
-    //upvotes: item.upvotes ?? 0,
-    //downvotes: item.downvotes ?? 0,
-    voteScore: item.vote_score ?? 0,
-  };
+    return {
+        reviewId: item.id,
+        reviewText: item.review,
+        courseDiff: item.course_diff,
+        profRating: item.prof_rating,
+        likes: item.likes,
+        term: item.enrollment?.term ?? "",
+        code: item.enrollment?.course_prof?.course?.code ?? "",
+        profName: item.enrollment?.course_prof?.prof?.name ?? "",
+        grade: item.grade ?? "",
+        reviewDate,
+        //upvotes: item.upvotes ?? 0,
+        //downvotes: item.downvotes ?? 0,
+        voteScore: item.vote_score ?? 0,
+    };
 };
 
-const normalizeReviews = (rows: any[]): ReviewDisplay[] =>
-  rows.map(normalizeReview);
+const normalizeReviews = (rows: any[]): ReviewDisplay[] => rows.map(normalizeReview);
