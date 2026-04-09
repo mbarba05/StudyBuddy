@@ -1,0 +1,34 @@
+4/1/26:
+This scrum cycle focused on improving the matchmaking cards so users can see more of a profile before 
+deciding to swipe left or right. I updated the matchmaking card to support multiple profile photos instead 
+of only showing one image. The card now takes the main profile picture together with any extra profile photos 
+and combines them into one image list. I also added tap areas on the left and right side of the card so users 
+can move backward and forward through photos without interfering with the normal swipe gestures. In addition 
+to that, I added a Bio button to the card so a user can open and read someone’s bio directly from the matchmaking 
+screen.
+
+4/4/26:
+While working on this feature, I ran into a few issues with both layout and compatibility. At first, I had the 
+profile information too high on the card, so I moved the overlay back down to the bottom so it looked closer to 
+the original design. I also had to update the matchmaking flow so it passed the new bio value and the combined 
+photo list into the card. On the service side, I updated the matchmaking query so it returned both photo_urls and 
+bio for each potential match. I also ran into a web build problem because the matchmaking screen was still importing 
+the push notification service, which pulled in expo-device and caused the browser bundle to fail. I fixed that by 
+avoiding the native notification import on web so the matchmaking screen could load correctly there too. On the testing 
+side, I added testIDs to the card image, the previous and next photo tap zones, the Bio button, and the bio sheet so the 
+Jest tests could target the new card behavior directly.
+
+Test Cases:
+Making sure the matchmaking card renders the first photo, name, major, and year correctly. Making sure tapping the right 
+side of the card moves to the next photo. Making sure tapping the left side of the card moves back to the previous photo. 
+Making sure pressing the Bio button opens the bio modal and shows the correct text. Making sure a fallback message appears 
+when a user does not have a bio. Making sure the matchmaking screen passes the bio and combined image list into the card. 
+Making sure users with no extra profile photos still display their main profile photo correctly. Making sure the new photo 
+browsing behavior does not replace the normal left and right swipe behavior.
+
+4/7/26:
+The matchmaking card updates are now implemented and tested. Users can browse through multiple photos on a profile card 
+before swiping, and they can also open a bio directly from the card without leaving the matchmaking screen. The card still 
+keeps the normal matchmaking behavior for liking and passing profiles, so the added features did not break the original swipe 
+flow. Both manual and automated testing confirm that the new matchmaking attributes and interactions work correctly and fit into 
+the existing system.
