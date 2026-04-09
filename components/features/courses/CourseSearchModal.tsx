@@ -1,6 +1,7 @@
 import { colors } from "@/assets/colors";
 import { BlueButton } from "@/components/ui/Buttons";
 import { LoginInput, SearchBar } from "@/components/ui/TextInputs";
+import supabase from "@/lib/subapase";
 import { validateClassInput, validateProfName } from "@/lib/utillities";
 import {
     Course,
@@ -10,15 +11,18 @@ import {
     getProfessorsForCourse,
     ProfessorForCourse,
 } from "@/services/courseService";
+import { MajorDropDownItem } from "@/services/majorsService";
 import {
     createCourseProf,
     createProfessor,
     getProfessorsForSearch,
+    linkProfToMajor,
     ProfessorForSearch,
 } from "@/services/professorService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, Text, TouchableOpacity, View } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
 
 interface CourseSearchModalProps {
     visible: boolean;
@@ -47,6 +51,38 @@ const CourseSearchModal = ({
     const [addOpenCourseId, setAddOpenCourseId] = useState<number | null>(null);
     const [profSearchQuery, setProfSearchQuery] = useState("");
     const [profSearchResults, setProfSearchResults] = useState<ProfessorForSearch[] | []>([]);
+    const [majorOpen, setMajorOpen] = useState(false);
+    const [majorValue, setMajorValue] = useState<number[]>([]);
+    const [majorOptions, setMajorOptions] = useState<MajorDropDownItem[]>([]); // [{label, value}]
+    const [majorLoading, setMajorLoading] = useState(true);
+    const [majorConfirmed, setMajorConfirmed] = useState(false);
+
+    //function to grab all major for dropdown
+    const majorFetch = async () => {
+        try {
+            setMajorLoading(true);
+            const { data, error } = await supabase.from("majors").select("id, name").order("name");
+
+            if (error) {
+                console.error("Error fetching mejors: ", error);
+                return;
+            }
+            const formatted = data.map((m) => ({
+                label: m.name,
+                value: m.id,
+            }));
+            setMajorOptions(formatted);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setMajorLoading(false);
+        }
+    };
+
+    //major dropdown population
+    useEffect(() => {
+        majorFetch();
+    }, []);
 
     //Debounced search for professors when add panel is open (shares loading/isDebouncing)
     useEffect(() => {
@@ -128,6 +164,9 @@ const CourseSearchModal = ({
         setAddOpenCourseId(null);
         setProfSearchQuery("");
         setProfSearchResults([]);
+        setMajorValue([]);
+        setMajorConfirmed(false);
+        setMajorOpen(false);
     }, [setVisible]);
 
     const keyExtractor = useCallback((item: Course) => String(item.id), []);
@@ -216,12 +255,48 @@ const CourseSearchModal = ({
             };
 
             const handleAttachExistingProf = async (prof: ProfessorForSearch) => {
+                if (majorValue.length > 0) {
+                    for (const majorId of majorValue) {
+                        await linkProfToMajor(prof.id, majorId);
+                    }
+                }
                 const courseProfId = await createCourseProf(prof.id, item.id);
 
                 if (!courseProfId) {
                     Alert.alert("Error adding professor to course", "Please try again later");
                     return;
                 }
+                // add new professor to ui display, doesn't allow dupicates
+                setProfessors((prev) => {
+                    const existing = prev[item.id] || [];
+                    const alreadyExists = existing.some((p) => p.professor_id === prof.id);
+                    if (alreadyExists) {
+                        Alert.alert("Already added", `${prof.name} is already in the course.`);
+                        return prev;
+                    }
+                    return {
+                        ...prev,
+                        [item.id]: [
+                            ...existing,
+                            {
+                                course_prof_id: courseProfId,
+                                professor_id: prof.id,
+                                name: prof.name,
+                            },
+                        ],
+                    };
+                });
+                // setProfessors((prev) => ({
+                //     ...prev,
+                //     [item.id]: [
+                //         ...(prev[item.id] || []),
+                //         {
+                //             course_prof_id: courseProfId,
+                //             professor_id: prof.id,
+                //             name: prof.name,
+                //         },
+                //     ],
+                // }));
 
                 const picked: CourseProfDisplay = {
                     course_code: item.code,
@@ -230,12 +305,13 @@ const CourseSearchModal = ({
                 };
 
                 handleProfessorPicked(picked);
-                modalClose();
+                //modalClose();
             };
 
             const handleAttachAndCreateProf = async () => {
                 const name = profSearchQuery.trim();
                 const validName = validateProfName(name);
+                //const major = majorPicker();
 
                 if (!validName) {
                     Alert.alert("Invalid Input", "Please enter a valid professor name.");
@@ -247,13 +323,15 @@ const CourseSearchModal = ({
                     Alert.alert("Error creating professor", "Please try again later");
                     return;
                 }
-
                 return await handleAttachExistingProf({ name, id });
             };
 
             const addProfessorExpanded = expanded && addOpenCourseId === item.id;
-            const hasSearch = profSearchQuery.trim().length >= 2;
+            const hasSearch = profSearchQuery.trim().length >= 3;
             const noResults = hasSearch && !isDebouncing && !loading && profSearchResults.length === 0;
+            const profName = profSearchQuery.trim();
+            const selectedMajor = majorOptions.filter((m) => majorValue.includes(m.value));
+            const teachConfirm = profName.length > 0 && selectedMajor.length > 0;
 
             return (
                 <View>
@@ -309,6 +387,9 @@ const CourseSearchModal = ({
                                     setAddOpenCourseId((prev) => (prev === item.id ? null : item.id));
                                     setProfSearchQuery("");
                                     setProfSearchResults([]);
+                                    setMajorValue([]);
+                                    setMajorConfirmed(false);
+                                    setMajorOpen(false);
                                 }}
                             >
                                 <Ionicons
@@ -325,10 +406,13 @@ const CourseSearchModal = ({
                             {addProfessorExpanded && (
                                 <View className="mt-4 rounded-md w-full p-4 bg-colors-primary border border-colors-text">
                                     <Text className="text-xl text-colors-text mb-2">Search or add a new professor</Text>
-
                                     <SearchBar
                                         value={profSearchQuery}
-                                        onChangeText={setProfSearchQuery}
+                                        //onChangeText={setProfSearchQuery}
+                                        onChangeText={(text) => {
+                                            setProfSearchQuery(text);
+                                            setMajorConfirmed(false);
+                                        }}
                                         placeholder="Type at least 3 characters..."
                                         autoCorrect={false}
                                         autoCapitalize="words"
@@ -359,26 +443,61 @@ const CourseSearchModal = ({
                                                 </View>
                                             )}
 
-                                            {noResults && (
-                                                <View className="mt-4 flex items-center">
-                                                    <Text className="text-colors-textSecondary mb-2">
-                                                        No matches found.
-                                                    </Text>
-                                                    <TouchableOpacity
-                                                        onPress={() => handleAttachAndCreateProf()}
-                                                        className="flex-row items-center justify-between p-4 rounded-xl mb-2 bg-colors-secondary"
-                                                    >
-                                                        <Text className="text-colors-text font-semibold">{`Add "${profSearchQuery.trim()}" to ${
-                                                            item.code
-                                                        }`}</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            )}
-
                                             {profSearchResults.length === 0 && !hasSearch && (
                                                 <Text className="text-colors-textSecondary mt-2">
                                                     Start typing to search, or type a full name and tap the add button.
                                                 </Text>
+                                            )}
+
+                                            {noResults && (
+                                                <>
+                                                    <Text className="text-xl text-colors-text mb-2">
+                                                        Select the Majors the Professor is associated with
+                                                    </Text>
+                                                    <View style={{ zIndex: 3000, marginBottom: 12 }}>
+                                                        <DropDownPicker
+                                                            multiple={true}
+                                                            open={majorOpen}
+                                                            value={majorValue}
+                                                            items={majorOptions}
+                                                            setOpen={() => setMajorOpen((prev) => !prev)}
+                                                            setValue={setMajorValue}
+                                                            setItems={setMajorOptions}
+                                                            searchable
+                                                            searchPlaceholder="Search Majors"
+                                                            placeholder="Choose Majors"
+                                                            listMode="SCROLLVIEW"
+                                                            maxHeight={165}
+                                                            style={{
+                                                                backgroundColor: colors.primary,
+                                                                borderColor: colors.text,
+                                                            }}
+                                                            dropDownContainerStyle={{
+                                                                backgroundColor: colors.primary,
+                                                                borderColor: colors.text,
+                                                            }}
+                                                            textStyle={{
+                                                                color: colors.text,
+                                                            }}
+                                                            placeholderStyle={{
+                                                                color: colors.text,
+                                                            }}
+                                                            listItemLabelStyle={{
+                                                                color: colors.text,
+                                                            }}
+                                                        />
+                                                    </View>
+                                                    {teachConfirm && (
+                                                        <TouchableOpacity
+                                                            onPress={() => handleAttachAndCreateProf()}
+                                                            className="flex-row items-center justify-between p-4 rounded-xl mb-2 bg-colors-secondary"
+                                                        >
+                                                            <Text className="text-colors-text front-semibold">
+                                                                {`"Click To Confirm ${profName}" is associated with "${selectedMajor.map((m) => m.label).join(", ")}"?`}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </>
                                             )}
                                         </>
                                     )}
@@ -400,6 +519,10 @@ const CourseSearchModal = ({
             profSearchResults,
             isDebouncing,
             loading,
+            majorOpen,
+            majorValue,
+            majorOptions,
+            majorConfirmed,
         ],
     );
 
