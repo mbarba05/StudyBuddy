@@ -1,10 +1,9 @@
-//import supabase from "@/lib/subapase";
 //here we put all the supabase api interactions,
 //i think it would be easiest to split them by data model
 //(profile, reviews, classes, professors)
 
 import { BUCKETS, FUNCTIONS, TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { Major } from "./majorsService";
 
 export interface Profile {
@@ -85,13 +84,14 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     let finalUrl: string | undefined = undefined;
     if (input.ppUrl) {
         if (isLocalUri(input.ppUrl)) {
-            finalUrl = await uploadProfileImage({
-                uri: input.ppUrl,
-                name: "avatar.jpg",
-                type: "image/jpeg",
-            },
-        "avatar"
-    );
+            finalUrl = await uploadProfileImage(
+                {
+                    uri: input.ppUrl,
+                    name: "avatar.jpg",
+                    type: "image/jpeg",
+                },
+                "avatar",
+            );
         } else {
             // Already a public URL
             finalUrl = input.ppUrl;
@@ -138,11 +138,7 @@ function getExt(name?: string, mime?: string): string {
 }
 
 function isLocalUri(uri?: string) {
-    return !!uri && 
-        (uri.startsWith("file://") || 
-        uri.startsWith("content://") ||
-        uri.startsWith("blob:")
-    );
+    return !!uri && (uri.startsWith("file://") || uri.startsWith("content://") || uri.startsWith("blob:"));
 }
 
 // adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
@@ -205,7 +201,7 @@ export async function uploadMultipleProfilePhotos(uris: string[]): Promise<strin
                     name: "extra.jpg",
                     type: "image/jpeg",
                 },
-                "extra"
+                "extra",
             );
             uploadedUrls.push(publicUrl);
         } else {

@@ -4,7 +4,7 @@ import AverageStuff from "@/components/features/reviews/review-averages/AverageS
 import { ClassFilterButton } from "@/components/ui/Buttons";
 import { LoadingScreen } from "@/components/ui/Loading";
 import { ReviewSeparator } from "@/components/ui/Seperators";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { getReviewsForProf, ReviewDisplay } from "@/services/reviewsService";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useLocalSearchParams } from "expo-router";

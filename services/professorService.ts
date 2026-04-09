@@ -1,5 +1,5 @@
 import { TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 
 export interface ProfessorForSearch {
     id: number;

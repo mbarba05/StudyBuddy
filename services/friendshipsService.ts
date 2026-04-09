@@ -1,5 +1,5 @@
 import { FUNCTIONS, TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { createConversation } from "./messageService";
 
 export type FriendStatus = "pending" | "accepted" | "rejected";

@@ -1,4 +1,4 @@
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 

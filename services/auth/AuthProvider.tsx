@@ -1,5 +1,5 @@
 // services/auth/AuthProvider.tsx
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type User = NonNullable<Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"]>;

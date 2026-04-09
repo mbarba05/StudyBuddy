@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import React, { useEffect, useState } from "react";
 import { Dimensions, ImageBackground, StyleSheet, Text, View } from "react-native";
