@@ -11,6 +11,7 @@ import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 
 export default function ProfileScreen() {
     const { signOut } = useAuth();
@@ -78,11 +79,14 @@ export default function ProfileScreen() {
     if (loading) return <LoadingScreen />;
 
     return (
-        <View className="flex-1 items-center  bg-colors-background gap-4 p-2">
+        <ScrollView
+            className="flex-1 bg-colors-background gap-4 p-2"
+            contentContainerStyle={{ alignItems: "center", justifyContent: "center", gap: 16, padding: 8, flexGrow: 1 }}
+        >
             <View className="flex flex-row gap-12 items-center justify-between w-full">
                 <View className="w-1/3">
                     <Image
-                        className="w-48 h-48 rounded-full border border-colors-text "
+                        className="w-44 h-44 rounded-full border border-colors-text "
                         source={{ uri: profile?.pp_url as string }}
                     />
                 </View>
@@ -200,6 +204,6 @@ export default function ProfileScreen() {
                     Sign Out
                 </LoginButton>
             </View>
-        </View>
+        </ScrollView>
     );
 }
