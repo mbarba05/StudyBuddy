@@ -133,7 +133,10 @@ export async function acceptFriendRequest(request: FriendRequest) {
 }
 
 export async function rejectFriendRequest(request_id: number) {
-    const { error } = await supabase.from(TABLES.FRIEND_REQUESTS).update({ status: "rejected" }).eq("id", request_id);
+    const { error } = await supabase
+        .from(TABLES.FRIEND_REQUESTS)
+        .update({ status: "rejected" })
+        .eq("id", request_id);
 
     if (error) throw error;
 }
@@ -147,32 +150,48 @@ export async function removeFriend(friend_id: string) {
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
 
-    const { error } = await supabase
+    const { error: friendshipError } = await supabase
         .from(TABLES.FRIENDSHIPS)
         .delete()
         .or(
             `and(user_id.eq.${user.id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user.id})`,
-        );
+        )
+        .eq("status", "accepted");
 
-    if (error) {
-        console.error("removeFriend:", error);
-        return error;
+    if (friendshipError) {
+        console.error("removeFriend friendshipError:", friendshipError);
+        return friendshipError;
+    }
+
+    const { error: requestError } = await supabase
+        .from(TABLES.FRIEND_REQUESTS)
+        .delete()
+        .or(
+            `and(sender_id.eq.${user.id},receiver_id.eq.${friend_id}),and(sender_id.eq.${friend_id},receiver_id.eq.${user.id})`,
+        )
+        .eq("status", "pending");
+
+    if (requestError) {
+        console.error("removeFriend requestError:", requestError);
+        return requestError;
     }
 
     return true;
 }
 
 export async function areFriends(user_id: string, friend_id: string) {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
         .from(TABLES.FRIENDSHIPS)
-        .select("id")
+        .select("*", { count: "exact", head: true })
         .or(`and(user_id.eq.${user_id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user_id})`)
-        .maybeSingle();
+        .eq("status", "accepted");
 
     if (error) {
         console.error("areFriends", error);
+        return false;
     }
-    return !!data;
+
+    return (count ?? 0) > 0;
 }
 
 export async function getFriendsCount() {
@@ -275,19 +294,17 @@ export const checkStatus = async (userId: string): Promise<FriendshipStatus> => 
 
     if (userId == user.id) return FriendshipStatus.self;
 
-    const { data: areFriends, error: friendsError } = await supabase.rpc(FUNCTIONS.ARE_FRIENDS, {
+    const { data: areFriendsData, error: friendsError } = await supabase.rpc(FUNCTIONS.ARE_FRIENDS, {
         p_curr_user_id: user.id,
         p_user_id: userId,
     });
 
     if (friendsError) {
-        console.error("checkStatus, are checking if friends", friendsError);
+        console.error("checkStatus, checking if friends", friendsError);
         return FriendshipStatus.error;
     }
 
-    console.log("ARE FRINED", areFriends);
-
-    if (areFriends[0].friends) return FriendshipStatus.friends;
+    if (areFriendsData?.[0]?.friends) return FriendshipStatus.friends;
 
     const { data: reqData, error } = await supabase.rpc(FUNCTIONS.CHECK_PENDING_REQUEST, {
         p_curr_user_id: user.id,
@@ -298,11 +315,10 @@ export const checkStatus = async (userId: string): Promise<FriendshipStatus> => 
         console.error("checkStatus, error finding pending friend request", error);
         return FriendshipStatus.error;
     }
-    console.log("REQ DATA", reqData);
-    if (reqData.length > 0) {
-        if (reqData[0].sender_id == user.id) return FriendshipStatus.pendingSent; // curr user sent a request that is pending
 
-        if (reqData[0].sender_id == userId) return FriendshipStatus.pendingAccept; // curr user has received a request from the user they are viewing
+    if (reqData.length > 0) {
+        if (reqData[0].sender_id == user.id) return FriendshipStatus.pendingSent;
+        if (reqData[0].sender_id == userId) return FriendshipStatus.pendingAccept;
     }
 
     return FriendshipStatus.none;
@@ -322,7 +338,7 @@ export const mutualFriends = async (otherUserId: string): Promise<MutualFriends>
         error: authError,
     } = await supabase.auth.getUser();
 
-    const res = { count: 0, friends: [] };
+    const res = { count: 0, friends: [] as { display_name: string; friend_id: string }[] };
 
     if (authError || !user) {
         console.error("mutualFriends, ", authError);
@@ -338,6 +354,7 @@ export const mutualFriends = async (otherUserId: string): Promise<MutualFriends>
         console.error("mutualFriends rpc error:", error);
         return res;
     }
+
     if (data) {
         res.count = data.length;
         res.friends = data;
@@ -345,6 +362,7 @@ export const mutualFriends = async (otherUserId: string): Promise<MutualFriends>
 
     return res;
 };
+
 export async function getFriendsByInteraction(mode: "most" | "least"): Promise<FriendListItem[]> {
     const friends = await getAllFriends();
     if (friends.length === 0) return [];
@@ -388,3 +406,4 @@ export async function getFriendsByInteraction(mode: "most" | "least"): Promise<F
 
     return merged;
 }
+
