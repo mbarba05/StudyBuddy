@@ -11,7 +11,7 @@ jest.mock("expo-router", () => ({
     }),
 }));
 
-jest.mock("@/components/ui/LoadingScreen", () => {
+jest.mock("@/components/ui/Loading", () => {
     const React = require("react");
     const { Text } = require("react-native");
     return () => <Text testID="loading">Loading</Text>;

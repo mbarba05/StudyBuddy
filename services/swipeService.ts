@@ -1,4 +1,4 @@
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 
 // total number of swipes allowed per day
 export const MAX_SWIPES = 15;

@@ -11,6 +11,9 @@ export default {
         },
         ios: {
             bundleIdentifier: "com.nickd4vis.studdybuddy",
+            infoPlist: {
+                ITSAppUsesNonExemptEncryption: false,
+            },
         },
         extra: {
             SUPABASE_URL: process.env.SUPABASE_URL,

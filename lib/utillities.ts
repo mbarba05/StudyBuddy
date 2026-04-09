@@ -101,3 +101,7 @@ export const saveImage = async (url: string) => {
         console.log("Error saving image:", error);
     }
 };
+
+export function getParam(param: string | string[]) {
+    return Array.isArray(param) ? param[0] : param;
+}

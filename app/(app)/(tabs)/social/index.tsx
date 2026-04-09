@@ -1,8 +1,8 @@
 import { colors } from "@/assets/colors";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { ListSeparator } from "@/components/ui/Seperators";
 import { SearchBar } from "@/components/ui/TextInputs";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { formatMessageTime } from "@/lib/utillities";
 import { getIncomingFriendRequests } from "@/services/friendshipsService";
 import { DMConversation, getChatsWithRecentMessage, updateReadMessage } from "@/services/messageService";

@@ -1,5 +1,5 @@
 import MatchMakingCard from "@/components/MatchMakingCard";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { sendFriendRequest } from "@/services/friendshipsService";
 import { getPotentialMatches } from "@/services/profileService";
@@ -173,7 +173,8 @@ export default function MatchmakingScreen() {
                             name={profile.display_name}
                             major={profile.major?.name}
                             year={profile.year}
-                            imageUrl={profile.pp_url}
+                            bio={profile.bio}
+                            imageUrls={[profile.pp_url, ...(profile.photo_urls ?? [])].filter(Boolean)}
                         />
                     );
                 }}
