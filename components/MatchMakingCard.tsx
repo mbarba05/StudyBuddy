@@ -2,7 +2,7 @@ import { colors } from "@/assets/colors";
 import supabase from "@/lib/supabase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Dimensions, ImageBackground, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -15,7 +15,7 @@ type MatchMakingCardProps = {
     imageUrls?: string[];
 };
 
-export default function MatchMakingCard({ name, major, year, bio, imageUrls = [], }: MatchMakingCardProps) {
+export default function MatchMakingCard({ name, major, year, bio, imageUrls = [] }: MatchMakingCardProps) {
     const { user } = useAuth();
     const [userMajor, setUserMajor] = useState<string | null>(null);
     const [photoIndex, setPhotoIndex] = useState(0);
@@ -44,6 +44,7 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
         const filtered = (imageUrls ?? []).filter((url): url is string => !!url && url.trim().length > 0);
         return filtered.length > 0 ? filtered : ["https://placehold.co/400x400?text=No+Image"];
     }, [imageUrls]);
+
     const currentPhoto = photos[photoIndex] ?? photos[0];
     const goPrevPhoto = () => {
         setPhotoIndex((prev) => (prev > 0 ? prev - 1 : prev));
@@ -56,70 +57,67 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
 
     return (
         <>
-        <View style={styles.card}>
-            <ImageBackground
-                testID="matchmaking-card-image"
-                source={{
-                    uri: currentPhoto || "https://placehold.co/400x400?text=No+Image",
-                }}
-                style={styles.image}
-                imageStyle={styles.imageStyle}
-            >   {/* Tap left/right to switch photos */}
-                <View style={styles.tapZones}>
-                    <Pressable testID="photo-prev-zone" style={styles.leftTapZone} onPress={goPrevPhoto} />
-                    <Pressable testID="photo-next-zone" style={styles.rightTapZone} onPress={goNextPhoto} />
-                </View>
-                {/*Photo indicator bars*/}
-                {photos.length > 1 && (
-                    <View style={styles.dotsContainer}>
-                        {photos.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[styles.dot, index === photoIndex ? styles.activeDot : styles.inactiveDot,
-                                ]}
-                            />
-                        ))}
+            <View style={styles.card}>
+                <ImageBackground
+                    testID="matchmaking-card-image"
+                    source={{
+                        uri: currentPhoto || "https://placehold.co/400x400?text=No+Image",
+                    }}
+                    style={styles.image}
+                    imageStyle={styles.imageStyle}
+                >
+                    {/* Tap left/right to switch photos */}
+                    <View style={styles.tapZones}>
+                        <Pressable testID="photo-prev-zone" style={styles.leftTapZone} onPress={goPrevPhoto} />
+                        <Pressable testID="photo-next-zone" style={styles.rightTapZone} onPress={goNextPhoto} />
                     </View>
-                )}
-                <View style={styles.overlay}>
-                    <View style={styles.textBlock}>
-                        <Text style={styles.name}>{name}</Text>
+                    {/*Photo indicator bars*/}
+                    {photos.length > 1 && (
+                        <View style={styles.dotsContainer}>
+                            {photos.map((_, index) => (
+                                <View
+                                    key={index}
+                                    style={[styles.dot, index === photoIndex ? styles.activeDot : styles.inactiveDot]}
+                                />
+                            ))}
+                        </View>
+                    )}
+                    <View style={styles.overlay}>
+                        <View style={styles.textBlock}>
+                            <Text style={styles.name}>{name}</Text>
 
-                        {/* Highlight if major matches user */}
-                        {major ? (
-                            <Text style={[styles.subText, isSameMajor ? styles.highlightMajor : null]}>{major}</Text>
-                        ) : null}
+                            {/* Highlight if major matches user */}
+                            {major ? (
+                                <Text style={[styles.subText, isSameMajor ? styles.highlightMajor : null]}>
+                                    {major}
+                                </Text>
+                            ) : null}
 
-                        {year ? <Text style={styles.subText}>{year}</Text> : null}
-                    </View>
-                    {/* Bio button */}
-                    <TouchableOpacity testID="bio-button" style={styles.bioButton} onPress={() => setShowBio(true)}>
-                        <Ionicons name="chevron-up" size={22} color={colors.text} />
-                        <Text style={styles.bioButtonText}>Bio</Text>
-                    </TouchableOpacity>
-                </View>
-            </ImageBackground>
-        </View>
-        {/* Bio Modal */}
-        <Modal
-            visible={showBio}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowBio(false)}
-        >
-            <Pressable style={styles.modalBackdrop} onPress={() => setShowBio(false)}>
-                <Pressable testID="bio-sheet" style={styles.bioSheet} onPress={() => {}}>
-                    <View style={styles.bioHeader}>
-                        <Text style={styles.bioTitle}>{name}</Text>
-                        <TouchableOpacity onPress={() => setShowBio(false)}>
-                            <Ionicons name="close" size={26} color={colors.text} />
+                            {year ? <Text style={styles.subText}>{year}</Text> : null}
+                        </View>
+                        {/* Bio button */}
+                        <TouchableOpacity testID="bio-button" style={styles.bioButton} onPress={() => setShowBio(true)}>
+                            <Ionicons name="chevron-up" size={22} color={colors.text} />
+                            <Text style={styles.bioButtonText}>Bio</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.bioLabel}>Bio</Text>
-                    <Text style={styles.bioText}>{bio?.trim() ? bio : "No bio added yet."}</Text>
+                </ImageBackground>
+            </View>
+            {/* Bio Modal */}
+            <Modal visible={showBio} transparent animationType="slide" onRequestClose={() => setShowBio(false)}>
+                <Pressable style={styles.modalBackdrop} onPress={() => setShowBio(false)}>
+                    <Pressable testID="bio-sheet" style={styles.bioSheet} onPress={() => {}}>
+                        <View style={styles.bioHeader}>
+                            <Text style={styles.bioTitle}>{name}</Text>
+                            <TouchableOpacity onPress={() => setShowBio(false)}>
+                                <Ionicons name="close" size={26} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.bioLabel}>Bio</Text>
+                        <Text style={styles.bioText}>{bio?.trim() ? bio : "No bio added yet."}</Text>
+                    </Pressable>
                 </Pressable>
-            </Pressable>
-        </Modal>
+            </Modal>
         </>
     );
 }

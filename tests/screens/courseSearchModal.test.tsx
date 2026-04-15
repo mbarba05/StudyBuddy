@@ -1,5 +1,5 @@
 import CourseSearchModal from "@/components/features/courses/CourseSearchModal";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { createNewCourse, getCoursesForSearch, getProfessorsForCourse } from "@/services/courseService";
 import {
     createCourseProf,
@@ -11,7 +11,7 @@ import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import React from "react";
 
 // mocking
-jest.mock("@/lib/subapase", () => ({
+jest.mock("@/lib/supabase", () => ({
     __esModule: true,
     default: {
         from: jest.fn(),

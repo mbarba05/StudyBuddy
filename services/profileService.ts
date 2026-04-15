@@ -681,8 +681,10 @@ export interface ProfileForSearch {
     user_id: string;
     display_name: string;
     pp_url?: string;
+    photo_urls?: string[];
     major: string;
     year: string;
+    bio?: string;
 }
 
 export const searchForProfile = async (searchTerm: string): Promise<ProfileForSearch[]> => {
@@ -716,6 +718,8 @@ export const searchForProfileWithMutuals = async (searchTerm: string): Promise<P
         p_user_id: user.id,
     });
 
+    console.log("DATA: ", data);
+
     if (error) {
         console.error("searchForProfileWithMutuals:", error);
         return [];
@@ -729,6 +733,8 @@ export const searchForProfileWithMutuals = async (searchTerm: string): Promise<P
         pp_url: row.pp_url,
         mutual_count: row.mutual_count,
         mutual_friends: row.mutual_friends ?? [],
+        bio: row.bio,
+        photo_urls: row.photo_urls ?? [],
     }));
 };
 

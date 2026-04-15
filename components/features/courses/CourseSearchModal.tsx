@@ -1,7 +1,7 @@
 import { colors } from "@/assets/colors";
 import { BlueButton } from "@/components/ui/Buttons";
 import { LoginInput, SearchBar } from "@/components/ui/TextInputs";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { validateClassInput, validateProfName } from "@/lib/utillities";
 import {
     Course,

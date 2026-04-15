@@ -1,5 +1,5 @@
+import { fireEvent, render, waitFor, within } from "@testing-library/react-native";
 import React from "react";
-import { render, fireEvent, waitFor, within } from "@testing-library/react-native";
 
 jest.mock("@/services/auth/AuthProvider", () => ({
   useAuth: () => ({
@@ -7,7 +7,7 @@ jest.mock("@/services/auth/AuthProvider", () => ({
   }),
 }));
 
-jest.mock("@/lib/subapase", () => ({
+jest.mock("@/lib/supabase", () => ({
   __esModule: true,
   default: {
     from: jest.fn(() => ({
