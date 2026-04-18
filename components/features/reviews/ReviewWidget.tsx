@@ -430,41 +430,6 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                     </TouchableOpacity>
                 </View>
             </View>
-            {/* {showReportBox && (
-                <View className="gap-2 border-t border-colors-textSecondary pt-2">
-                    <Text className="color-colors-textSecondary">Reporting? Why?</Text>
-                    <TextInput
-                        value={reportReason}
-                        onChangeText={setReportReason}
-                        placeholder="Write your reason here..."
-                        placeholderTextColor={colors.textSecondary}
-                        multiline
-                        className="bg-colors-background rounded-md p-2 border border-colors-textSecondary color-colors-text"
-                    />
-                    <View className="flex-row justify-end gap-3">
-                        <TouchableOpacity
-                            onPress={() => {
-                                setShowReportBox(false);
-                                setReportReason("");
-                            }}
-                            className="px-3 py-2 rounded-md border border-colors-textSecondary"
-                        >
-                            <Text className="color-colors-text">Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleReport}
-                            disabled={reporting || !reportReason.trim()}
-                            className="bg-red-500 px-4 py-2 rounded-md"
-                        >
-                            {reporting ? (
-                                <ActivityIndicator />
-                            ) : (
-                                <Text className="text-white font-semibold"> Submit Report</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )} */}
             {showComments && (
                 <View className="gap-2">
                     {commentErr ? <Text className="color-colors-textSecondary">{commentErr}</Text> : null}
