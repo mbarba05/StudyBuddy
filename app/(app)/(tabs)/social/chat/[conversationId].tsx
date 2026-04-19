@@ -5,8 +5,10 @@ import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/supabase";
 import { formatPrettyDate } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
+import { removeFriend, sendFriendRequest } from "@/services/friendshipsService";
 import {
     Chat,
+    getChatHeaderState,
     getMessagesForConv,
     LoadedAttachment,
     MessageAttachmentTable,
@@ -18,7 +20,8 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,7 +32,7 @@ type ChatRouteParams = {
     ppPic: string;
 };
 
-type ChatListItem = { type: "message"; chat: Chat } | { type: "date"; dateKey: string }; // stable key for a day
+type ChatListItem = { type: "message"; chat: Chat } | { type: "date"; dateKey: string };
 
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
@@ -39,10 +42,9 @@ const ConversationScreen = () => {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [countLeft, setCountLeft] = useState(0);
+    const [headerState, setHeaderState] = useState<any>(null);
+    const [busy, setBusy] = useState(false);
 
-    //we need to store chats as a record because of the way we subsrcibe to them on supabase
-    //messages and attachments are 2 diff tables, so we need to make 2 realitime subscriptions and
-    //merge the attachments into the messages seperatley
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
     const [order, setOrder] = useState<string[]>([]);
     const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
@@ -51,7 +53,6 @@ const ConversationScreen = () => {
 
     const dateKey = (iso: string) => {
         const d = new Date(iso);
-        // Use local day boundary; or use UTC if you prefer consistent server time
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     };
 
@@ -65,7 +66,6 @@ const ConversationScreen = () => {
             const cur = dateKey(chat.created_at);
             const next = chats[i + 1] ? dateKey(chats[i + 1].created_at) : null;
 
-            // When the NEXT message is a different day (or none), we've reached the "top" of this day section
             if (cur !== next) {
                 out.push({ type: "date", dateKey: cur });
             }
@@ -78,12 +78,26 @@ const ConversationScreen = () => {
         if (!order.length) return;
 
         const id = setTimeout(() => {
-            // inverted list: newest is at offset 0 (visual bottom)
             messagesListRef.current?.scrollToOffset({ offset: 0, animated: true });
         }, 0);
 
         return () => clearTimeout(id);
     }, [order[0]]);
+
+    useEffect(() => {
+        if (!conversationId) return;
+
+        const loadHeader = async () => {
+            try {
+                const data = await getChatHeaderState(conversationId);
+                setHeaderState(data);
+            } catch (err) {
+                console.error("loadHeader:", err);
+            }
+        };
+
+        loadHeader();
+    }, [conversationId]);
 
     useFocusEffect(
         useCallback(() => {
@@ -94,9 +108,10 @@ const ConversationScreen = () => {
                     setLoading(true);
                     const chat = await getMessagesForConv(conversationId, 0);
                     if (mounted) {
-                        const count = chat && chat?.length > 0 ? chat[0].count : 0;
+                        const count = chat && chat.length > 0 ? chat[0].count : 0;
                         if (count > CHAT_PAGE_SIZE) setCountLeft(count - CHAT_PAGE_SIZE);
                         if (!chat) return;
+
                         const nextById: Record<string, Chat> = {};
                         const nextOrder: string[] = [];
 
@@ -112,9 +127,9 @@ const ConversationScreen = () => {
                     if (mounted) setLoading(false);
                 }
             };
+
             fetchChats();
 
-            // cleanup when screen loses focus
             return () => {
                 mounted = false;
             };
@@ -135,7 +150,8 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 async (payload) => {
-                    let newMsg = payload.new as MessagesTable;
+                    const newMsg = payload.new as MessagesTable;
+
                     setChatsById((prev) => {
                         if (prev[newMsg.id]) return prev;
 
@@ -148,6 +164,7 @@ const ConversationScreen = () => {
                             sender_id: newMsg.sender_id,
                             count: 0,
                         };
+
                         return { ...prev, [newMsg.id]: newChat };
                     });
 
@@ -158,15 +175,13 @@ const ConversationScreen = () => {
                     });
 
                     const currentUserId = user.user?.id;
-
                     if (!currentUserId) return;
 
-                    //Notify the user if they receive a new message from the other person in the DM
                     if (newMsg.sender_id !== currentUserId) {
                         await sendPushNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
                     }
 
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 },
             )
             .subscribe();
@@ -174,7 +189,7 @@ const ConversationScreen = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [conversationId]);
+    }, [conversationId, dmName, user.user?.id]);
 
     useEffect(() => {
         if (!conversationId) return;
@@ -190,7 +205,7 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 async (payload) => {
-                    let newAtt = payload.new as MessageAttachmentTable;
+                    const newAtt = payload.new as MessageAttachmentTable;
 
                     setChatsById((prev) => {
                         const msg = prev[newAtt.message_id];
@@ -216,13 +231,11 @@ const ConversationScreen = () => {
                         };
                     });
 
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
                     const currentUserId = user.user?.id;
-
                     if (!currentUserId) return;
 
-                    //Notify the user if they receive a new message from the other person in the DM
                     if (newAtt.sender_id !== currentUserId) {
                         await sendPushNotification(currentUserId, `New message from ${dmName}: New Attachment`);
                     }
@@ -233,14 +246,20 @@ const ConversationScreen = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [conversationId]);
+    }, [conversationId, dmName, user.user?.id]);
 
     const loadOlderMessages = async () => {
         if (countLeft <= 0 || loadingMore) return;
+
         setLoadingMore(true);
         const offset = order.length;
         const oldChats = await getMessagesForConv(conversationId, offset);
-        if (!oldChats) return;
+
+        if (!oldChats) {
+            setLoadingMore(false);
+            return;
+        }
+
         const nextById: Record<string, Chat> = {};
         const nextOrder: string[] = [];
 
@@ -251,30 +270,45 @@ const ConversationScreen = () => {
 
         setChatsById((prev) => ({ ...prev, ...nextById }));
         setOrder((prev) => [...prev, ...nextOrder]);
-
         setCountLeft((prev) => prev - CHAT_PAGE_SIZE);
         setLoadingMore(false);
+    };
+
+    const handleFriendAction = async () => {
+        if (!headerState || busy) return;
+
+        try {
+            setBusy(true);
+
+            if (headerState.is_friend) {
+                await removeFriend(headerState.other_user_id);
+            } else {
+                await sendFriendRequest(headerState.other_user_id);
+            }
+
+            const refreshed = await getChatHeaderState(conversationId);
+            setHeaderState(refreshed);
+        } catch (err) {
+            console.error("handleFriendAction:", err);
+        } finally {
+            setBusy(false);
+        }
     };
 
     const globalX = useSharedValue(0);
 
     const swipeLeftGesture = useMemo(() => {
-        return (
-            Gesture.Pan()
-                // Only become active when there's meaningful horizontal movement
-                // and don't trigger if user is mostly scrolling vertically.
-                .activeOffsetX([-12, 12])
-                .failOffsetY([-10, 10])
-                .onUpdate((e) => {
-                    // Only allow dragging LEFT
-                    const nextX = Math.min(0, e.translationX);
-                    globalX.value = Math.max(nextX, -60);
-                })
-                .onEnd(() => {
-                    globalX.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.6 });
-                })
-        );
-    }, []);
+        return Gesture.Pan()
+            .activeOffsetX([-12, 12])
+            .failOffsetY([-10, 10])
+            .onUpdate((e) => {
+                const nextX = Math.min(0, e.translationX);
+                globalX.value = Math.max(nextX, -60);
+            })
+            .onEnd(() => {
+                globalX.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.6 });
+            });
+    }, [globalX]);
 
     const renderItem = useCallback(
         ({ item }: { item: ChatListItem }) => {
@@ -295,24 +329,46 @@ const ConversationScreen = () => {
     );
 
     const header = () => (
-        <View className="flex flex-row items-center gap-2">
-            <Image
-                contentFit="cover"
-                source={{ uri: ppPic as string }}
-                style={{
-                    width: 54,
-                    height: 54,
-                    borderRadius: 27,
-                    borderColor: colors.textSecondary,
-                    borderWidth: 1,
-                }}
-                cachePolicy="memory-disk"
-            />
-            <Text className="text-colors-text text-2xl font-semibold">{dmName}</Text>
+        <View className="flex flex-row items-center justify-between w-full pr-2">
+            <View className="flex flex-row items-center gap-2 flex-1">
+                <Image
+                    contentFit="cover"
+                    source={{ uri: ppPic as string }}
+                    style={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 27,
+                        borderColor: colors.textSecondary,
+                        borderWidth: 1,
+                    }}
+                    cachePolicy="memory-disk"
+                />
+                <Text className="text-colors-text text-2xl font-semibold" numberOfLines={1}>
+                    {dmName}
+                </Text>
+            </View>
+
+            {headerState && (
+                <TouchableOpacity
+                    onPress={handleFriendAction}
+                    disabled={busy}
+                    activeOpacity={0.8}
+                    className="bg-[#0A2F6B] border border-[#0E57C8] rounded-full px-4 py-2 ml-2"
+                >
+                    <View className="flex-row items-center gap-1">
+                        <Text className="text-white text-[14px] font-semibold">
+                            {headerState.is_friend ? "Remove Friend" : "Add Friend"}
+                        </Text>
+                        <Ionicons
+                            name={headerState.is_friend ? "person-remove" : "person-add"}
+                            size={18}
+                            color="white"
+                        />
+                    </View>
+                </TouchableOpacity>
+            )}
         </View>
     );
-
-    console.log(chats);
 
     return (
         <>
@@ -347,7 +403,7 @@ const ConversationScreen = () => {
                             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                             inverted
                         />
-                        <SendTextInput convId={conversationId} />
+                        <SendTextInput convId={conversationId} canMessage={headerState?.is_friend ?? true} />
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </GestureDetector>
@@ -356,3 +412,4 @@ const ConversationScreen = () => {
 };
 
 export default ConversationScreen;
+

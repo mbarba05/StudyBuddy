@@ -17,7 +17,6 @@ export type DMConversation = {
 };
 
 export type Chat = {
-    //this is what is returned from the supabase function in getMessagesForConv
     id: string;
     content: string | null;
     sender_id: string;
@@ -28,7 +27,6 @@ export type Chat = {
 };
 
 export type LoadedAttachment = {
-    //also from supabase rpc
     id: string;
     path: string;
     mime_type: string;
@@ -55,8 +53,16 @@ export type MessagesTable = {
     content: string;
 };
 
+export type ChatHeaderState = {
+    conversation_id: string;
+    other_user_id: string;
+    dm_name: string;
+    pp_url: string | null;
+    is_friend: boolean;
+};
+
 export async function createConversation(userA: string, userB: string) {
-    const { data, error } = await supabase //create conversation
+    const { data, error } = await supabase
         .from(TABLES.CONVERSATIONS)
         .insert({ type: "dm", created_by: userA })
         .select("id")
@@ -70,7 +76,6 @@ export async function createConversation(userA: string, userB: string) {
     const conversationId = data.id;
 
     const { error: membError } = await supabase.from(TABLES.CONVERSATION_MEMBERS).insert([
-        // create conversation members
         { conversation_id: conversationId, user_id: userA },
         { conversation_id: conversationId, user_id: userB },
     ]);
@@ -84,7 +89,7 @@ export async function createConversation(userA: string, userB: string) {
         conversation_id: conversationId,
         content: "I accepted your request",
         sender_id: userB,
-    }); //send message
+    });
 
     if (chatError) {
         console.error("Error sending chat:", chatError);
@@ -100,6 +105,7 @@ export async function getChatsWithRecentMessage(): Promise<DMConversation[] | nu
 
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
+
     const { data, error } = await supabase.rpc("get_dms_for_user", {
         p_user_id: user.id,
     });
@@ -108,6 +114,7 @@ export async function getChatsWithRecentMessage(): Promise<DMConversation[] | nu
         console.error("Error getting dms for user", error);
         return null;
     }
+
     return data;
 }
 
@@ -116,11 +123,83 @@ export async function getMessagesForConv(convId: string, offset: number): Promis
         p_conv_id: convId,
         offst: offset,
     });
+
     if (error) {
         console.error("Error getting dms for conversation", error);
         return null;
     }
+
     return data;
+}
+
+async function getCurrentUserId(): Promise<string> {
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) throw authError;
+    if (!user) throw new Error("User not authenticated");
+
+    return user.id;
+}
+
+async function getOtherUserIdForConversation(convId: string, currentUserId: string): Promise<string | null> {
+    const { data, error } = await supabase
+        .from(TABLES.CONVERSATION_MEMBERS)
+        .select("user_id")
+        .eq("conversation_id", convId);
+
+    if (error) {
+        console.error("getOtherUserIdForConversation:", error);
+        return null;
+    }
+
+    const otherMember = (data ?? []).find((row: any) => row.user_id !== currentUserId);
+    return otherMember?.user_id ?? null;
+}
+
+async function areUsersStillFriends(userA: string, userB: string): Promise<boolean> {
+    const { count, error } = await supabase
+        .from(TABLES.FRIENDSHIPS)
+        .select("*", { count: "exact", head: true })
+        .or(`and(user_id.eq.${userA},friend_id.eq.${userB}),and(user_id.eq.${userB},friend_id.eq.${userA})`)
+        .eq("status", "accepted");
+
+    if (error) {
+        console.error("areUsersStillFriends:", error);
+        return false;
+    }
+
+    return (count ?? 0) > 0;
+}
+
+export async function getChatHeaderState(convId: string): Promise<ChatHeaderState | null> {
+    const currentUserId = await getCurrentUserId();
+    const otherUserId = await getOtherUserIdForConversation(convId, currentUserId);
+
+    if (!otherUserId) return null;
+
+    const { data: profile, error: profileError } = await supabase
+        .from(TABLES.PROFILES)
+        .select("user_id, display_name, pp_url")
+        .eq("user_id", otherUserId)
+        .single();
+
+    if (profileError) {
+        console.error("getChatHeaderState profileError:", profileError);
+        return null;
+    }
+
+    const isFriend = await areUsersStillFriends(currentUserId, otherUserId);
+
+    return {
+        conversation_id: convId,
+        other_user_id: otherUserId,
+        dm_name: profile.display_name,
+        pp_url: profile.pp_url ?? null,
+        is_friend: isFriend,
+    };
 }
 
 export async function sendMessage(clientId: string, message: string, convId: string, uris: ChatAttachment[]) {
@@ -132,6 +211,16 @@ export async function sendMessage(clientId: string, message: string, convId: str
     if (authError || !user) {
         console.error("Auth error when sending text", authError);
         return authError;
+    }
+
+    const otherUserId = await getOtherUserIdForConversation(convId, user.id);
+    if (!otherUserId) {
+        return new Error("Could not find the other user for this conversation.");
+    }
+
+    const stillFriends = await areUsersStillFriends(user.id, otherUserId);
+    if (!stillFriends) {
+        return new Error("You can no longer message this user unless you become friends again.");
     }
 
     const { data, error } = await supabase
@@ -150,12 +239,14 @@ export async function sendMessage(clientId: string, message: string, convId: str
         return error;
     }
 
-    createAttachment(uris, convId, data.id);
-    //trigger then updates last message
+    if (uris.length > 0) {
+        await createAttachment(uris, convId, data.id);
+    }
 }
 
 export async function updateReadMessage(messageId: string | null, convId: string) {
     if (!messageId) return;
+
     const {
         data: { user },
         error: authError,
@@ -185,19 +276,15 @@ export async function createAttachment(uris: ChatAttachment[], convId: string, m
     const user = data?.user;
     if (authError || !user) throw authError ?? new Error("No user");
 
-    // Compute aspect ratios from the *local* assets BEFORE upload
     const aspectRatios = await Promise.all(
         uris.map(async (a) => {
             if (!isImageMime((a as any).mimeType ?? (a as any).mime)) return null;
 
-            // If it's an ImagePickerAsset, use width/height directly (fastest, no IO)
             if (isImagePickerAsset(a) && a.width > 0 && a.height > 0) {
                 return a.width / a.height;
             }
 
-            // Fallback: use local uri (file://...) for Image.getSize
             const localUri = (a as any).uri ?? (a as any).localUri ?? (a as any).file ?? null;
-
             if (!localUri) return null;
 
             try {
@@ -208,17 +295,15 @@ export async function createAttachment(uris: ChatAttachment[], convId: string, m
         }),
     );
 
-    // Upload
     const uploaded = await Promise.all(uris.map((u) => uploadAttachmentToStorage(u, convId)));
 
-    // Build rows (NO async map here)
     const rows = uploaded.map((u, idx) => ({
         conversation_id: convId,
         sender_id: user.id,
         message_id: messageId,
         path: u.path,
         mime_type: u.mime,
-        aspect_ratio: aspectRatios[idx], // number | null
+        aspect_ratio: aspectRatios[idx],
     }));
 
     const { error } = await supabase.from(TABLES.MESSAGE_ATTACHMENTS).insert(rows);
@@ -245,10 +330,7 @@ export function isImageMime(mime?: string) {
 
 export function fileNameFromPath(path: string) {
     const fullName = path.split("/").pop() ?? "file";
-
-    // remove timestamp-random- prefix
     const parts = fullName.split("-");
-
     return parts.length > 2 ? parts.slice(2).join("-") : fullName;
 }
 
@@ -263,7 +345,7 @@ export async function getImageAspectRatio(uri: string): Promise<number> {
 function sanitizeFileName(name: string) {
     return name
         .normalize("NFKD")
-        .replace(/[^\w.\-]/g, "_") // remove unsafe chars
+        .replace(/[^\w.\-]/g, "_")
         .replace(/_+/g, "_")
         .toLowerCase();
 }
@@ -301,11 +383,8 @@ export async function uploadAttachmentToStorage(
     if (!mime) mime = "application/octet-stream";
 
     const ext = getExt(name, mime);
-
     const safeName = sanitizeFileName(name ?? `file.${ext}`);
-
     const uniquePrefix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
     const filePath = `conversations/${convId}/${uniquePrefix}-${safeName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -317,14 +396,11 @@ export async function uploadAttachmentToStorage(
     return { path: filePath, mime, name };
 }
 
-//ATTACHMENTS will be stored in a private bucket, so we need to create a signed url (a url with a token that expires)
-//then use cache and use that url to display images
-
 type SignedUrlCacheEntry = { signedUrl: string; expiresAtMs: number };
 
 const signedUrlCache = new Map<string, SignedUrlCacheEntry>();
 const inflight = new Map<string, Promise<string>>();
-const SKEW_MS = 60_000; // refresh 1 min early
+const SKEW_MS = 60_000;
 
 export async function getAttachmentSignedUrlCached(path: string, expiresInSeconds = 60 * 30) {
     const now = Date.now();

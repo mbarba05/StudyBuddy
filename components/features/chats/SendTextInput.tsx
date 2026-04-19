@@ -12,15 +12,18 @@ import { v4 as uuidv4 } from "uuid";
 
 type SendTextInputProps = {
     convId: string;
+    canMessage?: boolean;
 };
 
-const SendTextInput = ({ convId }: SendTextInputProps) => {
+const SendTextInput = ({ convId, canMessage = true }: SendTextInputProps) => {
     const [message, setMessage] = useState<string>("");
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
     const user = useAuth();
     const { showActionSheetWithOptions } = useActionSheet();
 
     const sendText = async () => {
+        if (!canMessage) return;
+
         if (!user.user?.id) {
             console.error("Auth error when sending text");
             return;
@@ -29,7 +32,6 @@ const SendTextInput = ({ convId }: SendTextInputProps) => {
         const clientId = uuidv4();
 
         const messageToSend: Chat = {
-            // optimistically create message and update state on the client to avoid waiting a secnod for ui to update after send
             id: clientId,
             sender_id: user.user?.id,
             content: message,
@@ -39,27 +41,24 @@ const SendTextInput = ({ convId }: SendTextInputProps) => {
             count: 0,
         };
 
-        // setChatsById((prev) => ({ ...prev, [messageToSend.id]: messageToSend }));
-        // setOrder((prev) => [messageToSend.id, ...prev]);
         const error = await sendMessage(messageToSend.id, message, convId, attachments);
+
+        if (error) {
+            return;
+        }
 
         setMessage("");
         setAttachments([]);
-
-        if (error) {
-            // rollback or mark failed
-            //setChats((prev) => prev.filter((m) => m.id !== messageToSend.id));
-            // optionally restore input text or show toast
-            return;
-        }
     };
 
     const openAttachmentOptions = () => {
+        if (!canMessage) return;
+
         const options = ["Photo Library", "Camera", "Files", "Cancel"];
         const cancelButtonIndex = 3;
+
         showActionSheetWithOptions({ options, cancelButtonIndex, title: "Add Attachment" }, async (selectedIndex) => {
             if (selectedIndex === 0) {
-                //open photo library
                 const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (!permission.granted) {
                     Alert.alert("Permission required", "Please allow access to your photos.");
@@ -75,13 +74,11 @@ const SendTextInput = ({ convId }: SendTextInputProps) => {
                     videoMaxDuration: 180,
                     quality: 0.7,
                 });
-                console.log("RESULT", result);
 
                 if (!result.canceled && result.assets?.length > 0) {
                     setAttachments((prev) => [...prev, ...result.assets.map((a) => a)]);
                 }
             } else if (selectedIndex === 1) {
-                //camera
                 const permission = await ImagePicker.requestCameraPermissionsAsync();
                 if (!permission.granted) {
                     Alert.alert("Permission required", "Please allow access to your camera.");
@@ -99,12 +96,11 @@ const SendTextInput = ({ convId }: SendTextInputProps) => {
                     setAttachments((prev) => [...prev, ...result.assets.map((a) => a)]);
                 }
             } else if (selectedIndex === 2) {
-                //documents
                 const result = await DocumentPicker.getDocumentAsync({
                     type: "*/*",
                     copyToCacheDirectory: true,
                 });
-                console.log("RESULT", result);
+
                 if (!result.canceled && result.assets?.length > 0) {
                     setAttachments((prev) => [...prev, ...result.assets.map((a) => a)]);
                 }
@@ -114,7 +110,7 @@ const SendTextInput = ({ convId }: SendTextInputProps) => {
 
     return (
         <View className="flex">
-            {attachments.length > 0 && (
+            {attachments.length > 0 && canMessage && (
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -150,29 +146,37 @@ const SendTextInput = ({ convId }: SendTextInputProps) => {
                 </ScrollView>
             )}
 
-            <View className="flex items-center flex-row gap-2 px-2 pb-2">
-                <Ionicons
-                    testID="attachmentMenu"
-                    name="add-circle"
-                    color={colors.secondary}
-                    size={36}
-                    onPress={openAttachmentOptions}
-                />
+            {canMessage ? (
+                <View className="flex items-center flex-row gap-2 px-2 pb-2">
+                    <Ionicons
+                        testID="attachmentMenu"
+                        name="add-circle"
+                        color={colors.secondary}
+                        size={36}
+                        onPress={openAttachmentOptions}
+                    />
 
-                <TextInput
-                    value={message}
-                    onChangeText={setMessage}
-                    placeholder="Message"
-                    placeholderTextColor={colors.textSecondary}
-                    className="flex-1 justify-center text-colors-text rounded-2xl px-2 border-colors-textSecondary border h-12"
-                />
+                    <TextInput
+                        value={message}
+                        onChangeText={setMessage}
+                        placeholder="Message"
+                        placeholderTextColor={colors.textSecondary}
+                        className="flex-1 justify-center text-colors-text rounded-2xl px-2 border-colors-textSecondary border h-12"
+                    />
 
-                {message.length > 0 || attachments.length > 0 ? (
-                    <Ionicons name="arrow-up-circle" color={colors.secondary} size={36} onPress={sendText} />
-                ) : (
-                    <Ionicons name="arrow-up-circle-outline" color={colors.textSecondary} size={36} />
-                )}
-            </View>
+                    {message.length > 0 || attachments.length > 0 ? (
+                        <Ionicons name="arrow-up-circle" color={colors.secondary} size={36} onPress={sendText} />
+                    ) : (
+                        <Ionicons name="arrow-up-circle-outline" color={colors.textSecondary} size={36} />
+                    )}
+                </View>
+            ) : (
+                <View className="px-4 py-4 border-t border-colors-textSecondary">
+                    <Text className="text-center text-colors-textSecondary">
+                        You can no longer message this user unless you become friends again.
+                    </Text>
+                </View>
+            )}
         </View>
     );
 };
