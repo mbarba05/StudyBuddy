@@ -1,5 +1,5 @@
 import { TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { Alert } from "react-native";
 
 export interface Course {

@@ -1,5 +1,5 @@
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import supabase from "@/lib/subapase";
+import { LoadingScreen } from "@/components/ui/Loading";
+import supabase from "@/lib/supabase";
 import { getReviewableEnrollments, ReviewableEnrollment } from "@/services/enrollmentService";
 import { getUserReviews, getUserReviewScore, ReviewDisplay } from "@/services/reviewsService";
 import React, { useEffect, useState } from "react";

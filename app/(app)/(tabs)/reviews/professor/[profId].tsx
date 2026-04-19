@@ -1,7 +1,8 @@
 import { colors } from "@/assets/colors";
 import ReviewWidget from "@/components/features/reviews/ReviewWidget";
+import AverageStuff from "@/components/features/reviews/review-averages/AverageStuff";
 import { ClassFilterButton } from "@/components/ui/Buttons";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { ReviewSeparator } from "@/components/ui/Seperators";
 import supabase from "@/lib/subapase";
 import { getReviewsForProf, getUserReviewScore, ReviewDisplay } from "@/services/reviewsService";
@@ -148,6 +149,14 @@ const ProfessorReviewsScreen = () => {
         </View>
     );
 
+    const reviewsTexts = useMemo(() => {
+        const list = reviews ?? [];
+        return list
+            .map((r) => (r.reviewText ?? "").trim())
+            .filter(Boolean)
+            .slice(0, 120);
+    }, [reviews]);
+
     if (loading) return <LoadingScreen />;
 
     return (
@@ -163,7 +172,16 @@ const ProfessorReviewsScreen = () => {
             <SafeAreaView className="flex-1  bg-colors-background" edges={["left", "right"]}>
                 {/* Course filter */}
                 {courseOptions.length > 0 && (
-                    <View className="border-y p-2 border-colors-textSecondary w-full">
+                    <View className="border-y p-2 border-colors-textSecondary w-full h-80">
+                        <ScrollView className="w-full self-center mt-3">
+                            <AverageStuff
+                                reviews={reviews ?? []} //pass all fetched reviews
+                                selectedCourseCode={selectedCourseCode} //pass current filter
+                                profId={Number(profId)}
+                                professorName={profName ?? "unknown"}
+                            />
+                        </ScrollView>
+                        <View className="w-full h-[1px] bg-white/20 mt-3" />
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             <View className="flex-row gap-2">
                                 <Text className="text-colors-textSecondary text-lg font-semibold self-center">
@@ -201,8 +219,25 @@ const ProfessorReviewsScreen = () => {
                         keyExtractor={(r) => String(r.reviewId)}
                         renderItem={({ item }) => <ReviewWidget review={item} onVoted={fetchReviews} />}
                         ItemSeparatorComponent={ReviewSeparator}
+                        /*
+                            ListHeaderComponent allows us to place
+                            the averages section ABOVE the list items
+                            while still keeping everything inside one scrollable list.
+                            This prevents nested scrolling issues
+                            and ensures proper alignment.
+                        */
+                        ListHeaderComponent={
+                            <View className="w-full items-center pt-2">
+                                {/* <AverageStuff
+                                    reviews={reviews ?? []} //pass all fetched reviews
+                                    selectedCourseCode={selectedCourseCode} //pass current filter
+                                /> */}
+                                {/*Add some spacing between averages and first review item.*/}
+                                <View className="h-4" />
+                            </View>
+                        }
                         contentContainerStyle={{
-                            paddingTop: 20,
+                            paddingTop: 8,
                             paddingBottom: 20,
                             alignItems: "center",
                         }}

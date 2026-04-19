@@ -1,6 +1,6 @@
 import CourseProfDisplayWidget from "@/components/features/courses/CourseProfDisplayWidget";
 import { LoginButton } from "@/components/ui/Buttons";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { SectionSeperator } from "@/components/ui/Seperators";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
@@ -11,6 +11,7 @@ import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 
 export default function ProfileScreen() {
     const { signOut } = useAuth();
@@ -78,11 +79,14 @@ export default function ProfileScreen() {
     if (loading) return <LoadingScreen />;
 
     return (
-        <View className="flex-1 items-center  bg-colors-background gap-4 p-2">
+        <ScrollView
+            className="flex-1 bg-colors-background gap-4 p-2"
+            contentContainerStyle={{ alignItems: "center", justifyContent: "center", gap: 16, padding: 8, flexGrow: 1 }}
+        >
             <View className="flex flex-row gap-12 items-center justify-between w-full">
                 <View className="w-1/3">
                     <Image
-                        className="w-48 h-48 rounded-full border border-colors-text "
+                        className="w-44 h-44 rounded-full border border-colors-text "
                         source={{ uri: profile?.pp_url as string }}
                     />
                 </View>
@@ -112,6 +116,32 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </View>
+            <View className="w-full mt-0">
+                {/* <Text className="text-left color-colors-textSecondary mb-1">Bio</Text> */}
+                <Text className="font-semibold text-base text-colors-text">
+                    {profile?.bio?.trim() ? profile.bio : " "}
+                </Text>
+            </View>
+            <View className="w-full">
+                <Text className="color-colors-textSecondary text-left mb-1">Profile Photos</Text>
+                <SectionSeperator />
+
+                <View className="flex-row flex-wrap gap-3 mt-4 justify-center">
+                    {!profile?.photo_urls || profile.photo_urls.length === 0 ? (
+                        <Text className="text-colors-textSecondary text-lg text-center">
+                            No extra profile photos added yet.
+                        </Text>
+                    ) : (
+                        profile.photo_urls.map((photo, index) => (
+                            <Image
+                                key={`${photo}-${index}`}
+                                source={{ uri: photo }}
+                                className="w-32 h-32 rounded-xl border border-colors-text"
+                            />
+                        ))
+                    )}
+                </View>
+            </View>
             <View className="w-full">
                 <Text className=" color-colors-textSecondary text-left mb-1">
                     Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
@@ -136,6 +166,7 @@ export default function ProfileScreen() {
                     )}
                 </View>
             </View>
+
             <View className="w-full">
                 <Text className=" color-colors-textSecondary text-left mb-1">
                     Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
@@ -173,6 +204,6 @@ export default function ProfileScreen() {
                     Sign Out
                 </LoginButton>
             </View>
-        </View>
+        </ScrollView>
     );
 }
