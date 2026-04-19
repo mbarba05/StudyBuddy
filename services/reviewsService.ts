@@ -88,6 +88,32 @@ export async function voteOnReview(reviewId: number, direction: 1 | -1) {
     return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
 }
 
+// being able to report a review and using upsert to let users edit their reviews if they try to report the same review
+export async function reportReview(reviewId: number, reason: string) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError) throw userError;
+    if (!userData?.user) return null;
+
+    const { data, error } = await supabase
+        .from("review_reports")
+        .upsert(
+            {
+                review_id: reviewId,
+                user_id: userData.user.id,
+                reason,
+            },
+            {
+                onConflict: "review_id,user_id",
+            },
+        )
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return [];

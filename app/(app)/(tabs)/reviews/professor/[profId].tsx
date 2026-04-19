@@ -172,7 +172,7 @@ const ProfessorReviewsScreen = () => {
             <SafeAreaView className="flex-1  bg-colors-background" edges={["left", "right"]}>
                 {/* Course filter */}
                 {courseOptions.length > 0 && (
-                    <View className="border-y p-2 border-colors-textSecondary w-full h-80">
+                    <View className="border-y border-colors-textSecondary w-full py-2 h-[235px]">
                         <ScrollView className="w-full self-center mt-3">
                             <AverageStuff
                                 reviews={reviews ?? []} //pass all fetched reviews
@@ -181,9 +181,9 @@ const ProfessorReviewsScreen = () => {
                                 professorName={profName ?? "unknown"}
                             />
                         </ScrollView>
-                        <View className="w-full h-[1px] bg-white/20 mt-3" />
+                        <View className="w-full h-[1px] bg-white/20 mt-6 mb-1" />
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <View className="flex-row gap-2">
+                            <View className="flex-row gap-3 mt-0 mb-1 item-center">
                                 <Text className="text-colors-textSecondary text-lg font-semibold self-center">
                                     Course:
                                 </Text>
