@@ -14,6 +14,7 @@ export interface Profile {
     pp_url: string | null;
     photo_urls: string[] | null;
     bio: string | null;
+    is_admin: boolean;
 }
 
 export const getUserProfile = async (): Promise<Profile | null> => {
@@ -28,7 +29,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio, is_admin")
         //                              ^ join majors by foreign key
         .eq("user_id", user.id)
         .single();
@@ -113,7 +114,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .upsert(payload, { onConflict: "user_id" })
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`)
         .single();
 
     if (error) throw error;
@@ -128,6 +129,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         photo_urls: data.photo_urls ?? null,
         major: { id: major.id, name: major.name },
         bio: data.bio,
+        is_admin: !!(data as any).is_admin,
     };
 
     return result;
@@ -279,7 +281,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         .from(TABLES.PROFILES)
         .update(payload)
         .eq("user_id", user.id)
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`)
         .single();
 
     if (error) throw error;
@@ -294,6 +296,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         photo_urls: data.photo_urls ?? null,
         major: { id: major?.id, name: major?.name },
         bio: data.bio ?? null,
+        is_admin: !!(data as any).is_admin,
     };
 
     return result;
@@ -654,6 +657,7 @@ export async function majorMatching(
                 photo_urls: (c.photo_urls ?? null) as string[],
                 bio: (c.bio ?? null) as string | null,
                 major: c.major as Major,
+                is_admin: !!c.is_admin,
                 same_major: ifSame_major,
                 overlapping_classes: oc,
                 overlapping_professors: op,
