@@ -2,7 +2,7 @@ import { LoginButton } from "@/components/ui/Buttons";
 import { TextSeparator } from "@/components/ui/Seperators";
 import { LoginInput } from "@/components/ui/TextInputs";
 import { signInWithGoogle } from "@/lib/google";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";

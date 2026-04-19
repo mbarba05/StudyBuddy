@@ -1,5 +1,5 @@
 import { BUCKETS, TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { DocumentPickerAsset } from "expo-document-picker";
 import { ImagePickerAsset } from "expo-image-picker";
 import { Image } from "react-native";

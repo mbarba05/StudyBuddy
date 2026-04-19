@@ -25,7 +25,7 @@ jest.mock("@/services/swipeService", () => {
 import * as swipeService from "@/services/swipeService"; // allows to spy
 //import { getSwipeStatus, swipeResetafter24, swipeTracker, WINDOW_MS } from "@/services/swipeService";
 
-const supabaseMock = jest.requireMock("@/lib/subapase").default as {
+const supabaseMock = jest.requireMock("@/lib/supabase").default as {
     from: jest.Mock;
     auth: {
         getUser: jest.Mock;

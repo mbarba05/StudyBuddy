@@ -62,6 +62,7 @@ const ProfileSearch = () => {
 
     const viewProfileCard = (user: ProfileForSearch) => {
         upsertRecentSearch(user.user_id).then(() => loadRecentSearches());
+        console.log("USER: ", user)
         router.push({
             pathname: "/matchmaking/viewProfile",
             params: {
@@ -70,6 +71,8 @@ const ProfileSearch = () => {
                 user_id: user.user_id,
                 pp_url: user.pp_url,
                 year: user.year,
+                bio: user.bio,
+                photo_urls: JSON.stringify(user.photo_urls || []),
             },
         });
     };

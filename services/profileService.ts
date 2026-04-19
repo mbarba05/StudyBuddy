@@ -1,10 +1,9 @@
-//import supabase from "@/lib/subapase";
 //here we put all the supabase api interactions,
 //i think it would be easiest to split them by data model
 //(profile, reviews, classes, professors)
 
 import { BUCKETS, FUNCTIONS, TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { Major } from "./majorsService";
 
 export interface Profile {
@@ -15,6 +14,7 @@ export interface Profile {
     pp_url: string | null;
     photo_urls: string[] | null;
     bio: string | null;
+    is_admin: boolean;
 }
 
 export const getUserProfile = async (): Promise<Profile | null> => {
@@ -29,7 +29,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio, is_admin")
         //                              ^ join majors by foreign key
         .eq("user_id", user.id)
         .single();
@@ -85,13 +85,14 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     let finalUrl: string | undefined = undefined;
     if (input.ppUrl) {
         if (isLocalUri(input.ppUrl)) {
-            finalUrl = await uploadProfileImage({
-                uri: input.ppUrl,
-                name: "avatar.jpg",
-                type: "image/jpeg",
-            },
-        "avatar"
-    );
+            finalUrl = await uploadProfileImage(
+                {
+                    uri: input.ppUrl,
+                    name: "avatar.jpg",
+                    type: "image/jpeg",
+                },
+                "avatar",
+            );
         } else {
             // Already a public URL
             finalUrl = input.ppUrl;
@@ -113,7 +114,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .upsert(payload, { onConflict: "user_id" })
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`)
         .single();
 
     if (error) throw error;
@@ -128,6 +129,7 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
         photo_urls: data.photo_urls ?? null,
         major: { id: major.id, name: major.name },
         bio: data.bio,
+        is_admin: !!(data as any).is_admin,
     };
 
     return result;
@@ -138,11 +140,7 @@ function getExt(name?: string, mime?: string): string {
 }
 
 function isLocalUri(uri?: string) {
-    return !!uri && 
-        (uri.startsWith("file://") || 
-        uri.startsWith("content://") ||
-        uri.startsWith("blob:")
-    );
+    return !!uri && (uri.startsWith("file://") || uri.startsWith("content://") || uri.startsWith("blob:"));
 }
 
 // adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
@@ -205,7 +203,7 @@ export async function uploadMultipleProfilePhotos(uris: string[]): Promise<strin
                     name: "extra.jpg",
                     type: "image/jpeg",
                 },
-                "extra"
+                "extra",
             );
             uploadedUrls.push(publicUrl);
         } else {
@@ -283,7 +281,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         .from(TABLES.PROFILES)
         .update(payload)
         .eq("user_id", user.id)
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio`)
+        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`)
         .single();
 
     if (error) throw error;
@@ -298,6 +296,7 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         photo_urls: data.photo_urls ?? null,
         major: { id: major?.id, name: major?.name },
         bio: data.bio ?? null,
+        is_admin: !!(data as any).is_admin,
     };
 
     return result;
@@ -522,7 +521,7 @@ export async function majorMatching(
     // grabbing some user profiles
     let q = supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, year, pp_url, photo_urls, major:majors(id,name), created_at")
+        .select("user_id, display_name, year, pp_url, photo_urls, bio, major:majors(id,name), created_at")
         .neq("user_id", user_id) // to hid current user from swiping on themself
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
@@ -652,11 +651,13 @@ export async function majorMatching(
             results.push({
                 user_id: c.user_id,
                 display_name: c.display_name as string,
-                bio: c.bio as string,
+                //bio: c.bio as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
                 photo_urls: (c.photo_urls ?? null) as string[],
+                bio: (c.bio ?? null) as string | null,
                 major: c.major as Major,
+                is_admin: !!c.is_admin,
                 same_major: ifSame_major,
                 overlapping_classes: oc,
                 overlapping_professors: op,
@@ -684,8 +685,10 @@ export interface ProfileForSearch {
     user_id: string;
     display_name: string;
     pp_url?: string;
+    photo_urls?: string[];
     major: string;
     year: string;
+    bio?: string;
 }
 
 export const searchForProfile = async (searchTerm: string): Promise<ProfileForSearch[]> => {
@@ -719,6 +722,8 @@ export const searchForProfileWithMutuals = async (searchTerm: string): Promise<P
         p_user_id: user.id,
     });
 
+    console.log("DATA: ", data);
+
     if (error) {
         console.error("searchForProfileWithMutuals:", error);
         return [];
@@ -732,6 +737,8 @@ export const searchForProfileWithMutuals = async (searchTerm: string): Promise<P
         pp_url: row.pp_url,
         mutual_count: row.mutual_count,
         mutual_friends: row.mutual_friends ?? [],
+        bio: row.bio,
+        photo_urls: row.photo_urls ?? [],
     }));
 };
 

@@ -1,6 +1,5 @@
 import ConversationScreen from "@/app/(app)/(tabs)/social/chat/[conversationId]";
-import supabase from "@/lib/subapase";
-import { removeFriend, sendFriendRequest } from "@/services/friendshipsService";
+import supabase from "@/lib/supabase";
 import {
     getAttachmentSignedUrlCached,
     getChatHeaderState,

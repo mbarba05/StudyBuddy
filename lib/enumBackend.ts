@@ -19,6 +19,7 @@ export const TABLES = {
     RECENTLY_VIEWED_PROF_FOR_USER: "recently_viewed_prof_for_user",
     RECENTLY_VIEWED_PROF_GLOBAL: "recently_viewed_prof_global",
     RECENT_USER_SEARCH: "recent_user_search",
+    REVIEW_REPORTS: "review_reports",
 };
 
 export const FUNCTIONS = {

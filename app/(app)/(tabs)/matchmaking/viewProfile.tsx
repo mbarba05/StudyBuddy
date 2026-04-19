@@ -18,6 +18,9 @@ const ViewProfile = () => {
     const major = getParam(params.major);
     const year = getParam(params.year);
     const user_id = getParam(params.user_id);
+    const bio = getParam(params.bio);
+    const photoUrlsParam = getParam(params.photo_urls);
+    const photoUrls = photoUrlsParam ? JSON.parse(photoUrlsParam) : [];
 
     const [friendShipStatus, setFriendShipStatus] = useState<FriendshipStatus>(FriendshipStatus.error);
     const [topRightLoading, setTopRightLoading] = useState(false);
@@ -98,7 +101,7 @@ const ViewProfile = () => {
                 }}
             />
             <View className="bg-colors-background flex-1 p-4 pt-14 justify-center">
-                <MatchMakingCard name={display_name} imageUrl={pp_url} major={major} year={year} />
+                <MatchMakingCard name={display_name} major={major} year={year} bio={bio} imageUrls={[pp_url, ...photoUrls].filter(Boolean)} />
             </View>
         </>
     );

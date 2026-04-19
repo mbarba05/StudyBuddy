@@ -1,4 +1,4 @@
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { createProfile, editProfile } from "@/services/profileService";
 
 /*
@@ -9,7 +9,7 @@ bio can be added/edited after the profile is created
 
 */
 
-jest.mock("@/lib/subapase", () => ({
+jest.mock("@/lib/supabase", () => ({
     __esModule: true,
     default: {
         auth: {
