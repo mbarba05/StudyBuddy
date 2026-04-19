@@ -4,8 +4,8 @@ import AverageStuff from "@/components/features/reviews/review-averages/AverageS
 import { ClassFilterButton } from "@/components/ui/Buttons";
 import { LoadingScreen } from "@/components/ui/Loading";
 import { ReviewSeparator } from "@/components/ui/Seperators";
-import supabase from "@/lib/supabase";
-import { getReviewsForProf, ReviewDisplay } from "@/services/reviewsService";
+import supabase from "@/lib/subapase";
+import { getReviewsForProf, getUserReviewScore, ReviewDisplay } from "@/services/reviewsService";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,6 +24,9 @@ const ProfessorReviewsScreen = () => {
     // Auth state for “myVote” hydration
     const [userId, setUserId] = useState<string | null | undefined>(undefined);
 
+    const [reviewCount, setReviewCount] = useState(0);
+    const [totalPoints, setTotalPoints] = useState(0);
+
     // Course filter state
     const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
 
@@ -32,12 +35,24 @@ const ProfessorReviewsScreen = () => {
         const init = async () => {
             const { data } = await supabase.auth.getSession();
             setUserId(data.session?.user?.id ?? null);
+
+            if (data.session?.user?.id) {
+                const score = await getUserReviewScore(data.session.user.id);
+                setReviewCount(score.reviewCount);
+                setTotalPoints(score.totalPoints);
+            }
         };
 
         init();
 
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setUserId(session?.user?.id ?? null);
+
+            if (session?.user?.id) {
+                const score = await getUserReviewScore(session.user.id);
+                setReviewCount(score.reviewCount);
+                setTotalPoints(score.totalPoints);
+            }
         });
 
         return () => {

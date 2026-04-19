@@ -98,7 +98,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
             `
       *,
       enrollment:enrollment_id!inner (
-        *,
+        *,npx
         course_prof:course_prof_id (
           course:course_id (code),
           prof:prof_id (name)
@@ -110,6 +110,37 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
 
     if (error) return [];
     return normalizeReviews(data ?? []);
+}
+
+// Will count all the reviews user writes and sum up their upvotes
+export async function getUserReviewScore(userId: string) {
+    const { data, error } = await supabase
+        .from("reviews")
+        .select(
+            `
+            id,
+            likes,
+            enrollment:enrollment_id!inner (
+                id,
+                user_id
+            )
+        `,
+        )
+        .eq("enrollment.user_id", userId);
+
+    if (error) {
+        console.error("Error loading user score:", error);
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    // Only count reviews that actually belong to this user
+    const userReviews = (data as any[]).filter((r) => r.enrollment?.user_id === userId);
+
+    const reviewCount = userReviews.length;
+    const upvoteCount = userReviews.reduce((sum, review) => sum + (review.likes || 0), 0);
+    const totalPoints = reviewCount + upvoteCount;
+
+    return { reviewCount, upvoteCount, totalPoints };
 }
 
 export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
