@@ -1,6 +1,7 @@
 import CourseProfDisplayWidget from "@/components/features/courses/CourseProfDisplayWidget";
 import { LoginButton } from "@/components/ui/Buttons";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { ResizeImage } from "@/components/ui/ResizeImage";
 import { SectionSeperator } from "@/components/ui/Seperators";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
@@ -10,7 +11,7 @@ import { getUserProfile, Profile } from "@/services/profileService";
 import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 export default function ProfileScreen() {
     const { signOut } = useAuth();
@@ -81,11 +82,15 @@ export default function ProfileScreen() {
         <View className="flex-1 items-center  bg-colors-background gap-4 p-2">
             <View className="flex flex-row gap-12 items-center justify-between w-full">
                 <View className="w-1/3">
-                    <Image
-                        className="w-48 h-48 rounded-full border border-colors-text "
-                        source={{ uri: profile?.pp_url as string }}
+                    <ResizeImage
+                        url={profile?.pp_url as string}
+                        width={192}
+                        aspectRatio={1}
+                        borderRadius={999}
+                        testID="profile-picture"
                     />
                 </View>
+
                 <View className="flex w-2/3 gap-2">
                     <View>
                         <Text className="text-left color-colors-textSecondary">Name</Text>

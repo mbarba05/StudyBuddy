@@ -173,7 +173,8 @@ export default function MatchmakingScreen() {
                             name={profile.display_name}
                             major={profile.major?.name}
                             year={profile.year}
-                            imageUrl={profile.pp_url}
+                            bio={profile.bio}
+                            imageUrls={[profile.pp_url, ...(profile.photo_urls ?? [])].filter(Boolean)}
                         />
                     );
                 }}

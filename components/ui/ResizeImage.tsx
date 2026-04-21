@@ -1,104 +1,92 @@
 import { colors } from "@/assets/colors";
-import { saveImage } from "@/lib/utillities";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useState } from "react";
-import { Modal, Pressable, StatusBar, View } from "react-native";
+import { Modal, Pressable, StatusBar, StyleSheet, View } from "react-native";
 
-export function ResizeImage({ url, width, aspectRatio }: { url: string; width: number; aspectRatio: number }) {
+type ResizeImageProps = {
+    url: string;
+    width: number;
+    aspectRatio: number;
+    borderRadius?: number;
+    testID?: string;
+};
+
+export function ResizeImage({ url, width, aspectRatio, borderRadius = 12, testID }: ResizeImageProps) {
     const [fullscreenVisible, setFullscreenVisible] = useState(false);
-    const [headerVisible, setHeaderVisible] = useState(false);
-    const [saveInProg, setSaveInProg] = useState(false);
-    const [saved, setSaved] = useState(false);
 
     const blurhash =
         "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[";
 
-    const onSave = async () => {
-        if (saved) return; //dont allow double saves
-        setSaveInProg(true);
-        await saveImage(url);
-        setSaveInProg(false);
-        setSaved(true);
-    };
-
     const onClose = () => {
         setFullscreenVisible(false);
-        setHeaderVisible(false);
-        setSaveInProg(false);
-        setSaved(false);
     };
+    const styles = StyleSheet.create({
+        modalContainer: {
+            flex: 1,
+            backgroundColor: colors.black,
+        },
+        imageLayer: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 20,
+            paddingVertical: 32,
+        },
+        fullscreenImage: {
+            width: "100%",
+            height: "80%",
+        },
+        topBar: {
+            position: "absolute",
+            top: 20,
+            right: 20,
+        },
+        closeButton: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: colors.primary,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+    });
 
     return (
         <>
-            <Pressable onPress={() => setFullscreenVisible(true)}>
+            <Pressable disabled={!url} onPress={() => setFullscreenVisible(true)}>
                 <Image
                     source={{ uri: url }}
                     style={{
                         width,
                         aspectRatio,
-                        borderRadius: 12,
+                        borderRadius,
                     }}
-                    testID={url}
+                    testID={testID ?? url}
                     cachePolicy={"memory-disk"}
                     placeholder={{ blurhash }}
                 />
             </Pressable>
 
-            <Modal
-                visible={fullscreenVisible}
-                transparent={false}
-                animationType="slide"
-                onRequestClose={onClose}
-                allowSwipeDismissal
-            >
-                <StatusBar hidden={fullscreenVisible && !headerVisible} />
+            <Modal visible={fullscreenVisible} transparent={false} animationType="fade" onRequestClose={onClose}>
+                <StatusBar hidden />
 
-                <View style={{ flex: 1, backgroundColor: "black" }}>
-                    {/* IMAGE LAYER */}
-                    <Pressable style={{ flex: 1 }} onPress={() => setHeaderVisible((v) => !v)}>
+                <View style={styles.modalContainer}>
+                    <Pressable style={styles.imageLayer} onPress={onClose}>
                         <Image
                             source={{ uri: url }}
-                            style={{ flex: 1, width: "100%" }}
-                            contentFit="contain" // expo-image: keep whole image visible
+                            style={styles.fullscreenImage}
+                            contentFit="contain"
                             cachePolicy="memory-disk"
                             placeholder={{ blurhash }}
                         />
                     </Pressable>
 
-                    {/* HEADER OVERLAY */}
-                    {headerVisible && (
-                        <View
-                            style={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: 96,
-                                paddingHorizontal: 16,
-                                paddingBottom: 12,
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                alignItems: "flex-end",
-                                zIndex: 10,
-                                backgroundColor: colors.background,
-                            }}
-                        >
-                            <Pressable onPress={onClose}>
-                                <Ionicons size={32} color={colors.text} name="close" />
-                            </Pressable>
-
-                            <Pressable onPress={onSave}>
-                                {
-                                    <Ionicons
-                                        size={32}
-                                        color={saved ? colors.success : saveInProg ? colors.textSecondary : colors.text}
-                                        name={saved ? "download" : `download-outline`}
-                                    />
-                                }
-                            </Pressable>
-                        </View>
-                    )}
+                    <View style={styles.topBar}>
+                        <Pressable hitSlop={12} style={styles.closeButton} onPress={onClose}>
+                            <Ionicons size={24} color={colors.text} name="close" />
+                        </Pressable>
+                    </View>
                 </View>
             </Modal>
         </>

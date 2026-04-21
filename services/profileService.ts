@@ -13,6 +13,8 @@ export interface Profile {
     major: Major;
     year: string | null;
     pp_url: string | null;
+    bio?: string | null;
+    photo_urls?: string[] | null;
 }
 
 export const getUserProfile = async (): Promise<Profile | null> => {
@@ -27,7 +29,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
     let { data, error } = await supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, major:majors(id, name), year, pp_url")
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, bio, photo_urls")
         //                              ^ join majors by foreign key
         .eq("user_id", user.id)
         .single();
@@ -42,7 +44,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
         return null;
     }
 
-    return data as Profile;
+    return data as unknown as Profile;
 };
 
 export const hasProfile = async (userId: string): Promise<boolean> => {
@@ -603,6 +605,8 @@ export async function majorMatching(
                 display_name: c.display_name as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
+                photo_urls: (c.photo_urls ?? null) as string[] | null,
+                bio: (c.bio ?? null) as string | null,
                 major: c.major as Major,
                 same_major: ifSame_major,
                 overlapping_classes: oc,
