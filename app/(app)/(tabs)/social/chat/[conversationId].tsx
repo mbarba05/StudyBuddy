@@ -2,6 +2,7 @@ import { colors } from "@/assets/colors";
 import AttachmentImages from "@/components/features/chats/AttachmentImage";
 import ChatBubble from "@/components/features/chats/ChatBubble";
 import SendTextInput from "@/components/features/chats/SendTextInput";
+import { ResizeImage } from "@/components/ui/ResizeImage";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
@@ -17,7 +18,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ChatRouteParams = {
@@ -230,7 +231,13 @@ const ConversationScreen = () => {
 
     const header = () => (
         <View className="flex flex-row items-center gap-2">
-            <Image source={{ uri: ppPic }} className="w-12 h-12 rounded-full" />
+            <ResizeImage
+                url={ppPic}
+                width={48}
+                aspectRatio={1}
+                borderRadius={999}
+                testID="chat-header-profile-picture"
+            />
             <Text className="text-colors-text text-2xl font-semibold">{dmName}</Text>
         </View>
     );

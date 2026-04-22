@@ -1,10 +1,10 @@
 import { colors } from "@/assets/colors";
 import supabase from "@/lib/subapase";
 import { useAuth } from "@/services/auth/AuthProvider";
-import React, { useEffect, useState, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Dimensions, Pressable, StyleSheet, Text, Modal, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Dimensions, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
@@ -19,18 +19,14 @@ type MatchMakingCardProps = {
 export default function MatchMakingCard({ name, major, year, bio, imageUrls = [] }: MatchMakingCardProps) {
     const { user } = useAuth();
     const [userMajor, setUserMajor] = useState<string | null>(null);
-    
+
     const [photoIndex, setPhotoIndex] = useState(0);
     const [showBio, setShowBio] = useState(false);
     const [showFullPhoto, setShowFullPhoto] = useState(false);
 
     const photos = useMemo(() => {
-        const filtered = (imageUrls ?? []).filter(
-            (url): url is string => !!url && url.trim().length > 0,
-        );
-        return filtered.length > 0
-            ? filtered
-            : ["https://placehold.co/400x400?text=No+Image"];
+        const filtered = (imageUrls ?? []).filter((url): url is string => !!url && url.trim().length > 0);
+        return filtered.length > 0 ? filtered : ["https://placehold.co/400x400?text=No+Image"];
     }, [imageUrls]);
 
     const currentPhoto = photos[photoIndex] ?? photos[0];
@@ -65,97 +61,86 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
     // compare lowercase so “Computer Science” matches “computer science”
     const isSameMajor = major && userMajor && major.trim().toLowerCase() === userMajor.trim().toLowerCase();
 
-return (
-    <>
-        <View style={styles.card}>
-            <Pressable style={styles.imageWrapper} onPress={() => setShowFullPhoto(true)}>
-                <Image source={{ uri: currentPhoto }} style={styles.image} contentFit="cover" />
+    return (
+        <>
+            <View style={styles.card}>
+                <Pressable style={styles.imageWrapper}>
+                    <Image source={{ uri: currentPhoto }} style={styles.image} contentFit="cover" />
 
-                <View style={styles.tapZones}>
-                    <Pressable style={styles.leftTapZone} onPress={goPrevPhoto} />
-                    <Pressable style={styles.rightTapZone} onPress={goNextPhoto} />
-                </View>
-
-                {photos.length > 1 && (
-                    <View style={styles.dotsContainer}>
-                        {photos.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.dot,
-                                    index === photoIndex ? styles.activeDot : styles.inactiveDot,
-                                ]}
-                            />
-                        ))}
-                    </View>
-                )}
-
-                <View style={styles.overlay}>
-                    <View style={styles.textBlock}>
-                        <Text style={styles.name}>{name}</Text>
-
-                        {major ? (
-                            <Text style={[styles.subText, isSameMajor ? styles.highlightMajor : null]}>
-                                {major}
-                            </Text>
-                        ) : null}
-
-                        {year ? <Text style={styles.subText}>{year}</Text> : null}
+                    <View style={styles.tapZones}>
+                        <Pressable style={styles.leftTapZone} onPress={goPrevPhoto} />
+                        <Pressable style={styles.rightTapZone} onPress={goNextPhoto} />
                     </View>
 
-                    <TouchableOpacity style={styles.bioButton} onPress={() => setShowBio(true)}>
-                        <Ionicons name="chevron-up" size={22} color={colors.text} />
-                        <Text style={styles.bioButtonText}>Bio</Text>
-                    </TouchableOpacity>
-                </View>
-            </Pressable>
-        </View>
+                    {photos.length > 1 && (
+                        <View style={styles.dotsContainer}>
+                            {photos.map((_, index) => (
+                                <View
+                                    key={index}
+                                    style={[styles.dot, index === photoIndex ? styles.activeDot : styles.inactiveDot]}
+                                />
+                            ))}
+                        </View>
+                    )}
 
-        <Modal
-            visible={showBio}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowBio(false)}
-        >
-            <Pressable style={styles.modalBackdrop} onPress={() => setShowBio(false)}>
-                <Pressable style={styles.bioSheet} onPress={() => {}}>
-                    <View style={styles.bioHeader}>
-                        <Text style={styles.bioTitle}>{name}</Text>
-                        <TouchableOpacity onPress={() => setShowBio(false)}>
-                            <Ionicons name="close" size={26} color={colors.text} />
+                    <View style={styles.overlay}>
+                        <View style={styles.textBlock}>
+                            <Text style={styles.name}>{name}</Text>
+
+                            {major ? (
+                                <Text style={[styles.subText, isSameMajor ? styles.highlightMajor : null]}>
+                                    {major}
+                                </Text>
+                            ) : null}
+
+                            {year ? <Text style={styles.subText}>{year}</Text> : null}
+                        </View>
+
+                        <TouchableOpacity style={styles.bioButton} onPress={() => setShowBio(true)}>
+                            <Ionicons name="chevron-up" size={22} color={colors.text} />
+                            <Text style={styles.bioButtonText}>Bio</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.zoomButton} onPress={() => setShowFullPhoto(true)}>
+                            <Ionicons name="expand-outline" size={20} color={colors.text} />
+                            <Text style={styles.bioButtonText}>View Photo</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.bioLabel}>Bio</Text>
-                    <Text style={styles.bioText}>{bio?.trim() ? bio : "No bio added yet."}</Text>
                 </Pressable>
-            </Pressable>
-        </Modal>
-
-        <Modal
-            visible={showFullPhoto}
-            transparent={false}
-            animationType="fade"
-            onRequestClose={() => setShowFullPhoto(false)}
-        >
-            <View style={styles.fullscreenModal}>
-                <Image
-                    source={{ uri: currentPhoto }}
-                    style={styles.fullscreenImage}
-                    contentFit="contain"
-                />
-
-                <View style={styles.fullscreenTopBar}>
-                    <Pressable
-                        style={styles.fullscreenCloseButton}
-                        onPress={() => setShowFullPhoto(false)}
-                    >
-                        <Ionicons name="close" size={24} color={colors.text} />
-                    </Pressable>
-                </View>
             </View>
-        </Modal>
-    </>
-);
+
+            <Modal visible={showBio} transparent animationType="slide" onRequestClose={() => setShowBio(false)}>
+                <Pressable style={styles.modalBackdrop} onPress={() => setShowBio(false)}>
+                    <Pressable style={styles.bioSheet} onPress={() => {}}>
+                        <View style={styles.bioHeader}>
+                            <Text style={styles.bioTitle}>{name}</Text>
+                            <TouchableOpacity onPress={() => setShowBio(false)}>
+                                <Ionicons name="close" size={26} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.bioLabel}>Bio</Text>
+                        <Text style={styles.bioText}>{bio?.trim() ? bio : "No bio added yet."}</Text>
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+            <Modal
+                visible={showFullPhoto}
+                transparent={false}
+                animationType="fade"
+                onRequestClose={() => setShowFullPhoto(false)}
+            >
+                <View style={styles.fullscreenModal}>
+                    <Image source={{ uri: currentPhoto }} style={styles.fullscreenImage} contentFit="contain" />
+
+                    <View style={styles.fullscreenTopBar}>
+                        <Pressable style={styles.fullscreenCloseButton} onPress={() => setShowFullPhoto(false)}>
+                            <Ionicons name="close" size={24} color={colors.text} />
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
+        </>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -175,7 +160,7 @@ const styles = StyleSheet.create({
     },
     image: {
         width: "100%",
-        height: "100%"
+        height: "100%",
     },
     imageStyle: {
         resizeMode: "cover",
@@ -312,6 +297,17 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
         alignItems: "center",
         justifyContent: "center",
+    },
+    zoomButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start",
+        gap: 4,
+        backgroundColor: "rgba(0, 0, 0, 0.35)",
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        marginTop: 8,
     },
 
     // Highlight matching major
