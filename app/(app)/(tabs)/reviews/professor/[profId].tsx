@@ -1,15 +1,15 @@
 import { colors } from "@/assets/colors";
-import ReviewWidget from "@/components/features/reviews/ReviewWidget";
 import AverageStuff from "@/components/features/reviews/review-averages/AverageStuff";
+import ReviewWidget from "@/components/features/reviews/ReviewWidget";
 import { ClassFilterButton } from "@/components/ui/Buttons";
 import { LoadingScreen } from "@/components/ui/Loading";
-import { ReviewSeparator } from "@/components/ui/Seperators";
+import { ReviewSeparator, SectionSeperator } from "@/components/ui/Seperators";
 import supabase from "@/lib/supabase";
 import { getReviewsForProf, getUserReviewScore, ReviewDisplay } from "@/services/reviewsService";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const ProfessorReviewsScreen = () => {
@@ -169,24 +169,12 @@ const ProfessorReviewsScreen = () => {
                     headerBackTitle: "Search",
                 }}
             />
-            <SafeAreaView className="flex-1  bg-colors-background" edges={["left", "right"]}>
+            <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
                 {/* Course filter */}
                 {courseOptions.length > 0 && (
-                    <View className="border-y border-colors-textSecondary w-full py-2 h-[235px]">
-                        <ScrollView className="w-full self-center mt-3">
-                            <AverageStuff
-                                reviews={reviews ?? []} //pass all fetched reviews
-                                selectedCourseCode={selectedCourseCode} //pass current filter
-                                profId={Number(profId)}
-                                professorName={profName ?? "unknown"}
-                            />
-                        </ScrollView>
-                        <View className="w-full h-[1px] bg-white/20 mt-6 mb-1" />
+                    <View className="border-y border-colors-textSecondary w-full py-2">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <View className="flex-row gap-3 mt-0 mb-1 item-center">
-                                <Text className="text-colors-textSecondary text-lg font-semibold self-center">
-                                    Course:
-                                </Text>
+                            <View className="flex-row gap-3 justify-center items-center ml-4">
                                 <ClassFilterButton
                                     selected={selectedCourseCode === null}
                                     onPress={() => setSelectedCourseCode(null)}
@@ -212,41 +200,38 @@ const ProfessorReviewsScreen = () => {
                     </View>
                 )}
 
-                {/* Reviews list */}
-                {filteredReviews && filteredReviews.length > 0 ? (
-                    <FlatList
-                        data={filteredReviews}
-                        keyExtractor={(r) => String(r.reviewId)}
-                        renderItem={({ item }) => <ReviewWidget review={item} onVoted={fetchReviews} />}
-                        ItemSeparatorComponent={ReviewSeparator}
-                        /*
-                            ListHeaderComponent allows us to place
-                            the averages section ABOVE the list items
-                            while still keeping everything inside one scrollable list.
-                            This prevents nested scrolling issues
-                            and ensures proper alignment.
-                        */
-                        ListHeaderComponent={
-                            <View className="w-full items-center pt-2">
-                                {/* <AverageStuff
-                                    reviews={reviews ?? []} //pass all fetched reviews
-                                    selectedCourseCode={selectedCourseCode} //pass current filter
-                                /> */}
-                                {/*Add some spacing between averages and first review item.*/}
-                                <View className="h-4" />
-                            </View>
-                        }
-                        contentContainerStyle={{
-                            paddingTop: 8,
-                            paddingBottom: 20,
-                            alignItems: "center",
-                        }}
-                    />
-                ) : (
-                    <Text className="text-colors-textSecondary text-lg text-center mt-4">
-                        {selectedCourseCode ? "No reviews for this selection." : "No reviews yet for this professor."}
-                    </Text>
-                )}
+                <ScrollView
+                    contentContainerStyle={{
+                        paddingTop: 2,
+                        paddingBottom: 20,
+                        alignItems: "center",
+                    }}
+                >
+                    <View className="self-center py-4">
+                        <AverageStuff
+                            reviews={reviews ?? []}
+                            selectedCourseCode={selectedCourseCode}
+                            profId={Number(profId)}
+                            professorName={profName ?? "unknown"}
+                        />
+                    </View>
+                    <SectionSeperator />
+                    <View className="h-4" />
+                    {filteredReviews && filteredReviews.length > 0 ? (
+                        filteredReviews.map((item, index) => (
+                            <React.Fragment key={item.reviewId}>
+                                {index > 0 && <ReviewSeparator />}
+                                <ReviewWidget review={item} onVoted={fetchReviews} />
+                            </React.Fragment>
+                        ))
+                    ) : (
+                        <Text className="text-colors-textSecondary text-lg text-center mt-4">
+                            {selectedCourseCode
+                                ? "No reviews for this selection."
+                                : "No reviews yet for this professor."}
+                        </Text>
+                    )}
+                </ScrollView>
             </SafeAreaView>
         </>
     );

@@ -1,7 +1,7 @@
 import { getProfessorSummary } from "@/services/aiSummary";
 import { ReviewDisplay } from "@/services/reviewsService";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 
 // array of the reviews
 type Props = {
@@ -54,10 +54,10 @@ export default function ProfessorSummaryBox({ profId, professorName }: Props) {
         //     )}
         // </View>
         //this has summary inside a box
-        <ScrollView className=" w-full mt-2 p-3 rounded-lg bg-white/10 border border-white/20 backdrop-blur-md shadow-lg ">
-            <Text className="color-colors-text text-lg font-semibold text-center">AI Professor Summary:</Text>
+        <View className="w-full mt-2 rounded-lg shadow-lg ">
+            <Text className="color-colors-text text-2xl font-semibold text-left mb-3">Summary</Text>
             {loading ? (
-                <View style={{ alignItems: "center" }}>
+                <View className="items-center">
                     <ActivityIndicator />
                     <Text className="color-colors-textSecondary text-center">Generating summary...</Text>
                 </View>
@@ -66,6 +66,6 @@ export default function ProfessorSummaryBox({ profId, professorName }: Props) {
             ) : (
                 <Text className="color-colors-textSecondary text-center">{summary || "waiting for reviews..."}</Text>
             )}
-        </ScrollView>
+        </View>
     );
 }

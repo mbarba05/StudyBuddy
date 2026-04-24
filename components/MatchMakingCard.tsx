@@ -125,7 +125,7 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
 const styles = StyleSheet.create({
     card: {
         width: width * 0.95,
-        height: height * 0.75,
+        height: height * 0.725,
         borderRadius: 20,
         overflow: "hidden",
         backgroundColor: "#000",

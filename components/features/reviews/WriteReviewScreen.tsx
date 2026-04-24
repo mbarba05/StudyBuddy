@@ -129,7 +129,7 @@ const YourReviewsScreen = () => {
                         </View>
                     </View>
                 )}
-                <View className="flex items-center gap-4">
+                <View className="flex items-center gap-4 ">
                     <Text className="text-4xl text-colors-text font-semibold mb-2">View your Reviews</Text>
                     <View className="flex-row justify-between w-full px-4 mt-3 mb-5">
                         <Text className="text-lg font-semibold text-colors-textSecondary">
@@ -138,7 +138,7 @@ const YourReviewsScreen = () => {
                         <Text className="text-lg font-semibold text-colors-text">Total points: {totalPoints}</Text>
                     </View>
                 </View>
-                <View className="flex gap-4">
+                <View className="flex items-center gap-4">
                     {reviews && reviews.length !== 0 ? (
                         reviews.map((r) => (
                             <View key={r.reviewId}>
