@@ -90,7 +90,7 @@ export default function ProfileScreen() {
                     flexGrow: 1,
                 }}
             >
-                <View className="flex flex-row gap-12 items-center justify-between w-full">
+                <View className="flex flex-row gap-12 items-center justify-between w-full p-2">
                     <View className="w-1/3">
                         <Image
                             className="w-44 h-44 rounded-full border border-colors-text "
@@ -129,7 +129,7 @@ export default function ProfileScreen() {
                     </Text>
                 </View>
                 <View className="w-full">
-                    <Text className="color-colors-textSecondary text-left mb-1">Profile Photos</Text>
+                    <Text className="color-colors-textSecondary text-left mb-2 ml-2">Profile Photos</Text>
                     <SectionSeperator />
                     <View className="flex-row flex-wrap gap-3 mt-4 justify-center">
                         {!profile?.photo_urls || profile.photo_urls.length === 0 ? (
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
                     </View>
                 </View>
                 <View className="w-full">
-                    <Text className=" color-colors-textSecondary text-left mb-1">
+                    <Text className=" color-colors-textSecondary text-left mb-2 ml-2">
                         Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
                     </Text>
                     <SectionSeperator />
@@ -171,7 +171,7 @@ export default function ProfileScreen() {
                     </View>
                 </View>
                 <View className="w-full">
-                    <Text className=" color-colors-textSecondary text-left mb-1">
+                    <Text className=" color-colors-textSecondary text-left mb-2 ml-2">
                         Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
                     </Text>
                     <SectionSeperator />

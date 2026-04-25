@@ -421,7 +421,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                     <TextInput
                         value={comment}
                         onChangeText={(t) => setComment(t)}
-                        placeholder="Leave an anonymous comment..."
+                        placeholder="Comment"
                         placeholderTextColor={colors.textSecondary}
                         multiline
                         className="bg-colors-background rounded-md p-2 border border-colors-textSecondary color-colors-text"
@@ -434,7 +434,6 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                             className="flex-row items-center gap-2"
                         >
                             <Ionicons name="refresh" size={18} color={colors.text} />
-                            <Text className="color-colors-text">Refresh</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
