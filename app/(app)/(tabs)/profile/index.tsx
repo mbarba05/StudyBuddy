@@ -8,6 +8,7 @@ import { getEnrollmentsForProfile } from "@/services/enrollmentService";
 import { getFriendsCount } from "@/services/friendshipsService";
 import { getUserProfile, Profile } from "@/services/profileService";
 import { getCurrentAndNextTerm, Term } from "@/services/termsService";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Text, TouchableOpacity, View } from "react-native";
@@ -22,8 +23,6 @@ export default function ProfileScreen() {
     const [nextCourses, setNextCourses] = useState<CourseProfDisplay[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [currAndNextTerm, setCurrAndNextTerm] = useState<[Term, Term] | null>(null);
-
-    // Friends count use State
     const [friendCount, setFriendCount] = useState<number | null>(null);
 
     useEffect(() => {
@@ -46,13 +45,12 @@ export default function ProfileScreen() {
                 setFriendCount(friends);
 
                 if (terms) {
-                    const currTermCourses =
-                        enrollments?.filter((enrollment) => enrollment.term === terms[0].name) || [];
-                    const nextTermCourses =
-                        enrollments?.filter((enrollment) => enrollment.term === terms[1].name) || [];
-
-                    setCurrCourses(currTermCourses);
-                    setNextCourses(nextTermCourses);
+                    setCurrCourses(
+                        enrollments?.filter((enrollment) => enrollment.term === terms[0].name) || []
+                    );
+                    setNextCourses(
+                        enrollments?.filter((enrollment) => enrollment.term === terms[1].name) || []
+                    );
                 } else {
                     setCurrCourses([]);
                     setNextCourses([]);
@@ -78,14 +76,28 @@ export default function ProfileScreen() {
     if (loading) return <LoadingScreen />;
 
     return (
-        <View className="flex-1 items-center  bg-colors-background gap-4 p-2">
+        <View className="flex-1 items-center bg-colors-background gap-4 p-2 relative">
+            <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile/blocked-users")}
+                style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 12,
+                    zIndex: 999,
+                    padding: 8,
+                }}
+            >
+                <Ionicons name="eye-outline" size={26} color="white" />
+            </TouchableOpacity>
+
             <View className="flex flex-row gap-12 items-center justify-between w-full">
                 <View className="w-1/3">
                     <Image
-                        className="w-48 h-48 rounded-full border border-colors-text "
+                        className="w-48 h-48 rounded-full border border-colors-text"
                         source={{ uri: profile?.pp_url as string }}
                     />
                 </View>
+
                 <View className="flex w-2/3 gap-2">
                     <View>
                         <Text className="text-left color-colors-textSecondary">Name</Text>
@@ -96,11 +108,13 @@ export default function ProfileScreen() {
                         <Text className="color-colors-textSecondary text-left">Major</Text>
                         <Text className="font-semibold text-2xl text-colors-text">{profile?.major.name}</Text>
                     </View>
+
                     <View className="flex flex-row gap-12">
                         <View>
                             <Text className="color-colors-textSecondary text-left">Year</Text>
                             <Text className="font-semibold text-2xl text-colors-text">{profile?.year}</Text>
                         </View>
+
                         <View>
                             <TouchableOpacity onPress={() => router.push("(tabs)/profile/friendsList")}>
                                 <Text className="color-colors-textSecondary text-center">Friends</Text>
@@ -112,12 +126,13 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </View>
+
             <View className="w-full mt-0">
-                {/* <Text className="text-left color-colors-textSecondary mb-1">Bio</Text> */}
                 <Text className="font-semibold text-base text-colors-text">
                     {profile?.bio?.trim() ? profile.bio : " "}
                 </Text>
             </View>
+
             <View className="w-full">
                 <Text className="color-colors-textSecondary text-left mb-1">Profile Photos</Text>
                 <SectionSeperator />
@@ -138,8 +153,9 @@ export default function ProfileScreen() {
                     )}
                 </View>
             </View>
+
             <View className="w-full">
-                <Text className=" color-colors-textSecondary text-left mb-1">
+                <Text className="color-colors-textSecondary text-left mb-1">
                     Current Term Courses ({currAndNextTerm && currAndNextTerm[0].name})
                 </Text>
                 <SectionSeperator />
@@ -147,7 +163,7 @@ export default function ProfileScreen() {
                 <View
                     className={`flex ${
                         currCourses ? "flex-row" : ""
-                    } flex-wrap gap-4 min-h-14  rounded-lg justify-center  text-colors-text mt-4`}
+                    } flex-wrap gap-4 min-h-14 rounded-lg justify-center text-colors-text mt-4`}
                 >
                     {!currCourses || currCourses.length === 0 || !currAndNextTerm ? (
                         <Text className="text-colors-textSecondary text-2xl text-left">
@@ -164,7 +180,7 @@ export default function ProfileScreen() {
             </View>
 
             <View className="w-full">
-                <Text className=" color-colors-textSecondary text-left mb-1">
+                <Text className="color-colors-textSecondary text-left mb-1">
                     Next Term Courses ({currAndNextTerm && currAndNextTerm[1].name})
                 </Text>
                 <SectionSeperator />
@@ -187,6 +203,7 @@ export default function ProfileScreen() {
                     )}
                 </View>
             </View>
+
             <View className="flex w-full gap-2 mt-auto">
                 <LoginButton
                     bgColor="bg-colors-secondary"

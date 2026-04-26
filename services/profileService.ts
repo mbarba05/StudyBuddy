@@ -6,6 +6,7 @@
 import { BUCKETS, FUNCTIONS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { Major } from "./majorsService";
+import { getAllBlockedRelationUserIds, getBlockStatus } from "./blockingService";
 
 export interface Profile {
     user_id: string;
@@ -47,6 +48,35 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     return data as Profile;
 };
 
+export const getProfileByUserId = async (targetUserId: string): Promise<Profile | null> => {
+    const blockStatus = await getBlockStatus(targetUserId);
+
+    if (blockStatus.blocked_me) return null;
+
+    const { data, error } = await supabase
+        .from(TABLES.PROFILES)
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Error fetching target profile:", error);
+        return null;
+    }
+
+   
+if (!data) return null;
+
+return {
+    ...data,
+    major: Array.isArray(data.major)
+        ? data.major[0] ?? null
+        : data.major ?? null,
+} as Profile;
+
+}
+
+
 export const hasProfile = async (userId: string): Promise<boolean> => {
     const { data, count, error } = await supabase
         .from(TABLES.PROFILES)
@@ -85,13 +115,14 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     let finalUrl: string | undefined = undefined;
     if (input.ppUrl) {
         if (isLocalUri(input.ppUrl)) {
-            finalUrl = await uploadProfileImage({
-                uri: input.ppUrl,
-                name: "avatar.jpg",
-                type: "image/jpeg",
-            },
-        "avatar"
-    );
+            finalUrl = await uploadProfileImage(
+                {
+                    uri: input.ppUrl,
+                    name: "avatar.jpg",
+                    type: "image/jpeg",
+                },
+                "avatar"
+            );
         } else {
             // Already a public URL
             finalUrl = input.ppUrl;
@@ -138,11 +169,7 @@ function getExt(name?: string, mime?: string): string {
 }
 
 function isLocalUri(uri?: string) {
-    return !!uri && 
-        (uri.startsWith("file://") || 
-        uri.startsWith("content://") ||
-        uri.startsWith("blob:")
-    );
+    return !!uri && (uri.startsWith("file://") || uri.startsWith("content://") || uri.startsWith("blob:"));
 }
 
 // adds profile picture into profile_pics public bucket and then gets the pp_url and adds it to the profiles table
@@ -313,7 +340,6 @@ export type MatchRow = Profile & {
     score: number; // total sum(points) for overlap in proflies. used to arrange the profiles
 };
 
-// this is the function that gets called to get the alg running
 // grabbing profiles with filters (major for now)
 export async function getPotentialMatches(
     termId?: number | string,
@@ -323,12 +349,8 @@ export async function getPotentialMatches(
         minimumOverlap?: number;
         left_swipe_cooldown?: number;
         right_swipe_cooldown?: number;
-    },
+    }
 ): Promise<MatchRow[]> {
-    const userId = await grabCurr_UserId();
-    // once limit is hit nomore profiles so
-    //await lockCan(userId);
-
     return majorMatching(termId, {
         limit: opts?.limit,
         offset: opts?.offset,
@@ -356,6 +378,9 @@ async function grabCurr_UserId(): Promise<string> {
 
 // function to grab major id of a given user
 async function grabMajorIds(user_id: string): Promise<number | null> {
+    const blockStatus = await getBlockStatus(user_id);
+    if (blockStatus.any_block) return null;
+
     const { data, error } = await supabase.from("profiles").select("major_id").eq("user_id", user_id).maybeSingle();
     if (error) throw error;
     return data?.major_id ?? null;
@@ -371,7 +396,7 @@ async function getExcludedUserIds(
         // before adding back into the poll)
         left_swipe_cooldown?: number;
         right_swipe_cooldown?: number;
-    },
+    }
 ): Promise<string[]> {
     // where cooldown timers are set (in hours)
     const left_swipe_cooldown = opts?.left_swipe_cooldown ?? 1;
@@ -391,11 +416,7 @@ async function getExcludedUserIds(
         .gte("created_at", left_cutOff); //creates the cooldown
     if (leftErr) throw leftErr;
 
-    let rightQuery = supabase
-        .from("user_swipes")
-        .select("target_id")
-        .eq("swiper_id", swiperId)
-        .eq("direction", "right");
+    let rightQuery = supabase.from("user_swipes").select("target_id").eq("swiper_id", swiperId).eq("direction", "right");
 
     if (typeof right_swipe_cooldown === "number") {
         const right_cutOff = new Date(now - right_swipe_cooldown * 60 * 60 * 1000).toISOString();
@@ -415,14 +436,17 @@ async function getExcludedUserIds(
         .from("friendships")
         .select("user_id, friend_id")
         .eq("status", "accepted")
-        .or(`user_id.eq.${swiperId},friend_id.eq.${swiperId}`); // if user === swiperId or swiperId === user
+        .or(`user_id.eq.${swiperId},friend_id.eq.${swiperId}`);
     if (friendErr) throw friendErr;
 
-    //adding friends to excluded list
+    // adding friends to excluded list
     for (const f of friendRows ?? []) {
         const otherId = (f as any).user_id === swiperId ? (f as any).friend_id : (f as any).user_id;
         exclude.add(otherId);
     }
+
+    const blockedIds = await getAllBlockedRelationUserIds();
+    for (const id of blockedIds) exclude.add(id);
 
     return Array.from(exclude);
 }
@@ -483,63 +507,31 @@ export async function majorMatching(
         offset?: number;
         left_swipe_cooldown?: number;
         right_swipe_cooldown?: number;
-    },
+    }
 ): Promise<MatchRow[]> {
     if (termId == null) {
         termId = await getCurrentTermId();
     }
 
+    const user_id = await grabCurr_UserId();
     const minOverlap = opts?.minimumOverlap ?? 0;
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
-    //used for matching users terms
-    let termName: string;
+    // grabbing current term name
+    const termName = await getCurrentTermName();
 
-    if (typeof termId === "number") {
-        const { data: termRow, error: termErr } = await supabase.from("terms").select("name").eq("id", termId).single();
-        if (termErr) throw termErr;
-        termName = termRow.name;
-    } else {
-        termName = termId;
-    }
-
-    // making sure users have same major
-    const user_id = await grabCurr_UserId();
+    // grab current user info once
     const user_major_id = await grabMajorIds(user_id);
     if (user_major_id == null) return [];
 
-    // keeping already swipped users out
+    // pass cooldown options through
     const swipedIds = await getExcludedUserIds(user_id, {
-        left_swipe_cooldown: opts?.left_swipe_cooldown ?? 24,
+        left_swipe_cooldown: opts?.left_swipe_cooldown,
         right_swipe_cooldown: opts?.right_swipe_cooldown,
     });
 
-    const excludeSet = new Set<string>(swipedIds);
-    excludeSet.add(user_id); //hide yourself
-    const excludeIds = Array.from(excludeSet);
-
-    // grabbing some user profiles
-    let q = supabase
-        .from(TABLES.PROFILES)
-        .select("user_id, display_name, year, pp_url, photo_urls, major:majors(id,name), created_at")
-        .neq("user_id", user_id) // to hid current user from swiping on themself
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1);
-
-    if (excludeIds.length) {
-        const csv = "(" + excludeIds.map((id) => `"${id}"`).join(",") + ")";
-        q = q.not("user_id", "in", csv);
-    }
-
-    const { data: candRows, error: candErr } = await q;
-    if (candErr) throw candErr;
-    if (!candRows || candRows.length === 0) return [];
-
-    // pos = possible
-    const pos_profile_ids: string[] = candRows.map((r: any) => r.user_id);
-
-    // grabing current user classes and professors on current term
+    // 1) current user's current enrollments in the current term
     const { data: myEnrolls, error: myEnrollErr } = await supabase
         .from("enrollments_with_status")
         .select("course_prof_id")
@@ -548,10 +540,27 @@ export async function majorMatching(
         .eq("status", "current");
     if (myEnrollErr) throw myEnrollErr;
 
-    // myCpIds => my course profile ids
-    const myCpIds = (myEnrolls ?? []).map((r: any) => r.course_prof_id);
+    const myCpIds = (myEnrolls ?? []).map((r: any) => r.course_prof_id as number);
 
-    // grabbing both professor_id and course_id
+    // 2) candidate profiles: same major, exclude self and swiped
+    let candidateQuery = supabase
+        .from(TABLES.PROFILES)
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .eq("major_id", user_major_id)
+        .neq("user_id", user_id)
+        .range(offset, offset + limit - 1);
+
+    if (swipedIds.length > 0) {
+        candidateQuery = candidateQuery.not("user_id", "in", `(${swipedIds.map((x) => `"${x}"`).join(",")})`);
+    }
+
+    const { data: candRows, error: candErr } = await candidateQuery;
+    if (candErr) throw candErr;
+    if (!candRows?.length) return [];
+
+    const pos_profile_ids = candRows.map((p: any) => p.user_id as string);
+
+    // 3) current user's course and professor sets
     let myCourseSet = new Set<number | string>();
     let myProfSet = new Set<number | string>();
 
@@ -806,7 +815,7 @@ export async function getRecentSearches(): Promise<RecentSearchWithProfile[]> {
         }));
 }
 
-/** Record or update a recent search when the user taps a profile. */
+
 export async function upsertRecentSearch(otherUserId: string): Promise<void> {
     const {
         data: { user },
@@ -850,9 +859,56 @@ export async function upsertRecentSearch(otherUserId: string): Promise<void> {
     }
 }
 
-/** Mark a recent search as cleared. */
+// Mark a search as cleared off 
 export async function clearRecentSearch(recentSearchId: number): Promise<void> {
     const { error } = await supabase.from(TABLES.RECENT_USER_SEARCH).update({ cleared: true }).eq("id", recentSearchId);
 
     if (error) console.error("clearRecentSearch:", error);
+}
+
+
+export type BlockedUser = Profile;
+
+export async function getBlockedUsers(): Promise<BlockedUser[]> {
+    const blockerId = await grabCurr_UserId();
+
+    const { data: blockRows, error: blockErr } = await supabase
+        .from("user_blocks")
+        .select("blocked_id")
+        .eq("blocker_id", blockerId)
+        .order("created_at", { ascending: false });
+
+    if (blockErr) throw blockErr;
+
+    const blockedIds = (blockRows ?? []).map((row: any) => row.blocked_id);
+
+    if (blockedIds.length === 0) return [];
+
+    const { data, error } = await supabase
+        .from(TABLES.PROFILES)
+        .select(
+            "user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio"
+        )
+        .in("user_id", blockedIds);
+
+    if (error) throw error;
+
+    return (data ?? []).map((profile: any) => ({
+        ...profile,
+        major: Array.isArray(profile.major)
+            ? profile.major[0] ?? null
+            : profile.major ?? null,
+    })) as BlockedUser[];
+}
+
+export async function unblockUser(blockedId: string): Promise<void> {
+    const blockerId = await grabCurr_UserId();
+
+    const { error } = await supabase
+        .from("user_blocks")
+        .delete()
+        .eq("blocker_id", blockerId)
+        .eq("blocked_id", blockedId);
+
+    if (error) throw error;
 }

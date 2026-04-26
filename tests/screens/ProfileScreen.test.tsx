@@ -132,3 +132,4 @@ describe("ProfileScreen", () => {
     // this mirrors how these UI tests are usually kept lightweight
   });
 });
+
