@@ -93,7 +93,10 @@ export async function handleRequest(
           Write: 
           1). Summary is to be less than 3 sentences long.
           2). Provide a One Word discription for the professor. 
-          3). Provde what are the common complaints in a list. If none, do not include.
+          3). If there are no clear complaints, do not include a Common Complaints sections. Do not include if no complaints.
+          4). Provde common complaints only if reviews mention clear complaints.
+          5). Do not use markdown symbols like *, **, or -.
+          6). Use plain text only.
         
           rules: 
           - Do not fabricate facts.
