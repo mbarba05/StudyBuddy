@@ -38,6 +38,7 @@ export default function ProfessorSummaryBox({ profId, professorName }: Props) {
             cancelled = true;
         };
     }, [profId]);
+    const cleanSummary = summary.replace(/\*\*/g, "");
     return (
         //summary without a box
         // <View>
@@ -64,7 +65,9 @@ export default function ProfessorSummaryBox({ profId, professorName }: Props) {
             ) : error ? (
                 <Text className="color-colors-textSecondary text-center">{error}</Text>
             ) : (
-                <Text className="color-colors-textSecondary text-center">{summary || "waiting for reviews..."}</Text>
+                <Text className="color-colors-textSecondary text-center">
+                    {cleanSummary || "waiting for reviews..."}
+                </Text>
             )}
         </ScrollView>
     );
