@@ -1,6 +1,6 @@
 import { Database } from "@/lib/database.types";
 import { TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { CourseProfDisplay } from "./courseService";
 import { getCurrentAndNextTerm } from "./termsService";
 

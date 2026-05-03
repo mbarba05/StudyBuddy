@@ -2,7 +2,7 @@ import { colors } from "@/assets/colors";
 import ChatRow from "@/components/features/chats/ChatRow";
 import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { formatPrettyDate } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { blockUser, unblockUser } from "@/services/blockingService";

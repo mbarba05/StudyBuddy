@@ -20,6 +20,9 @@ const ViewProfile = () => {
     const fallbackMajor = getParam(params.major);
     const fallbackYear = getParam(params.year);
     const user_id = getParam(params.user_id);
+    const bio = getParam(params.bio);
+    const photoUrlsParam = getParam(params.photo_urls);
+    const photoUrls = photoUrlsParam ? JSON.parse(photoUrlsParam) : [];
 
     const [friendShipStatus, setFriendShipStatus] = useState<FriendshipStatus>(FriendshipStatus.error);
     const [topRightLoading, setTopRightLoading] = useState(false);
@@ -158,7 +161,8 @@ const ViewProfile = () => {
                 {profileUnavailable ? (
                     <Text className="text-center text-colors-textSecondary text-lg">This profile is unavailable.</Text>
                 ) : (
-                    <MatchMakingCard name={displayName} imageUrl={ppUrl} major={majorName} year={year} />
+                    <MatchMakingCard name={display_name} major={major} year={year} bio={bio} imageUrls={[pp_url, ...photoUrls].filter(Boolean)} />
+
                 )}
             </View>
         </>

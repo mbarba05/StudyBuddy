@@ -117,7 +117,7 @@ export default function AverageStuff({ reviews, selectedCourseCode, profId, prof
             {/*Overall Card*/}
             {showingAll ? (
                 <AvgCard
-                    title="Total Averages for Professor"
+                    title="Total Averages"
                     subtitle={`${overall.total} review${overall.total === 1 ? "" : "s"}`}
                     avgGrade={overall.gradeLetter}
                     avgGpa={overall.gpaAvg}
@@ -128,7 +128,7 @@ export default function AverageStuff({ reviews, selectedCourseCode, profId, prof
                     ratingCount={overall.ratingCount}
                 >
                     {/* Professor Summary Box */}
-                    <View className="mt-1 w-full ">
+                    <View className="w-full ">
                         <ProfessorSummaryBox
                             reviews={reviews ?? []}
                             selectedCourseCode={selectedCourseCode}
@@ -175,34 +175,16 @@ function AvgCard(props: {
             </View>
 
             <View className="flex-row justify-between">
-                <StatCol
-                    label="Avg Grade"
-                    value={props.avgGrade}
-                    sub={props.gradeCount > 0 ? `${fmt1(props.avgGpa)}/4.0` : "—"}
-                />
-                <StatCol
-                    label="Avg Difficulty"
-                    value={fmt1(props.avgDifficulty)}
-                    sub={props.diffCount > 0 ? `${props.diffCount} filled` : "—"}
-                />
-                <StatCol
-                    label="Avg Rating"
-                    value={fmt1(props.avgRating)}
-                    sub={props.ratingCount > 0 ? `${props.ratingCount} filled` : "—"}
-                />
-            </View>
-
-            <View className="border-t border-colors-textSecondary pt-2">
-                <Text className="color-colors-textSecondary text-xs text-center">
-                    Grade uses a 4.0 scale (A=4.0, B=3.0, etc.)
-                </Text>
+                <StatCol label="Avg Grade" value={props.avgGrade} />
+                <StatCol label="Avg Difficulty" value={fmt1(props.avgDifficulty)} />
+                <StatCol label="Avg Rating" value={fmt1(props.avgRating)} />
             </View>
             {props.children && <View className="mt-4 w-full">{props.children}</View>}
         </View>
     );
 }
 
-function StatCol({ label, value, sub }: { label: string; value: string; sub: string }) {
+function StatCol({ label, value, sub }: { label: string; value: string; sub?: string }) {
     return (
         <View className="flex items-center flex-1">
             <Text className="color-colors-textSecondary text-lg">{label}</Text>

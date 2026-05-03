@@ -1,5 +1,5 @@
 import { TABLES } from "@/lib/enumBackend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { markEnrollmentAsReviewed } from "./enrollmentService";
 import { ProfessorForSearch } from "./professorService";
 
@@ -88,6 +88,32 @@ export async function voteOnReview(reviewId: number, direction: 1 | -1) {
     return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
 }
 
+// being able to report a review and using upsert to let users edit their reviews if they try to report the same review
+export async function reportReview(reviewId: number, reason: string) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError) throw userError;
+    if (!userData?.user) return null;
+
+    const { data, error } = await supabase
+        .from("review_reports")
+        .upsert(
+            {
+                review_id: reviewId,
+                user_id: userData.user.id,
+                reason,
+            },
+            {
+                onConflict: "review_id,user_id",
+            },
+        )
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return [];
@@ -98,7 +124,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
             `
       *,
       enrollment:enrollment_id!inner (
-        *,
+        *,npx
         course_prof:course_prof_id (
           course:course_id (code),
           prof:prof_id (name)
@@ -110,6 +136,37 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
 
     if (error) return [];
     return normalizeReviews(data ?? []);
+}
+
+// Will count all the reviews user writes and sum up their upvotes
+export async function getUserReviewScore(userId: string) {
+    const { data, error } = await supabase
+        .from("reviews")
+        .select(
+            `
+            id,
+            likes,
+            enrollment:enrollment_id!inner (
+                id,
+                user_id
+            )
+        `,
+        )
+        .eq("enrollment.user_id", userId);
+
+    if (error) {
+        console.error("Error loading user score:", error);
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    // Only count reviews that actually belong to this user
+    const userReviews = (data as any[]).filter((r) => r.enrollment?.user_id === userId);
+
+    const reviewCount = userReviews.length;
+    const upvoteCount = userReviews.reduce((sum, review) => sum + (review.likes || 0), 0);
+    const totalPoints = reviewCount + upvoteCount;
+
+    return { reviewCount, upvoteCount, totalPoints };
 }
 
 export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
