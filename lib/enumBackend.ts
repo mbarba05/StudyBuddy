@@ -28,6 +28,11 @@ export const FUNCTIONS = {
     CHECK_PENDING_REQUEST: "check_pending_request",
     ARE_FRIENDS: "are_friends",
     MUTUAL_FRIENDS: "mutual_friends",
+    GET_USER_REVIEWS: "get_user_reviews",
+    GET_USER_REVIEW_SCORES: "get_user_review_scores",
+    GET_PROF_REVIEWS: "get_prof_reviews",
+    VOTE_ON_REVIEW: "vote_on_review",
+    GET_PENDING_FRIEND_REQUESTS: "get_pending_friend_requests",
 };
 
 export const BUCKETS = { PROFILE_PICS: "profile-pictures", ATTACHMENTS: "chat-attatchments" };

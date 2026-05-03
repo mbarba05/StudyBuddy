@@ -12,13 +12,19 @@ export type Friendship = {
     status: FriendStatus;
 };
 
-export type FriendRequest = {
+export interface PendingFriendRequest {
     id: number;
     created_at: string;
     sender_id: string;
     receiver_id: string;
-    status: FriendStatus;
-};
+    status: string;
+    display_name: string;
+    pp_url: string | null;
+    year: string | null;
+    bio: string | null;
+    photo_urls: string[] | null;
+    major_name: string | null;
+}
 
 export type FriendListItem = {
     friend_id: string;
@@ -45,10 +51,10 @@ export async function sendFriendRequest(receiver_id: string) {
         .single();
 
     if (error) throw error;
-    return data as FriendRequest;
+    return data as PendingFriendRequest;
 }
 
-export async function getIncomingFriendRequests() {
+export async function getIncomingFriendRequests(): Promise<PendingFriendRequest[]> {
     const {
         data: { user },
         error: authError,
@@ -57,86 +63,42 @@ export async function getIncomingFriendRequests() {
     if (authError) throw authError;
     if (!user) throw new Error("User not authenticated");
 
-    const { data, error } = await supabase
-        .from(TABLES.FRIEND_REQUESTS)
-        .select(
-            `
-      id,
-      created_at,
-      sender_id,
-      receiver_id,
-      status,
-      sender:profiles!friend_requests_sender_id_fkey (
-        user_id,
-        display_name,
-        pp_url,
-        year,
-        major:major_id(name)
-      )
-    `,
-        )
-        .eq("receiver_id", user.id)
-        .eq("status", "pending");
+    const { data, error } = await supabase.rpc(FUNCTIONS.GET_PENDING_FRIEND_REQUESTS, { p_user_id: user.id });
+    if (error) {
+        console.error("getIncomingFriendRequests: ", error);
+    }
 
-    if (error) throw error;
-    return data as FriendRequest[];
+    return data;
 }
 
-export async function getOutgoingFriendRequests(user_id: string) {
-    const { data, error } = await supabase
-        .from(TABLES.FRIEND_REQUESTS)
-        .select(
-            `
-      id,
-      created_at,
-      sender_id,
-      receiver_id,
-      status,
-      receiver:profiles!friend_requests_receiver_id_fkey (
-        user_id,
-        display_name,
-        pp_url
-      )
-    `,
-        )
-        .eq("sender_id", user_id)
-        .eq("status", "pending");
-
-    if (error) throw error;
-    return data as FriendRequest[];
-}
-
-export async function acceptFriendRequest(request: FriendRequest) {
+export async function acceptFriendRequest(req_id: number, sender_id: string, reciever_id: string) {
     const { error: updateErr } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
         .update({ status: "accepted" })
-        .eq("id", request.id);
+        .eq("id", req_id);
 
     if (updateErr) throw updateErr;
 
     const { error: insertErr } = await supabase.from(TABLES.FRIENDSHIPS).insert([
         {
-            user_id: request.sender_id,
-            friend_id: request.receiver_id,
+            user_id: sender_id,
+            friend_id: reciever_id,
             status: "accepted",
         },
         {
-            user_id: request.receiver_id,
-            friend_id: request.sender_id,
+            user_id: reciever_id,
+            friend_id: sender_id,
             status: "accepted",
         },
     ]);
 
     if (insertErr) throw insertErr;
 
-    await createConversation(request.sender_id, request.receiver_id);
+    await createConversation(sender_id, reciever_id);
 }
 
 export async function rejectFriendRequest(request_id: number) {
-    const { error } = await supabase
-        .from(TABLES.FRIEND_REQUESTS)
-        .update({ status: "rejected" })
-        .eq("id", request_id);
+    const { error } = await supabase.from(TABLES.FRIEND_REQUESTS).update({ status: "rejected" }).eq("id", request_id);
 
     if (error) throw error;
 }
@@ -153,9 +115,7 @@ export async function removeFriend(friend_id: string) {
     const { error: friendshipError } = await supabase
         .from(TABLES.FRIENDSHIPS)
         .delete()
-        .or(
-            `and(user_id.eq.${user.id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user.id})`,
-        )
+        .or(`and(user_id.eq.${user.id},friend_id.eq.${friend_id}),and(user_id.eq.${friend_id},friend_id.eq.${user.id})`)
         .eq("status", "accepted");
 
     if (friendshipError) {
@@ -406,4 +366,3 @@ export async function getFriendsByInteraction(mode: "most" | "least"): Promise<F
 
     return merged;
 }
-

@@ -59,6 +59,15 @@ export default function ProfileStack() {
                     headerStyle: { backgroundColor: colors.background },
                 }}
             />
+            <Stack.Screen
+                name="blocked-users"
+                options={{
+                    headerShown: true,
+                    headerTitle: "Blocked",
+                    headerTitleStyle: { color: colors.text, fontSize: 22 },
+                    headerStyle: { backgroundColor: colors.background },
+                }}
+            />
         </Stack>
     );
 }

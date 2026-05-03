@@ -3,6 +3,7 @@ import supabase from "@/lib/supabase";
 import { DocumentPickerAsset } from "expo-document-picker";
 import { ImagePickerAsset } from "expo-image-picker";
 import { Image } from "react-native";
+import { getBlockStatus } from "./blockingService";
 
 export type DMConversation = {
     conversation_id: string;
@@ -59,9 +60,17 @@ export type ChatHeaderState = {
     dm_name: string;
     pp_url: string | null;
     is_friend: boolean;
+    is_blocked: boolean;
+    i_blocked: boolean;
+    blocked_me: boolean;
 };
 
 export async function createConversation(userA: string, userB: string) {
+    const blockStatus = await getBlockStatus(userB);
+    if (blockStatus.any_block) {
+        throw new Error("You cannot message this user");
+    }
+
     const { data, error } = await supabase
         .from(TABLES.CONVERSATIONS)
         .insert({ type: "dm", created_by: userA })
@@ -180,6 +189,8 @@ export async function getChatHeaderState(convId: string): Promise<ChatHeaderStat
 
     if (!otherUserId) return null;
 
+    const blockStatus = await getBlockStatus(otherUserId);
+
     const { data: profile, error: profileError } = await supabase
         .from(TABLES.PROFILES)
         .select("user_id, display_name, pp_url")
@@ -188,10 +199,19 @@ export async function getChatHeaderState(convId: string): Promise<ChatHeaderStat
 
     if (profileError) {
         console.error("getChatHeaderState profileError:", profileError);
-        return null;
+        return {
+            conversation_id: convId,
+            other_user_id: otherUserId,
+            dm_name: "Unavailable",
+            pp_url: null,
+            is_friend: false,
+            is_blocked: blockStatus.any_block,
+            i_blocked: blockStatus.i_blocked,
+            blocked_me: blockStatus.blocked_me,
+        };
     }
 
-    const isFriend = await areUsersStillFriends(currentUserId, otherUserId);
+    const isFriend = blockStatus.any_block ? false : await areUsersStillFriends(currentUserId, otherUserId);
 
     return {
         conversation_id: convId,
@@ -199,6 +219,9 @@ export async function getChatHeaderState(convId: string): Promise<ChatHeaderStat
         dm_name: profile.display_name,
         pp_url: profile.pp_url ?? null,
         is_friend: isFriend,
+        is_blocked: blockStatus.any_block,
+        i_blocked: blockStatus.i_blocked,
+        blocked_me: blockStatus.blocked_me,
     };
 }
 
@@ -216,6 +239,11 @@ export async function sendMessage(clientId: string, message: string, convId: str
     const otherUserId = await getOtherUserIdForConversation(convId, user.id);
     if (!otherUserId) {
         return new Error("Could not find the other user for this conversation.");
+    }
+
+    const blockStatus = await getBlockStatus(otherUserId);
+    if (blockStatus.any_block) {
+        return new Error("Messaging unavailable for this user.");
     }
 
     const stillFriends = await areUsersStillFriends(user.id, otherUserId);

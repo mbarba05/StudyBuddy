@@ -13,7 +13,6 @@ import { ActivityIndicator, Alert, Modal, Text, TextInput, TouchableOpacity, Vie
 
 interface ReviewWidgetProps {
     review: ReviewDisplay;
-    onVoted?: () => Promise<void> | void;
 }
 
 function fmtDate(iso: string) {
@@ -53,24 +52,19 @@ function buildThread(rows: CommentWithVotes[]): ThreadNode[] {
     return roots;
 }
 
-const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
-    const reviewIdForVotes: any = (review as any).reviewId ?? (review as any).id;
-
+const ReviewWidget = ({ review }: ReviewWidgetProps) => {
+    console.log("REVI IN EIDGET: ", review);
+    const reviewIdForVotes = review.reviewId;
     const reviewIdForComments = typeof reviewIdForVotes === "number" ? reviewIdForVotes : Number(reviewIdForVotes);
-
     const hasNumericReviewId = Number.isFinite(reviewIdForComments);
 
-    // adding states for reporting reviews
+    // reporting reviews state
     const [showReportBox, setShowReportBox] = useState(false);
     const [reportReason, setReportReason] = useState("");
     const [reporting, setReporting] = useState(false);
 
-    const [voteScore, setVoteScore] = useState(
-        (review as any).voteScore ?? ((review as any).upvotes ?? 0) - ((review as any).downvotes ?? 0),
-    );
-
-    const [myVote, setMyVote] = useState<-1 | 0 | 1>(((review as any).myVote ?? 0) as -1 | 0 | 1);
-
+    const [voteScore, setVoteScore] = useState(review.voteScore);
+    const [myVote, setMyVote] = useState<-1 | 0 | 1>((review.myVote ?? 0) as -1 | 0 | 1);
     const [busy, setBusy] = useState(false);
 
     // comments
@@ -92,37 +86,24 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
 
     // keep local review vote state in sync when parent refreshes
     useEffect(() => {
-        const nextVoteScore =
-            (review as any).voteScore ?? ((review as any).upvotes ?? 0) - ((review as any).downvotes ?? 0);
-
-        setVoteScore(nextVoteScore);
-        setMyVote(((review as any).myVote ?? 0) as -1 | 0 | 1);
-    }, [(review as any).voteScore, (review as any).myVote, review]);
+        setVoteScore(review.voteScore);
+        setMyVote((review.myVote ?? 0) as -1 | 0 | 1);
+    }, [review.voteScore, review.myVote, review]);
 
     const threadedComments = useMemo(() => buildThread(comments), [comments]);
 
-    const handleVote = async (direction: 1 | -1) => {
+    const handleVote = async (vote: 1 | 0 | -1) => {
         if (busy) return;
         setBusy(true);
 
-        try {
-            const res = await voteOnReview(reviewIdForVotes, direction);
+        const effectiveVote = myVote === vote ? 0 : vote;
 
-            if ((res as any)?.deleted) {
-                await onVoted?.();
-                return;
-            }
+        try {
+            const res = await voteOnReview(reviewIdForVotes, effectiveVote);
 
             if (res) {
-                if (typeof (res as any).vote_score === "number") {
-                    setVoteScore((res as any).vote_score);
-                    setMyVote(((res as any).my_vote ?? 0) as -1 | 0 | 1);
-                } else if (typeof (res as any).upvotes === "number" && typeof (res as any).downvotes === "number") {
-                    setVoteScore((res as any).upvotes - (res as any).downvotes);
-                } else if (typeof (res as any).voteScore === "number") {
-                    setVoteScore((res as any).voteScore);
-                    setMyVote(((res as any).myVote ?? 0) as -1 | 0 | 1);
-                }
+                setVoteScore((prev) => prev - myVote + effectiveVote);
+                setMyVote(effectiveVote);
             }
         } catch (e) {
             console.log("Vote error:", e);
@@ -130,7 +111,6 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
             setBusy(false);
         }
     };
-
     const handleReport = async () => {
         if (!hasNumericReviewId) {
             Alert.alert("Error", "This review cannot be reported.");
@@ -240,14 +220,14 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
         return { voteScore: res.vote_score, myVote: res.my_vote };
     };
 
-    const handleCommentVote = async (commentId: number, direction: 1 | -1) => {
+    const handleCommentVote = async (commentId: number, vote: 1 | -1) => {
         if (commentVotingId) return;
 
         const target = comments.find((c) => c.id === commentId);
         const prevMyVote = (target?.myVote ?? 0) as -1 | 0 | 1;
         const prevScore = target?.voteScore ?? 0;
 
-        const nextMyVote: -1 | 0 | 1 = prevMyVote === direction ? 0 : direction;
+        const nextMyVote: -1 | 0 | 1 = prevMyVote === vote ? 0 : vote;
         const nextScore = prevScore + (nextMyVote - prevMyVote);
 
         setComments((cs) =>
@@ -256,7 +236,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
 
         setCommentVotingId(commentId);
         try {
-            const raw = (await voteOnReviewComment(commentId, direction)) as VoteResultMaybe;
+            const raw = (await voteOnReviewComment(commentId, vote)) as VoteResultMaybe;
 
             const res = normalizeVoteResult(raw);
 
@@ -287,9 +267,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
             <View key={node.id} className={`${indentClass} gap-2`}>
                 <View className="bg-colors-background rounded-md p-2 border border-colors-textSecondary">
                     <View className="flex-row justify-between items-center">
-                        <Text className="color-colors-textSecondary text-sm">
-                            Anonymous • {fmtDate(node.created_at)}
-                        </Text>
+                        <Text className="color-colors-textSecondary text-sm">{fmtDate(node.created_at)}</Text>
 
                         <View className="flex-row items-center gap-2">
                             <TouchableOpacity
@@ -373,50 +351,45 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
 
     const upColor = myVote === 1 ? colors.success : colors.text;
     const downColor = myVote === -1 ? colors.error : colors.text;
-
     return (
         <View className="bg-colors-secondary w-[90vw] rounded-lg border border-colors-text p-2 gap-4 shadow-md">
             <View className="flex-row justify-between">
                 <View>
-                    <Text className="color-colors-text text-2xl font-semibold">{(review as any).code}</Text>
-                    <Text className="color-colors-textSecondary text-lg">
-                        {parseLastName((review as any).profName)}
-                    </Text>
+                    <Text className="color-colors-text text-2xl font-semibold">{review.code}</Text>
+                    <Text className="color-colors-textSecondary text-lg">{parseLastName(review.profName)}</Text>
                 </View>
                 <View>
-                    <Text className="color-colors-text text-2xl font-semibold">{(review as any).term}</Text>
-                    <Text className="color-colors-textSecondary text-lg text-right">{(review as any).reviewDate}</Text>
+                    <Text className="color-colors-text text-2xl font-semibold">{review.term}</Text>
+                    <Text className="color-colors-textSecondary text-lg text-right">{review.reviewDate}</Text>
                 </View>
             </View>
 
-            <Text className="color-colors-text text-center text-lg">{(review as any).reviewText}</Text>
+            <Text className="color-colors-text text-center text-lg">{review.reviewText}</Text>
 
             <View className="flex flex-row justify-between">
                 <View className="flex items-center">
                     <Text className="color-colors-textSecondary text-lg">Difficulty</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{(review as any).courseDiff}/10</Text>
+                    <Text className="color-colors-text text-2xl font-semibold">{review.courseDiff}/10</Text>
                 </View>
                 <View className="flex items-center">
                     <Text className="color-colors-textSecondary text-lg">Quality</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{(review as any).profRating}/10</Text>
+                    <Text className="color-colors-text text-2xl font-semibold">{review.profRating}/10</Text>
                 </View>
                 <View className="flex items-center">
                     <Text className="color-colors-textSecondary text-lg">Grade</Text>
-                    <Text className="color-colors-text text-2xl font-semibold">{(review as any).grade}</Text>
+                    <Text className="color-colors-text text-2xl font-semibold">{review.grade}</Text>
                 </View>
             </View>
 
             <View className="flex flex-row justify-between items-center border-t border-colors-textSecondary pt-2">
-                <TouchableOpacity onPress={toggleComments} className="flex-row items-center gap-2">
-                    <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.text} />
-                    <Text className="color-colors-text text-lg">
-                        Comment{comments.length ? ` (${comments.length})` : ""}
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowReportBox(true)} className="flex-row items-center gap-2">
-                    <Ionicons name="flag-outline" size={22} color={colors.error} />
-                    <Text className="color-red-400 text-lg">Report</Text>
-                </TouchableOpacity>
+                <View className="flex flex-row gap-4">
+                    <TouchableOpacity onPress={toggleComments} className="flex-row items-center gap-2">
+                        <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowReportBox(true)} className="flex-row items-center gap-2">
+                        <Ionicons name="flag-outline" size={22} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
 
                 <View className="flex-row items-center gap-3">
                     <TouchableOpacity testID="vote-up" onPress={() => handleVote(1)} disabled={busy}>
@@ -437,7 +410,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                     <TextInput
                         value={comment}
                         onChangeText={(t) => setComment(t)}
-                        placeholder="Leave an anonymous comment..."
+                        placeholder="Comment"
                         placeholderTextColor={colors.textSecondary}
                         multiline
                         className="bg-colors-background rounded-md p-2 border border-colors-textSecondary color-colors-text"
@@ -450,7 +423,6 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                             className="flex-row items-center gap-2"
                         >
                             <Ionicons name="refresh" size={18} color={colors.text} />
-                            <Text className="color-colors-text">Refresh</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity

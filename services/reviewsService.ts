@@ -1,4 +1,4 @@
-import { TABLES } from "@/lib/enumBackend";
+import { FUNCTIONS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/supabase";
 import { markEnrollmentAsReviewed } from "./enrollmentService";
 import { ProfessorForSearch } from "./professorService";
@@ -26,16 +26,34 @@ export interface ReviewDisplay {
     courseDiff: number;
     profRating: number;
     term: string;
-    likes: number;
     profName: string;
     code: string;
     reviewDate: string;
     grade: string;
-    //upvotes: number;
-    //downvotes: number;
     voteScore: number;
-    myVote?: -1 | 0 | 1;
+    myVote: -1 | 0 | 1;
 }
+
+const normalizeReview = (item: any): ReviewDisplay => {
+    const d = new Date(item.created_at);
+    const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+    console.log("VOTESCORE: ", item);
+    return {
+        reviewId: item.id,
+        reviewText: item.review,
+        courseDiff: item.course_diff,
+        profRating: item.prof_rating,
+        term: item.term,
+        code: item.code,
+        profName: item.name,
+        grade: item.grade,
+        reviewDate,
+        voteScore: item.vote_score ?? 0,
+        myVote: item.my_vote ?? 0,
+    };
+};
+
+const normalizeReviews = (rows: any[]): ReviewDisplay[] => rows.map(normalizeReview);
 
 export async function submitReview(fullReview: ReviewInput) {
     const user = await supabase.auth.getUser();
@@ -51,7 +69,6 @@ export async function submitReview(fullReview: ReviewInput) {
             review: fullReview.review,
             course_diff: fullReview.courseDiff,
             prof_rating: fullReview.profRating,
-            likes: 0,
             grade: fullReview.grade,
         })
         .select()
@@ -61,31 +78,24 @@ export async function submitReview(fullReview: ReviewInput) {
     return data;
 }
 
-/*export async function voteOnReview(reviewId: number, direction: 1 | -1) {
-  const { data, error } = await supabase.rpc("vote_on_review", {
-    p_review_id: reviewId,
-    p_direction: direction,
-  });
+export async function voteOnReview(reviewId: number, vote: 1 | 0 | -1): Promise<boolean> {
+    const user = await supabase.auth.getUser();
+    if (!user) return false;
 
-  if (error) {
-    console.error("Vote error:", error);
-    throw error;
-  }
-
-  const row = Array.isArray(data) ? data[0] : null;
-
-  return row as { upvotes: number; downvotes: number; deleted: boolean } | null;
-}*/
-export async function voteOnReview(reviewId: number, direction: 1 | -1) {
-    const { data, error } = await supabase.rpc("vote_on_review", {
+    const { data, error } = await supabase.rpc(FUNCTIONS.VOTE_ON_REVIEW, {
         p_review_id: reviewId,
-        p_direction: direction,
+        p_user_id: user.data.user?.id,
+        p_vote: vote,
     });
 
-    if (error) throw error;
+    if (error) {
+        console.error("Error: voteOnReview: ", error);
+        return false;
+    }
 
-    const row = Array.isArray(data) ? data[0] : null;
-    return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
+    const success = { data }.data;
+
+    return success;
 }
 
 // being able to report a review and using upsert to let users edit their reviews if they try to report the same review
@@ -118,6 +128,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return [];
 
+<<<<<<< minorEdits
     const { data, error } = await supabase
         .from(TABLES.REVIEWS)
         .select(
@@ -154,11 +165,15 @@ export async function getUserReviewScore(userId: string) {
         )
         .eq("enrollment.user_id", userId);
 
+=======
+    const { data, error } = await supabase.rpc(FUNCTIONS.GET_USER_REVIEWS, { p_user_id: userData.user.id });
+>>>>>>> main
     if (error) {
-        console.error("Error loading user score:", error);
-        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+        console.error("Error, getUserReviews:", error);
+        return [];
     }
 
+<<<<<<< minorEdits
     // Only count reviews that actually belong to this user
     const userReviews = (data as any[]).filter((r) => r.enrollment?.user_id === userId);
 
@@ -167,35 +182,27 @@ export async function getUserReviewScore(userId: string) {
     const totalPoints = reviewCount + upvoteCount;
 
     return { reviewCount, upvoteCount, totalPoints };
+=======
+    return normalizeReviews(data ?? []);
+>>>>>>> main
 }
 
 export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
-    const { data: enrollments } = await supabase
-        .from(TABLES.ENROLLMENTS)
-        .select(`id, course_prof:course_prof_id!inner (prof_id)`)
-        .eq("course_prof.prof_id", profId);
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) return [];
 
-    if (!enrollments || enrollments.length === 0) return [];
+    const { data, error } = await supabase.rpc(FUNCTIONS.GET_PROF_REVIEWS, {
+        p_prof_id: profId,
+        p_user_id: userData.user.id,
+    });
 
-    const enrollmentIds = enrollments.map((e) => e.id as number);
+    if (error) {
+        console.error("Error: getReviewsForProf: ", error);
+        return [];
+    }
 
-    const { data, error } = await supabase
-        .from(TABLES.REVIEWS)
-        .select(
-            `
-      *,
-      enrollment:enrollment_id (
-        *,
-        course_prof:course_prof_id (
-          prof:prof_id (*),
-          course:course_id (*)
-        )
-      )
-    `,
-        )
-        .in("enrollment_id", enrollmentIds);
+    console.log("REVS: ", data);
 
-    if (error) throw error;
     return normalizeReviews(data ?? []);
 };
 
@@ -211,29 +218,6 @@ export async function getSavedSummaries(profId: number) {
     return data ?? null;
 }
 
-const normalizeReview = (item: any): ReviewDisplay => {
-    const d = new Date(item.created_at);
-    const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
-
-    return {
-        reviewId: item.id,
-        reviewText: item.review,
-        courseDiff: item.course_diff,
-        profRating: item.prof_rating,
-        likes: item.likes,
-        term: item.enrollment?.term ?? "",
-        code: item.enrollment?.course_prof?.course?.code ?? "",
-        profName: item.enrollment?.course_prof?.prof?.name ?? "",
-        grade: item.grade ?? "",
-        reviewDate,
-        //upvotes: item.upvotes ?? 0,
-        //downvotes: item.downvotes ?? 0,
-        voteScore: item.vote_score ?? 0,
-    };
-};
-
-const normalizeReviews = (rows: any[]): ReviewDisplay[] => rows.map(normalizeReview);
-
 export const updateRecentlyViewedRevForUser = async (profId: number) => {
     const user = await supabase.auth.getUser();
     if (!user) return null;
@@ -244,11 +228,9 @@ export const updateRecentlyViewedRevForUser = async (profId: number) => {
         .eq("prof_id", profId)
         .eq("user_id", user.data.user?.id)
         .single();
-    console.log(recentlyViewedProf);
 
     if (recentlyViewedProf.data == null) {
         //add it
-        console.log("ADDING NEW VIEW FOR USER");
         const res = await supabase.from(TABLES.RECENTLY_VIEWED_PROF_FOR_USER).insert({
             user_id: user.data.user?.id,
             prof_id: profId,
@@ -281,8 +263,6 @@ export const updateRecentlyViewedRevForUser = async (profId: number) => {
             .eq("user_id", user.data.user?.id)
             .select();
 
-        console.log("INCREMENTING NEW VIEW FOR USER", res);
-
         if (res.error) {
             console.error("updateRecentlyViewedRev, unable to increment view count", res.error);
             return;
@@ -297,16 +277,12 @@ export const updateRecentlyViewedRevGlobal = async (profId: number) => {
         .eq("prof_id", profId)
         .maybeSingle();
 
-    console.log(recentlyViewedProf);
-
     if (recentlyViewedProf.error) {
         console.error("updateRecentlyViewedRevGlobal, error fetching global row", recentlyViewedProf.error);
         return;
     }
 
     if (recentlyViewedProf.data == null) {
-        console.log("ADDING NEW GLOBAL VIEW");
-
         const res = await supabase.from(TABLES.RECENTLY_VIEWED_PROF_GLOBAL).insert({
             prof_id: profId,
             viewed_at: new Date().toISOString(),
@@ -327,8 +303,6 @@ export const updateRecentlyViewedRevGlobal = async (profId: number) => {
             .eq("prof_id", profId)
             .select();
 
-        console.log("INCREMENTING NEW GLOBAL VIEW", res);
-
         if (res.error) {
             console.error("updateRecentlyViewedRevGlobal, unable to increment global view count", res.error);
             return;
@@ -346,8 +320,6 @@ export const getRecentSearchesForUser = async (): Promise<ProfessorForSearch[] |
     const recentSearches = await supabase.rpc("get_recent_rev_searches_for_user", {
         p_user_id: user.data.user.id,
     });
-
-    console.log("RECENT: ", recentSearches);
 
     if (recentSearches.error) {
         console.error("getRecentSearchesForUser unable to get user recent searches", recentSearches.error);
@@ -367,8 +339,6 @@ export const getPopularSearchesByMajor = async (): Promise<ProfessorForSearch[] 
     const popularSearches = await supabase.rpc("get_popular_prof_searches_by_major", {
         p_user_id: user.data.user.id,
     });
-
-    console.log("popular", popularSearches);
 
     if (popularSearches.error) {
         console.error("getPopularSearchesForUser unable to get user popular searches", popularSearches.error);

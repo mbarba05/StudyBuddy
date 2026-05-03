@@ -1,7 +1,6 @@
 import { LoadingScreen } from "@/components/ui/Loading";
-import supabase from "@/lib/supabase";
 import { getReviewableEnrollments, ReviewableEnrollment } from "@/services/enrollmentService";
-import { getUserReviews, getUserReviewScore, ReviewDisplay } from "@/services/reviewsService";
+import { getUserReviews, ReviewDisplay } from "@/services/reviewsService";
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import CourseProfDisplayWidget from "../courses/CourseProfDisplayWidget";
@@ -14,26 +13,9 @@ const YourReviewsScreen = () => {
     const [selectedEnrollment, setSelectedEnrollment] = useState<ReviewableEnrollment | null>(null);
     const [reviews, setReviews] = useState<ReviewDisplay[] | null>();
     const [loading, setLoading] = useState(true);
-
     const [reviewCount, setReviewCount] = useState(0);
     const [totalPoints, setTotalPoints] = useState(0);
 
-    // Loads the user's review score (total reviews and points) and updates state
-    const loadScore = async () => {
-        const { data } = await supabase.auth.getSession();
-        const userId = data.session?.user?.id;
-        if (!userId) return;
-
-        const score = await getUserReviewScore(userId);
-        setReviewCount(score.reviewCount);
-        setTotalPoints(score.totalPoints);
-    };
-
-    useEffect(() => {
-        loadScore();
-    }, []);
-
-    //  getData() can safely call loadScore()
     const getData = async () => {
         const enrollments = await getReviewableEnrollments();
         const reviewList = await getUserReviews();
@@ -41,49 +23,14 @@ const YourReviewsScreen = () => {
         if (enrollments) setReviewableEnrollments(enrollments);
 
         if (!reviewList || reviewList.length === 0) {
-            setReviews(reviewList);
-            await loadScore();
             return;
         }
 
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData.session?.user?.id;
-
-        if (!userId) {
-            setReviews(reviewList.map((r) => ({ ...r, myVote: 0 })));
-            await loadScore();
-            return;
-        }
-
-        const reviewIds = reviewList.map((r) => r.reviewId);
-
-        const { data: voteRows, error } = await supabase
-            .from("review_votes")
-            .select("review_id, vote")
-            .in("review_id", reviewIds)
-            .eq("user_id", userId);
-
-        if (error) {
-            console.log("Error fetching my votes (WriteReviewScreen):", error);
-            setReviews(reviewList.map((r) => ({ ...r, myVote: 0 })));
-            await loadScore();
-            return;
-        }
-
-        const myVoteMap = new Map<number, -1 | 1>();
-        for (const row of voteRows ?? []) {
-            myVoteMap.set(row.review_id, row.vote as -1 | 1);
-        }
-
-        const merged = reviewList.map((r) => ({
-            ...r,
-            myVote: (myVoteMap.get(r.reviewId) ?? 0) as -1 | 0 | 1,
-        }));
-
-        setReviews(merged);
-
-        // Refresh score AFTER reviews load
-        await loadScore();
+        setReviews(reviewList);
+        setReviewCount(reviewList.length);
+        console.log("REVIEW LIST: ", reviewList);
+        //5 points per review + upvote score
+        setTotalPoints(reviewList.reduce((acc, review) => acc + review.voteScore + 5, 0));
     };
 
     useEffect(() => {
@@ -129,20 +76,18 @@ const YourReviewsScreen = () => {
                         </View>
                     </View>
                 )}
-                <View className="flex items-center gap-4 ">
-                    <Text className="text-4xl text-colors-text font-semibold mb-2">View your Reviews</Text>
-                    <View className="flex-row justify-between w-full px-4 mt-3 mb-5">
-                        <Text className="text-lg font-semibold text-colors-textSecondary">
-                            Reviews written: {reviewCount}
-                        </Text>
-                        <Text className="text-lg font-semibold text-colors-text">Total points: {totalPoints}</Text>
+                <View className="flex items-center gap-2 ">
+                    <Text className="text-4xl text-colors-text font-semibold ">View your Reviews</Text>
+                    <View className="flex-row justify-between w-full">
+                        <Text className="text-lg text-colors-textSecondary">Reviews Written: {reviewCount}</Text>
+                        <Text className="text-lg text-colors-textSecondary">Study Score: {totalPoints}</Text>
                     </View>
                 </View>
                 <View className="flex items-center gap-4">
                     {reviews && reviews.length !== 0 ? (
                         reviews.map((r) => (
                             <View key={r.reviewId}>
-                                <ReviewWidget review={r} onVoted={getData} />
+                                <ReviewWidget review={r} />
                             </View>
                         ))
                     ) : (

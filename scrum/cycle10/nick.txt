@@ -1,0 +1,7 @@
+4/23: Going to clean up everything about the app. Today I started with lots of UI changes. 
+
+4/25: The reviews arent loading properly in the your reviews tab. This is leading me down a rabbit hole where 
+i am going to rewrite the way to fetch a review with all its info because right now the logic for that page 
+is very ugly. 
+
+i changed how reviews are fetched and got the votes and user vote for them in one query becuase the current way was so messy

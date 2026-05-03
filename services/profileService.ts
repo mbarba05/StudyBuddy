@@ -4,6 +4,7 @@
 
 import { BUCKETS, FUNCTIONS, TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/supabase";
+import { getAllBlockedRelationUserIds, getBlockStatus } from "./blockingService";
 import { Major } from "./majorsService";
 
 export interface Profile {
@@ -45,6 +46,30 @@ export const getUserProfile = async (): Promise<Profile | null> => {
     }
 
     return data as Profile;
+};
+
+export const getProfileByUserId = async (targetUserId: string): Promise<Profile | null> => {
+    const blockStatus = await getBlockStatus(targetUserId);
+
+    if (blockStatus.blocked_me) return null;
+
+    const { data, error } = await supabase
+        .from(TABLES.PROFILES)
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+    if (error) {
+        console.error("Error fetching target profile:", error);
+        return null;
+    }
+
+    if (!data) return null;
+
+    return {
+        ...data,
+        major: Array.isArray(data.major) ? (data.major[0] ?? null) : (data.major ?? null),
+    } as Profile;
 };
 
 export const hasProfile = async (userId: string): Promise<boolean> => {
@@ -316,7 +341,6 @@ export type MatchRow = Profile & {
     score: number; // total sum(points) for overlap in proflies. used to arrange the profiles
 };
 
-// this is the function that gets called to get the alg running
 // grabbing profiles with filters (major for now)
 export async function getPotentialMatches(
     termId?: number | string,
@@ -328,10 +352,6 @@ export async function getPotentialMatches(
         right_swipe_cooldown?: number;
     },
 ): Promise<MatchRow[]> {
-    const userId = await grabCurr_UserId();
-    // once limit is hit nomore profiles so
-    //await lockCan(userId);
-
     return majorMatching(termId, {
         limit: opts?.limit,
         offset: opts?.offset,
@@ -359,6 +379,9 @@ async function grabCurr_UserId(): Promise<string> {
 
 // function to grab major id of a given user
 async function grabMajorIds(user_id: string): Promise<number | null> {
+    const blockStatus = await getBlockStatus(user_id);
+    if (blockStatus.any_block) return null;
+
     const { data, error } = await supabase.from("profiles").select("major_id").eq("user_id", user_id).maybeSingle();
     if (error) throw error;
     return data?.major_id ?? null;
@@ -418,14 +441,17 @@ async function getExcludedUserIds(
         .from("friendships")
         .select("user_id, friend_id")
         .eq("status", "accepted")
-        .or(`user_id.eq.${swiperId},friend_id.eq.${swiperId}`); // if user === swiperId or swiperId === user
+        .or(`user_id.eq.${swiperId},friend_id.eq.${swiperId}`);
     if (friendErr) throw friendErr;
 
-    //adding friends to excluded list
+    // adding friends to excluded list
     for (const f of friendRows ?? []) {
         const otherId = (f as any).user_id === swiperId ? (f as any).friend_id : (f as any).user_id;
         exclude.add(otherId);
     }
+
+    const blockedIds = await getAllBlockedRelationUserIds();
+    for (const id of blockedIds) exclude.add(id);
 
     return Array.from(exclude);
 }
@@ -483,7 +509,7 @@ export async function matchMajor(limit = 50): Promise<MatchRow[]> {
 export async function majorMatching(
     termId?: number | string,
     opts?: {
-        minimumOverlap?: number; // minimum number of overlaps required
+        minimumOverlap?: number;
         limit?: number;
         offset?: number;
         left_swipe_cooldown?: number;
@@ -494,57 +520,40 @@ export async function majorMatching(
         termId = await getCurrentTermId();
     }
 
+    const user_id = await grabCurr_UserId();
     const minOverlap = opts?.minimumOverlap ?? 0;
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
-    //used for matching users terms
-    let termName: string;
+    const termName = await getCurrentTermName();
 
-    if (typeof termId === "number") {
-        const { data: termRow, error: termErr } = await supabase.from("terms").select("name").eq("id", termId).single();
-        if (termErr) throw termErr;
-        termName = termRow.name;
-    } else {
-        termName = termId;
-    }
-
-    // making sure users have same major
-    const user_id = await grabCurr_UserId();
     const user_major_id = await grabMajorIds(user_id);
     if (user_major_id == null) return [];
 
-    // keeping already swipped users out
     const swipedIds = await getExcludedUserIds(user_id, {
-        left_swipe_cooldown: opts?.left_swipe_cooldown ?? 24,
+        left_swipe_cooldown: opts?.left_swipe_cooldown,
         right_swipe_cooldown: opts?.right_swipe_cooldown,
     });
 
-    const excludeSet = new Set<string>(swipedIds);
-    excludeSet.add(user_id); //hide yourself
-    const excludeIds = Array.from(excludeSet);
-
-    // grabbing some user profiles
-    let q = supabase
+    // 1) candidate profiles: same major, exclude self and swiped
+    let candidateQuery = supabase
         .from(TABLES.PROFILES)
-        .select("user_id, display_name, year, pp_url, photo_urls, bio, major:majors(id,name), created_at")
-        .neq("user_id", user_id) // to hid current user from swiping on themself
-        .order("created_at", { ascending: false })
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .eq("major_id", user_major_id)
+        .neq("user_id", user_id)
         .range(offset, offset + limit - 1);
 
-    if (excludeIds.length) {
-        const csv = "(" + excludeIds.map((id) => `"${id}"`).join(",") + ")";
-        q = q.not("user_id", "in", csv);
+    if (swipedIds.length > 0) {
+        candidateQuery = candidateQuery.not("user_id", "in", `(${swipedIds.map((x) => `"${x}"`).join(",")})`);
     }
 
-    const { data: candRows, error: candErr } = await q;
+    const { data: candRows, error: candErr } = await candidateQuery;
     if (candErr) throw candErr;
-    if (!candRows || candRows.length === 0) return [];
+    if (!candRows?.length) return [];
 
-    // pos = possible
-    const pos_profile_ids: string[] = candRows.map((r: any) => r.user_id);
+    const pos_profile_ids = candRows.map((p: any) => p.user_id as string);
 
-    // grabing current user classes and professors on current term
+    // 2) current user's enrollments in the current term
     const { data: myEnrolls, error: myEnrollErr } = await supabase
         .from("enrollments_with_status")
         .select("course_prof_id")
@@ -553,10 +562,9 @@ export async function majorMatching(
         .eq("status", "current");
     if (myEnrollErr) throw myEnrollErr;
 
-    // myCpIds => my course profile ids
-    const myCpIds = (myEnrolls ?? []).map((r: any) => r.course_prof_id);
+    const myCpIds = (myEnrolls ?? []).map((r: any) => r.course_prof_id as number);
 
-    // grabbing both professor_id and course_id
+    // 3) current user's course and professor sets
     let myCourseSet = new Set<number | string>();
     let myProfSet = new Set<number | string>();
 
@@ -582,7 +590,7 @@ export async function majorMatching(
             .from("enrollments_with_status")
             .select("user_id, course_prof_id")
             .in("user_id", ids)
-            .eq("term", termName) // adding filter to the same term
+            .eq("term", termName)
             .eq("status", "current");
         if (ceErr) throw ceErr;
         candEnrolls.push(...(ce ?? []));
@@ -616,48 +624,43 @@ export async function majorMatching(
     function coursesForCandidate(userId: string): Set<number | string> {
         const out = new Set<number | string>();
         const cps = candCpMap.get(userId) ?? new Set<number | string>();
-        for (const CpIds of cps) {
-            const cid = cpIdToCourse.get(CpIds);
+        for (const cpId of cps) {
+            const cid = cpIdToCourse.get(cpId);
             if (cid !== undefined) out.add(cid);
         }
         return out;
     }
+
     function profForCandidate(userId: string): Set<number | string> {
         const out = new Set<number | string>();
         const cps = candCpMap.get(userId) ?? new Set<number | string>();
-        for (const myCpIds of cps) {
-            const pid = cpIdToProf.get(myCpIds);
+        for (const cpId of cps) {
+            const pid = cpIdToProf.get(cpId);
             if (pid !== undefined) out.add(pid);
         }
         return out;
     }
+
     const results: MatchRow[] = [];
     for (const c of candRows as any[]) {
         const theirCourses = coursesForCandidate(c.user_id);
         const theirProfs = profForCandidate(c.user_id);
 
-        // used for counting the amount of overlaps
-        //counting classes
         let oc = 0;
         for (const x of theirCourses) if (myCourseSet.has(x)) oc++;
-        //counting professors
         let op = 0;
         for (const x of theirProfs) if (myProfSet.has(x)) op++;
-        //if major overlaps (bool 1 if yes, 0 if no)
+
         const userMajorId = Number((c.major as any)?.id);
         const ifSame_major = !Number.isNaN(userMajorId) && userMajorId === user_major_id;
         const overlapping_major = ifSame_major ? 1 : 0;
 
-        // overlapping score
-        // major + courses + professors
         const score = overlapping_major + oc + op;
-        const totalOverlapScore = score;
 
-        if (totalOverlapScore >= minOverlap) {
+        if (score >= minOverlap) {
             results.push({
                 user_id: c.user_id,
                 display_name: c.display_name as string,
-                //bio: c.bio as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
                 photo_urls: (c.photo_urls ?? null) as string[],
@@ -671,19 +674,20 @@ export async function majorMatching(
             });
         }
     }
-    // output same major first with higher score alphabetically by name (for now)
+
     results.sort((a, b) => {
         const aMajor = a.same_major ? 1 : 0;
         const bMajor = b.same_major ? 1 : 0;
 
         return (
-            bMajor - aMajor || // pioritize major then
-            b.score - a.score || //score
+            bMajor - aMajor ||
+            b.score - a.score ||
             b.overlapping_classes - a.overlapping_classes ||
             b.overlapping_professors - a.overlapping_professors ||
             (a.display_name || "").localeCompare(b.display_name || "")
         );
     });
+
     return results;
 }
 
@@ -819,7 +823,6 @@ export async function getRecentSearches(): Promise<RecentSearchWithProfile[]> {
         }));
 }
 
-/** Record or update a recent search when the user taps a profile. */
 export async function upsertRecentSearch(otherUserId: string): Promise<void> {
     const {
         data: { user },
@@ -863,9 +866,51 @@ export async function upsertRecentSearch(otherUserId: string): Promise<void> {
     }
 }
 
-/** Mark a recent search as cleared. */
+// Mark a search as cleared off
 export async function clearRecentSearch(recentSearchId: number): Promise<void> {
     const { error } = await supabase.from(TABLES.RECENT_USER_SEARCH).update({ cleared: true }).eq("id", recentSearchId);
 
     if (error) console.error("clearRecentSearch:", error);
+}
+
+export type BlockedUser = Profile;
+
+export async function getBlockedUsers(): Promise<BlockedUser[]> {
+    const blockerId = await grabCurr_UserId();
+
+    const { data: blockRows, error: blockErr } = await supabase
+        .from("user_blocks")
+        .select("blocked_id")
+        .eq("blocker_id", blockerId)
+        .order("created_at", { ascending: false });
+
+    if (blockErr) throw blockErr;
+
+    const blockedIds = (blockRows ?? []).map((row: any) => row.blocked_id);
+
+    if (blockedIds.length === 0) return [];
+
+    const { data, error } = await supabase
+        .from(TABLES.PROFILES)
+        .select("user_id, display_name, major:majors(id, name), year, pp_url, photo_urls, bio")
+        .in("user_id", blockedIds);
+
+    if (error) throw error;
+
+    return (data ?? []).map((profile: any) => ({
+        ...profile,
+        major: Array.isArray(profile.major) ? (profile.major[0] ?? null) : (profile.major ?? null),
+    })) as BlockedUser[];
+}
+
+export async function unblockUser(blockedId: string): Promise<void> {
+    const blockerId = await grabCurr_UserId();
+
+    const { error } = await supabase
+        .from("user_blocks")
+        .delete()
+        .eq("blocker_id", blockerId)
+        .eq("blocked_id", blockedId);
+
+    if (error) throw error;
 }
