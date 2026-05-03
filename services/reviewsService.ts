@@ -128,63 +128,14 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) return [];
 
-<<<<<<< minorEdits
-    const { data, error } = await supabase
-        .from(TABLES.REVIEWS)
-        .select(
-            `
-      *,
-      enrollment:enrollment_id!inner (
-        *,npx
-        course_prof:course_prof_id (
-          course:course_id (code),
-          prof:prof_id (name)
-        )
-      )
-    `,
-        )
-        .eq("enrollment.user_id", userData.user.id);
-
-    if (error) return [];
-    return normalizeReviews(data ?? []);
-}
-
-// Will count all the reviews user writes and sum up their upvotes
-export async function getUserReviewScore(userId: string) {
-    const { data, error } = await supabase
-        .from("reviews")
-        .select(
-            `
-            id,
-            vote_score,
-            enrollment:enrollment_id!inner (
-                id,
-                user_id
-            )
-        `,
-        )
-        .eq("enrollment.user_id", userId);
-
-=======
     const { data, error } = await supabase.rpc(FUNCTIONS.GET_USER_REVIEWS, { p_user_id: userData.user.id });
->>>>>>> main
+    
     if (error) {
         console.error("Error, getUserReviews:", error);
         return [];
     }
 
-<<<<<<< minorEdits
-    // Only count reviews that actually belong to this user
-    const userReviews = (data as any[]).filter((r) => r.enrollment?.user_id === userId);
-
-    const reviewCount = userReviews.length;
-    const upvoteCount = userReviews.reduce((sum, review) => sum + (review.vote_score || 0), 0);
-    const totalPoints = reviewCount + upvoteCount;
-
-    return { reviewCount, upvoteCount, totalPoints };
-=======
     return normalizeReviews(data ?? []);
->>>>>>> main
 }
 
 export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
