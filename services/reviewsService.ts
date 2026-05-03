@@ -129,6 +129,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
     if (!userData?.user) return [];
 
     const { data, error } = await supabase.rpc(FUNCTIONS.GET_USER_REVIEWS, { p_user_id: userData.user.id });
+    
     if (error) {
         console.error("Error, getUserReviews:", error);
         return [];

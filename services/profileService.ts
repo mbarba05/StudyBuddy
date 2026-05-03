@@ -495,7 +495,9 @@ export async function matchMajor(limit = 50): Promise<MatchRow[]> {
         limit,
         offset: 0,
         minimumOverlap: 0,
-        left_swipe_cooldown: 24,
+        left_swipe_cooldown: 168, // left swipped users show back up after a week; at 24 hours, users would be swipping
+        // on the same users each 24 hours. With a 24-hour cooldown, left-swiped users come back after one day, so users may
+        // see the same people again plus new matches.
     });
 }
 
