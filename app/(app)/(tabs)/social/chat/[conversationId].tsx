@@ -16,7 +16,7 @@ import {
     MessageAttachmentTable,
     MessagesTable,
 } from "@/services/messageService";
-import { sendPushNotification } from "@/services/PushNotifications";
+import { sendMatchNotification } from "@/services/PushNotifications";
 import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
@@ -192,7 +192,7 @@ const ConversationScreen = () => {
                     if (!currentUserId) return;
 
                     if (newMsg.sender_id !== currentUserId) {
-                        await sendPushNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
+                        await sendMatchNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
                     }
 
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -251,7 +251,7 @@ const ConversationScreen = () => {
                     if (!currentUserId) return;
 
                     if (newAtt.sender_id !== currentUserId) {
-                        await sendPushNotification(currentUserId, `New message from ${dmName}: New Attachment`);
+                        await sendMatchNotification(currentUserId, `New message from ${dmName}: New Attachment`);
                     }
                 },
             )
@@ -443,73 +443,85 @@ const ConversationScreen = () => {
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </GestureDetector>
-        <Modal visible={menuOpen} transparent animationType="none" onRequestClose={() => setMenuOpen(false)}>
-            <Pressable style={{ flex: 1 }} onPress={() => setMenuOpen(false)}>
-                <View
-                    style={{
-                        position: "absolute",
-                        top: insets.top + 56,
-                        right: 8,
-                        backgroundColor: "#1a1a2e",
-                        borderColor: "#333",
-                        borderWidth: 1,
-                        borderRadius: 12,
-                        minWidth: 160,
-                        overflow: "hidden",
-                        shadowColor: "#000",
-                        shadowOpacity: 0.4,
-                        shadowRadius: 8,
-                        elevation: 10,
-                    }}
-                >
-                    {headerState && !headerState.is_blocked && (
-                        <TouchableOpacity
-                            onPress={() => {
-                                setMenuOpen(false);
-                                handleFriendAction();
-                            }}
-                            disabled={busy}
-                            activeOpacity={0.7}
-                            style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}
-                        >
-                            <Ionicons
-                                name={headerState.is_friend ? "person-remove" : "person-add"}
-                                size={18}
-                                color="white"
-                            />
-                            <Text style={{ color: "white", fontSize: 14 }}>
-                                {headerState.is_friend ? "Remove Friend" : "Add Friend"}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
+            <Modal visible={menuOpen} transparent animationType="none" onRequestClose={() => setMenuOpen(false)}>
+                <Pressable style={{ flex: 1 }} onPress={() => setMenuOpen(false)}>
+                    <View
+                        style={{
+                            position: "absolute",
+                            top: insets.top + 56,
+                            right: 8,
+                            backgroundColor: "#1a1a2e",
+                            borderColor: "#333",
+                            borderWidth: 1,
+                            borderRadius: 12,
+                            minWidth: 160,
+                            overflow: "hidden",
+                            shadowColor: "#000",
+                            shadowOpacity: 0.4,
+                            shadowRadius: 8,
+                            elevation: 10,
+                        }}
+                    >
+                        {headerState && !headerState.is_blocked && (
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setMenuOpen(false);
+                                    handleFriendAction();
+                                }}
+                                disabled={busy}
+                                activeOpacity={0.7}
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 12,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 12,
+                                }}
+                            >
+                                <Ionicons
+                                    name={headerState.is_friend ? "person-remove" : "person-add"}
+                                    size={18}
+                                    color="white"
+                                />
+                                <Text style={{ color: "white", fontSize: 14 }}>
+                                    {headerState.is_friend ? "Remove Friend" : "Add Friend"}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
-                    {headerState && !headerState.is_blocked && !headerState.blocked_me && (
-                        <View style={{ height: 1, backgroundColor: "#333" }} />
-                    )}
+                        {headerState && !headerState.is_blocked && !headerState.blocked_me && (
+                            <View style={{ height: 1, backgroundColor: "#333" }} />
+                        )}
 
-                    {headerState && !headerState.blocked_me && (
-                        <TouchableOpacity
-                            onPress={() => {
-                                setMenuOpen(false);
-                                handleBlockToggle();
-                            }}
-                            disabled={busy}
-                            activeOpacity={0.7}
-                            style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}
-                        >
-                            <Ionicons
-                                name={headerState.i_blocked ? "lock-open" : "ban"}
-                                size={18}
-                                color="#ff4444"
-                            />
-                            <Text style={{ color: "#ff4444", fontSize: 14 }}>
-                                {headerState.i_blocked ? "Unblock" : "Block"}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </Pressable>
-        </Modal>
+                        {headerState && !headerState.blocked_me && (
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setMenuOpen(false);
+                                    handleBlockToggle();
+                                }}
+                                disabled={busy}
+                                activeOpacity={0.7}
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 12,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 12,
+                                }}
+                            >
+                                <Ionicons
+                                    name={headerState.i_blocked ? "lock-open" : "ban"}
+                                    size={18}
+                                    color="#ff4444"
+                                />
+                                <Text style={{ color: "#ff4444", fontSize: 14 }}>
+                                    {headerState.i_blocked ? "Unblock" : "Block"}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </Pressable>
+            </Modal>
         </>
     );
 };

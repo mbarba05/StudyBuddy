@@ -3,26 +3,16 @@ import MatchMakingCard from "@/components/MatchMakingCard";
 import { LoadingScreen } from "@/components/ui/Loading";
 import {
     acceptFriendRequest,
-    FriendRequest,
     getIncomingFriendRequests,
+    PendingFriendRequest,
     rejectFriendRequest,
 } from "@/services/friendshipsService";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import Swiper from "react-native-deck-swiper";
 
-export type IncomingFriendRequest = FriendRequest & {
-    sender: {
-        user_id: string;
-        display_name: string;
-        pp_url: string | null;
-        year: string | null;
-        major: { name: string } | null;
-    };
-};
-
 export default function RequestsScreen() {
-    const [requests, setRequests] = useState<IncomingFriendRequest[]>([]);
+    const [requests, setRequests] = useState<PendingFriendRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasSwipedAll, setHasSwipedAll] = useState(false);
 
@@ -30,9 +20,10 @@ export default function RequestsScreen() {
         const loadRequests = async () => {
             try {
                 const data = await getIncomingFriendRequests();
-                setRequests(data as IncomingFriendRequest[]);
+                console.log("DATA: ", data);
+
+                setRequests(data);
                 setHasSwipedAll(false);
-                console.log("Incoming friend requests:", data);
             } catch (err) {
                 console.error("Error loading friend requests", err);
             } finally {
@@ -49,9 +40,7 @@ export default function RequestsScreen() {
             if (!req) return;
 
             try {
-                await acceptFriendRequest(req);
-                // remove this request from local state
-                //setRequests((prev) => prev.filter((_, i) => i !== cardIndex));
+                await acceptFriendRequest(req.id, req.sender_id, req.receiver_id);
             } catch (err) {
                 console.error("Error accepting friend request", err);
             }
@@ -102,16 +91,15 @@ export default function RequestsScreen() {
         <View className="flex-1 bg-colors-background ">
             <Swiper
                 cards={requests}
-                renderCard={(req: IncomingFriendRequest) => {
+                renderCard={(req: PendingFriendRequest) => {
                     if (!req) return null;
-                    const p = req.sender;
 
                     return (
                         <MatchMakingCard
-                            name={p.display_name}
-                            imageUrl={p.pp_url}
-                            major={p.major?.name ?? null}
-                            year={p.year ?? null}
+                            name={req.display_name}
+                            imageUrls={[req.pp_url ?? "", ...(req.photo_urls ?? [])]}
+                            major={req.major_name ?? null}
+                            year={req.year ?? null}
                         />
                     );
                 }}
