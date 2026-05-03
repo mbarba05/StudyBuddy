@@ -145,7 +145,7 @@ export async function getUserReviewScore(userId: string) {
         .select(
             `
             id,
-            likes,
+            vote_score,
             enrollment:enrollment_id!inner (
                 id,
                 user_id
@@ -163,7 +163,7 @@ export async function getUserReviewScore(userId: string) {
     const userReviews = (data as any[]).filter((r) => r.enrollment?.user_id === userId);
 
     const reviewCount = userReviews.length;
-    const upvoteCount = userReviews.reduce((sum, review) => sum + (review.likes || 0), 0);
+    const upvoteCount = userReviews.reduce((sum, review) => sum + (review.vote_score || 0), 0);
     const totalPoints = reviewCount + upvoteCount;
 
     return { reviewCount, upvoteCount, totalPoints };

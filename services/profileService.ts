@@ -114,7 +114,9 @@ export async function createProfile(input: CreateProfileInput): Promise<Profile>
     const { data, error } = await supabase
         .from(TABLES.PROFILES)
         .upsert(payload, { onConflict: "user_id" })
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`)
+        .select(
+            `user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`,
+        )
         .single();
 
     if (error) throw error;
@@ -281,7 +283,9 @@ export async function editProfile(updates: EditProfileInput): Promise<Profile | 
         .from(TABLES.PROFILES)
         .update(payload)
         .eq("user_id", user.id)
-        .select(`user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`)
+        .select(
+            `user_id, display_name, major:majors!profiles_major_id_fkey(id, name), year, pp_url, photo_urls, bio, is_admin`,
+        )
         .single();
 
     if (error) throw error;
@@ -465,7 +469,9 @@ export async function matchMajor(limit = 50): Promise<MatchRow[]> {
         limit,
         offset: 0,
         minimumOverlap: 0,
-        left_swipe_cooldown: 24,
+        left_swipe_cooldown: 168, // left swipped users show back up after a week; if it stays at 24 hours, users would be swipping
+        // on the same users each 24 hours. With a 24-hour cooldown, left-swiped users come back after one day, so users may
+        // see the same people again plus new matches.
     });
 }
 
