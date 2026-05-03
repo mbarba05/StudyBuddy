@@ -468,10 +468,14 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                 }}
             >
                 <View className="flex-1 justify-center items-center bg-black/50 px-6">
-                    <View className="w-full rounded-2xl bg-colors-secondary p-4 border border-colors-text">
+                    <View
+                        testID="report-modal"
+                        className="w-full rounded-2xl bg-colors-secondary p-4 border border-colors-text"
+                    >
                         <Text className="color-colors-text text-xl font-semibold mb-2">Report Review</Text>
                         <Text className="color-colors-textSecondary mb-3">Why are you reporting?</Text>
                         <TextInput
+                            testID="report-reason"
                             value={reportReason}
                             onChangeText={setReportReason}
                             placeholder="Write your reason here..."
@@ -490,6 +494,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
                                 <Text className="color-colors-text">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
+                                testID="submit-report-button"
                                 onPress={handleReport}
                                 disabled={reporting || !reportReason.trim()}
                                 className="bg-red-500 px-4 py-2 rounded-md"

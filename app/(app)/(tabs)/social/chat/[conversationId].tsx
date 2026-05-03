@@ -5,9 +5,11 @@ import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
 import supabase from "@/lib/supabase";
 import { formatPrettyDate } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
+import { blockUser, unblockUser } from "@/services/blockingService";
 import { removeFriend, sendFriendRequest } from "@/services/friendshipsService";
 import {
     Chat,
+    ChatHeaderState,
     getChatHeaderState,
     getMessagesForConv,
     LoadedAttachment,
@@ -15,13 +17,13 @@ import {
     MessagesTable,
 } from "@/services/messageService";
 import { sendPushNotification } from "@/services/PushNotifications";
+import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,7 +44,7 @@ const ConversationScreen = () => {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [countLeft, setCountLeft] = useState(0);
-    const [headerState, setHeaderState] = useState<any>(null);
+    const [headerState, setHeaderState] = useState<ChatHeaderState | null>(null);
     const [busy, setBusy] = useState(false);
 
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
@@ -107,6 +109,7 @@ const ConversationScreen = () => {
                 try {
                     setLoading(true);
                     const chat = await getMessagesForConv(conversationId, 0);
+
                     if (mounted) {
                         const count = chat && chat.length > 0 ? chat[0].count : 0;
                         if (count > CHAT_PAGE_SIZE) setCountLeft(count - CHAT_PAGE_SIZE);
@@ -274,8 +277,13 @@ const ConversationScreen = () => {
         setLoadingMore(false);
     };
 
+    const refreshHeaderState = async () => {
+        const refreshed = await getChatHeaderState(conversationId);
+        setHeaderState(refreshed);
+    };
+
     const handleFriendAction = async () => {
-        if (!headerState || busy) return;
+        if (!headerState || busy || headerState.any_block) return;
 
         try {
             setBusy(true);
@@ -286,10 +294,29 @@ const ConversationScreen = () => {
                 await sendFriendRequest(headerState.other_user_id);
             }
 
-            const refreshed = await getChatHeaderState(conversationId);
-            setHeaderState(refreshed);
+            await refreshHeaderState();
         } catch (err) {
             console.error("handleFriendAction:", err);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleBlockToggle = async () => {
+        if (!headerState || busy || headerState.blocked_me) return;
+
+        try {
+            setBusy(true);
+
+            if (headerState.i_blocked) {
+                await unblockUser(headerState.other_user_id);
+            } else {
+                await blockUser(headerState.other_user_id);
+            }
+
+            await refreshHeaderState();
+        } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to update block status");
         } finally {
             setBusy(false);
         }
@@ -348,27 +375,51 @@ const ConversationScreen = () => {
                 </Text>
             </View>
 
-            {headerState && (
-                <TouchableOpacity
-                    onPress={handleFriendAction}
-                    disabled={busy}
-                    activeOpacity={0.8}
-                    className="bg-[#0A2F6B] border border-[#0E57C8] rounded-full px-4 py-2 ml-2"
-                >
-                    <View className="flex-row items-center gap-1">
-                        <Text className="text-white text-[14px] font-semibold">
-                            {headerState.is_friend ? "Remove Friend" : "Add Friend"}
-                        </Text>
-                        <Ionicons
-                            name={headerState.is_friend ? "person-remove" : "person-add"}
-                            size={18}
-                            color="white"
-                        />
-                    </View>
-                </TouchableOpacity>
-            )}
+            <View className="flex-row items-center gap-2 ml-2">
+                {headerState && !headerState.is_blocked && (
+                    <TouchableOpacity
+                        onPress={handleFriendAction}
+                        disabled={busy}
+                        activeOpacity={0.8}
+                        className="bg-[#0A2F6B] border border-[#0E57C8] rounded-full px-4 py-2"
+                    >
+                        <View className="flex-row items-center gap-1">
+                            <Text className="text-white text-[14px] font-semibold">
+                                {headerState.is_friend ? "Remove Friend" : "Add Friend"}
+                            </Text>
+                            <Ionicons
+                                name={headerState.is_friend ? "person-remove" : "person-add"}
+                                size={18}
+                                color="white"
+                            />
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+                {headerState && !headerState.blocked_me && (
+                    <TouchableOpacity
+                        onPress={handleBlockToggle}
+                        disabled={busy}
+                        activeOpacity={0.8}
+                        className="bg-[#3A1111] border border-[#A22] rounded-full px-4 py-2"
+                    >
+                        <View className="flex-row items-center gap-1">
+                            <Text className="text-white text-[14px] font-semibold">
+                                {headerState.i_blocked ? "Unblock" : "Block"}
+                            </Text>
+                            <Ionicons
+                                name={headerState.i_blocked ? "lock-open" : "ban"}
+                                size={18}
+                                color="white"
+                            />
+                        </View>
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
     );
+
+    const canMessage = headerState?.is_blocked ? false : (headerState?.is_friend ?? true);
 
     return (
         <>
@@ -386,7 +437,7 @@ const ConversationScreen = () => {
                         behavior={Platform.OS === "ios" ? "padding" : undefined}
                         keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
                     >
-                        {loadingMore && <ActivityIndicator className="mt-4" />}
+                        {(loading || loadingMore) && <ActivityIndicator className="mt-4" />}
                         <FlatList
                             ref={messagesListRef}
                             testID="chats"
@@ -403,7 +454,19 @@ const ConversationScreen = () => {
                             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
                             inverted
                         />
-                        <SendTextInput convId={conversationId} canMessage={headerState?.is_friend ?? true} />
+                        {headerState?.blocked_me && (
+                            <View className="px-4 py-2">
+                                <Text className="text-center text-colors-textSecondary">Messaging unavailable.</Text>
+                            </View>
+                        )}
+                        {headerState?.i_blocked && (
+                            <View className="px-4 py-2">
+                                <Text className="text-center text-colors-textSecondary">
+                                    You blocked this user. Unblock them to message again.
+                                </Text>
+                            </View>
+                        )}
+                        <SendTextInput convId={conversationId} canMessage={canMessage} />
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </GestureDetector>
