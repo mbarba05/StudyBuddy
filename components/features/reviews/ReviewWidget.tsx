@@ -13,7 +13,6 @@ import { ActivityIndicator, Alert, Modal, Text, TextInput, TouchableOpacity, Vie
 
 interface ReviewWidgetProps {
     review: ReviewDisplay;
-    onVoted?: () => Promise<void> | void;
 }
 
 function fmtDate(iso: string) {
@@ -53,7 +52,8 @@ function buildThread(rows: CommentWithVotes[]): ThreadNode[] {
     return roots;
 }
 
-const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
+const ReviewWidget = ({ review }: ReviewWidgetProps) => {
+    console.log("REVI IN EIDGET: ", review);
     const reviewIdForVotes = review.reviewId;
     const reviewIdForComments = typeof reviewIdForVotes === "number" ? reviewIdForVotes : Number(reviewIdForVotes);
     const hasNumericReviewId = Number.isFinite(reviewIdForComments);
@@ -92,28 +92,18 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
 
     const threadedComments = useMemo(() => buildThread(comments), [comments]);
 
-    const handleVote = async (direction: 1 | -1) => {
+    const handleVote = async (vote: 1 | 0 | -1) => {
         if (busy) return;
         setBusy(true);
 
-        try {
-            const res = await voteOnReview(reviewIdForVotes, direction);
+        const effectiveVote = myVote === vote ? 0 : vote;
 
-            if ((res as any)?.deleted) {
-                await onVoted?.();
-                return;
-            }
+        try {
+            const res = await voteOnReview(reviewIdForVotes, effectiveVote);
 
             if (res) {
-                if (typeof (res as any).vote_score === "number") {
-                    setVoteScore((res as any).vote_score);
-                    setMyVote(((res as any).my_vote ?? 0) as -1 | 0 | 1);
-                } else if (typeof (res as any).upvotes === "number" && typeof (res as any).downvotes === "number") {
-                    setVoteScore((res as any).upvotes - (res as any).downvotes);
-                } else if (typeof (res as any).voteScore === "number") {
-                    setVoteScore((res as any).voteScore);
-                    setMyVote(((res as any).myVote ?? 0) as -1 | 0 | 1);
-                }
+                setVoteScore((prev) => prev - myVote + effectiveVote);
+                setMyVote(effectiveVote);
             }
         } catch (e) {
             console.log("Vote error:", e);
@@ -121,7 +111,6 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
             setBusy(false);
         }
     };
-
     const handleReport = async () => {
         if (!hasNumericReviewId) {
             Alert.alert("Error", "This review cannot be reported.");
@@ -231,14 +220,14 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
         return { voteScore: res.vote_score, myVote: res.my_vote };
     };
 
-    const handleCommentVote = async (commentId: number, direction: 1 | -1) => {
+    const handleCommentVote = async (commentId: number, vote: 1 | -1) => {
         if (commentVotingId) return;
 
         const target = comments.find((c) => c.id === commentId);
         const prevMyVote = (target?.myVote ?? 0) as -1 | 0 | 1;
         const prevScore = target?.voteScore ?? 0;
 
-        const nextMyVote: -1 | 0 | 1 = prevMyVote === direction ? 0 : direction;
+        const nextMyVote: -1 | 0 | 1 = prevMyVote === vote ? 0 : vote;
         const nextScore = prevScore + (nextMyVote - prevMyVote);
 
         setComments((cs) =>
@@ -247,7 +236,7 @@ const ReviewWidget = ({ review, onVoted }: ReviewWidgetProps) => {
 
         setCommentVotingId(commentId);
         try {
-            const raw = (await voteOnReviewComment(commentId, direction)) as VoteResultMaybe;
+            const raw = (await voteOnReviewComment(commentId, vote)) as VoteResultMaybe;
 
             const res = normalizeVoteResult(raw);
 

@@ -37,7 +37,7 @@ export interface ReviewDisplay {
 const normalizeReview = (item: any): ReviewDisplay => {
     const d = new Date(item.created_at);
     const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
-
+    console.log("VOTESCORE: ", item);
     return {
         reviewId: item.id,
         reviewText: item.review,
@@ -69,7 +69,6 @@ export async function submitReview(fullReview: ReviewInput) {
             review: fullReview.review,
             course_diff: fullReview.courseDiff,
             prof_rating: fullReview.profRating,
-            likes: 0,
             grade: fullReview.grade,
         })
         .select()
@@ -79,16 +78,24 @@ export async function submitReview(fullReview: ReviewInput) {
     return data;
 }
 
-export async function voteOnReview(reviewId: number, direction: 1 | -1) {
-    const { data, error } = await supabase.rpc("vote_on_review", {
+export async function voteOnReview(reviewId: number, vote: 1 | 0 | -1): Promise<boolean> {
+    const user = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase.rpc(FUNCTIONS.VOTE_ON_REVIEW, {
         p_review_id: reviewId,
-        p_direction: direction,
+        p_user_id: user.data.user?.id,
+        p_vote: vote,
     });
 
-    if (error) throw error;
+    if (error) {
+        console.error("Error: voteOnReview: ", error);
+        return false;
+    }
 
-    const row = Array.isArray(data) ? data[0] : null;
-    return row as { vote_score: number; deleted: boolean; my_vote: number } | null;
+    const success = { data }.data;
+
+    return success;
 }
 
 // being able to report a review and using upsert to let users edit their reviews if they try to report the same review
@@ -126,6 +133,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
         console.error("Error, getUserReviews:", error);
         return [];
     }
+
     return normalizeReviews(data ?? []);
 }
 
@@ -142,6 +150,8 @@ export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]
         console.error("Error: getReviewsForProf: ", error);
         return [];
     }
+
+    console.log("REVS: ", data);
 
     return normalizeReviews(data ?? []);
 };

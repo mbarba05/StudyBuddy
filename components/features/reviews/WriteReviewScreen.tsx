@@ -87,7 +87,7 @@ const YourReviewsScreen = () => {
                     {reviews && reviews.length !== 0 ? (
                         reviews.map((r) => (
                             <View key={r.reviewId}>
-                                <ReviewWidget review={r} onVoted={getData} />
+                                <ReviewWidget review={r} />
                             </View>
                         ))
                     ) : (

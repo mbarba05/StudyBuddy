@@ -1,4 +1,4 @@
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 
 export type UserBlock = {
     id: number;
@@ -39,7 +39,7 @@ export async function blockUser(blockedUserId: string): Promise<UserBlock> {
                 blocker_id: currentUserId,
                 blocked_id: blockedUserId,
             },
-            { onConflict: "blocker_id,blocked_id" }
+            { onConflict: "blocker_id,blocked_id" },
         )
         .select()
         .single();
@@ -67,7 +67,7 @@ export async function getBlockStatus(targetUserId: string): Promise<BlockStatus>
         .from("user_blocks")
         .select("blocker_id, blocked_id")
         .or(
-            `and(blocker_id.eq.${currentUserId},blocked_id.eq.${targetUserId}),and(blocker_id.eq.${targetUserId},blocked_id.eq.${currentUserId})`
+            `and(blocker_id.eq.${currentUserId},blocked_id.eq.${targetUserId}),and(blocker_id.eq.${targetUserId},blocked_id.eq.${currentUserId})`,
         );
 
     if (error) throw error;
@@ -109,6 +109,6 @@ export async function getAllBlockedRelationUserIds(): Promise<string[]> {
         new Set([
             ...(blockedByMe ?? []).map((r: any) => r.blocked_id),
             ...(blockedMe ?? []).map((r: any) => r.blocker_id),
-        ])
+        ]),
     );
 }

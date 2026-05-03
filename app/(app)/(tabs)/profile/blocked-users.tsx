@@ -1,20 +1,9 @@
 import { colors } from "@/assets/colors";
 import { LoadingScreen } from "@/components/ui/Loading";
-import {
-    BlockedUser,
-    getBlockedUsers,
-    unblockUser,
-} from "@/services/profileService";
+import { BlockedUser, getBlockedUsers, unblockUser } from "@/services/profileService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import {
-    Alert,
-    FlatList,
-    Image,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 
 export default function BlockedUsersScreen() {
     const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
@@ -43,9 +32,7 @@ export default function BlockedUsersScreen() {
                 onPress: async () => {
                     try {
                         await unblockUser(id);
-                        setBlockedUsers((prev) =>
-                            prev.filter((u) => u.user_id !== id)
-                        );
+                        setBlockedUsers((prev) => prev.filter((u) => u.user_id !== id));
                     } catch (error) {
                         console.error(error);
                     }
@@ -58,21 +45,8 @@ export default function BlockedUsersScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
-            <Text
-                style={{
-                    color: colors.text,
-                    fontSize: 24,
-                    fontWeight: "700",
-                    marginBottom: 20,
-                }}
-            >
-                Blocked Users
-            </Text>
-
             {blockedUsers.length === 0 ? (
-                <Text style={{ color: colors.textSecondary }}>
-                    No blocked users.
-                </Text>
+                <Text style={{ color: colors.textSecondary }}>No blocked users.</Text>
             ) : (
                 <FlatList
                     data={blockedUsers}
@@ -121,9 +95,7 @@ export default function BlockedUsersScreen() {
                             </View>
 
                             <TouchableOpacity
-                                onPress={() =>
-                                    handleUnblock(item.user_id, item.display_name)
-                                }
+                                onPress={() => handleUnblock(item.user_id, item.display_name)}
                                 style={{
                                     backgroundColor: colors.primary,
                                     paddingHorizontal: 12,

@@ -23,7 +23,18 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -46,7 +57,7 @@ const ConversationScreen = () => {
     const [countLeft, setCountLeft] = useState(0);
     const [headerState, setHeaderState] = useState<ChatHeaderState | null>(null);
     const [busy, setBusy] = useState(false);
-
+    const [menuOpen, setMenuOpen] = useState(false);
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
     const [order, setOrder] = useState<string[]>([]);
     const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
@@ -283,7 +294,7 @@ const ConversationScreen = () => {
     };
 
     const handleFriendAction = async () => {
-        if (!headerState || busy || headerState.any_block) return;
+        if (!headerState || busy || headerState.is_blocked) return;
 
         try {
             setBusy(true);
@@ -357,7 +368,7 @@ const ConversationScreen = () => {
 
     const header = () => (
         <View className="flex flex-row items-center justify-between w-full pr-2">
-            <View className="flex flex-row items-center gap-2 flex-1">
+            <View className="flex flex-row items-center self-center gap-2 flex-1">
                 <Image
                     contentFit="cover"
                     source={{ uri: ppPic as string }}
@@ -375,47 +386,9 @@ const ConversationScreen = () => {
                 </Text>
             </View>
 
-            <View className="flex-row items-center gap-2 ml-2">
-                {headerState && !headerState.is_blocked && (
-                    <TouchableOpacity
-                        onPress={handleFriendAction}
-                        disabled={busy}
-                        activeOpacity={0.8}
-                        className="bg-[#0A2F6B] border border-[#0E57C8] rounded-full px-4 py-2"
-                    >
-                        <View className="flex-row items-center gap-1">
-                            <Text className="text-white text-[14px] font-semibold">
-                                {headerState.is_friend ? "Remove Friend" : "Add Friend"}
-                            </Text>
-                            <Ionicons
-                                name={headerState.is_friend ? "person-remove" : "person-add"}
-                                size={18}
-                                color="white"
-                            />
-                        </View>
-                    </TouchableOpacity>
-                )}
-
-                {headerState && !headerState.blocked_me && (
-                    <TouchableOpacity
-                        onPress={handleBlockToggle}
-                        disabled={busy}
-                        activeOpacity={0.8}
-                        className="bg-[#3A1111] border border-[#A22] rounded-full px-4 py-2"
-                    >
-                        <View className="flex-row items-center gap-1">
-                            <Text className="text-white text-[14px] font-semibold">
-                                {headerState.i_blocked ? "Unblock" : "Block"}
-                            </Text>
-                            <Ionicons
-                                name={headerState.i_blocked ? "lock-open" : "ban"}
-                                size={18}
-                                color="white"
-                            />
-                        </View>
-                    </TouchableOpacity>
-                )}
-            </View>
+            <TouchableOpacity onPress={() => setMenuOpen((prev) => !prev)} activeOpacity={0.8} className="p-2">
+                <Ionicons name="ellipsis-vertical" size={22} color="white" />
+            </TouchableOpacity>
         </View>
     );
 
@@ -470,9 +443,75 @@ const ConversationScreen = () => {
                     </KeyboardAvoidingView>
                 </SafeAreaView>
             </GestureDetector>
+        <Modal visible={menuOpen} transparent animationType="none" onRequestClose={() => setMenuOpen(false)}>
+            <Pressable style={{ flex: 1 }} onPress={() => setMenuOpen(false)}>
+                <View
+                    style={{
+                        position: "absolute",
+                        top: insets.top + 56,
+                        right: 8,
+                        backgroundColor: "#1a1a2e",
+                        borderColor: "#333",
+                        borderWidth: 1,
+                        borderRadius: 12,
+                        minWidth: 160,
+                        overflow: "hidden",
+                        shadowColor: "#000",
+                        shadowOpacity: 0.4,
+                        shadowRadius: 8,
+                        elevation: 10,
+                    }}
+                >
+                    {headerState && !headerState.is_blocked && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setMenuOpen(false);
+                                handleFriendAction();
+                            }}
+                            disabled={busy}
+                            activeOpacity={0.7}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}
+                        >
+                            <Ionicons
+                                name={headerState.is_friend ? "person-remove" : "person-add"}
+                                size={18}
+                                color="white"
+                            />
+                            <Text style={{ color: "white", fontSize: 14 }}>
+                                {headerState.is_friend ? "Remove Friend" : "Add Friend"}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {headerState && !headerState.is_blocked && !headerState.blocked_me && (
+                        <View style={{ height: 1, backgroundColor: "#333" }} />
+                    )}
+
+                    {headerState && !headerState.blocked_me && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setMenuOpen(false);
+                                handleBlockToggle();
+                            }}
+                            disabled={busy}
+                            activeOpacity={0.7}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}
+                        >
+                            <Ionicons
+                                name={headerState.i_blocked ? "lock-open" : "ban"}
+                                size={18}
+                                color="#ff4444"
+                            />
+                            <Text style={{ color: "#ff4444", fontSize: 14 }}>
+                                {headerState.i_blocked ? "Unblock" : "Block"}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </Pressable>
+        </Modal>
         </>
     );
 };
 
 export default ConversationScreen;
-

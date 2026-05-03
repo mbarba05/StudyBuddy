@@ -25,6 +25,7 @@ const ReportCard = ({ report, onRemove }: ReportCardProps) => {
         reviewDate: report.reviewDate,
         likes: 0,
         voteScore: 0,
+        myVote: 0 as const,
     };
 
     const handleDelete = () => {

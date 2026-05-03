@@ -143,7 +143,7 @@ const ViewProfile = () => {
 
     const displayName = profile?.display_name ?? fallbackDisplayName;
     const ppUrl = profile?.pp_url ?? fallbackPpUrl;
-    const majorName = typeof profile?.major === "object" ? profile.major?.name ?? "" : fallbackMajor;
+    const majorName = typeof profile?.major === "object" ? (profile.major?.name ?? "") : fallbackMajor;
     const year = profile?.year ?? fallbackYear;
 
     return (
@@ -161,8 +161,13 @@ const ViewProfile = () => {
                 {profileUnavailable ? (
                     <Text className="text-center text-colors-textSecondary text-lg">This profile is unavailable.</Text>
                 ) : (
-                    <MatchMakingCard name={display_name} major={major} year={year} bio={bio} imageUrls={[pp_url, ...photoUrls].filter(Boolean)} />
-
+                    <MatchMakingCard
+                        name={displayName}
+                        major={majorName}
+                        year={year}
+                        bio={bio}
+                        imageUrls={[ppUrl, ...photoUrls].filter(Boolean)}
+                    />
                 )}
             </View>
         </>

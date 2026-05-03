@@ -1,8 +1,8 @@
 import { colors } from "@/assets/colors";
 import { BlueButton } from "@/components/ui/Buttons";
 import { ReviewInput } from "@/components/ui/TextInputs";
-import { gradeOptions } from "@/lib/enumFrontend";
 import { containsBadWords } from "@/lib/badWords";
+import { gradeOptions } from "@/lib/enumFrontend";
 import { ReviewableEnrollment } from "@/services/enrollmentService";
 import { submitReview } from "@/services/reviewsService";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +11,6 @@ import { ActivityIndicator, Modal, StyleSheet, Text, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import StarRating from "react-native-star-rating-widget";
 import { DifficultyIcon, ProfessorQualityIcon } from "./RatingIcons";
-
 
 interface WriteReviewModalProps {
     visible: boolean;
@@ -44,7 +43,7 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
             return false;
         }
 
-    return true;
+        return true;
     };
 
     const handleSubmitReview = async () => {
@@ -86,8 +85,6 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
         setVisible(false);
         setGrade("");
     };
-
-    console.log("Selected Enrollment in Modal:", selectedEnrollment);
 
     if (!selectedEnrollment) return null;
 
