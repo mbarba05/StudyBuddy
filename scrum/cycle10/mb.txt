@@ -1,0 +1,27 @@
+4/28/26:
+This scrum cycle focused on redesigning the app’s branding and homepage. I updated the project by adding a new StudyBuddy logo
+and using it as the main logo shown on the Home screen. I also redesigned the homepage so it looks more polished and closer to 
+the layout we wanted. Instead of the older basic layout, the new version has a centered logo, updated title and subtitle text, 
+a highlighted hero section, and four main action cards for Reviews, Matchmaking, Messages, and Profile. I also updated the bottom 
+tab layout so it has better visible labels and improved active and inactive tab colors.
+
+4/29/26:
+While working on this feature, I ran into some issues with the logo asset and the overall layout styling. At first, the logo image 
+still showed a white or checkered square behind it because the image file was not being used correctly as a transparent asset. I fixed 
+that by replacing the homepage logo file with a properly trimmed transparent PNG and keeping the image reference consistent in the project. 
+I also adjusted the homepage styling multiple times so the spacing, card sizes, colors, and text hierarchy for a better design. On the tab 
+bar side, I updated the tabs layout so the labels appeared correctly and the selected tab used the red accent color instead of keeping every 
+tab the same.
+
+Test Cases:
+Making sure the homepage logo renders at the top of the screen. Making sure the StudyBuddy subtitle appears correctly below the logo. Making 
+sure the homepage hero section renders with the updated text. Making sure the Reviews card renders correctly. Making sure the Matchmaking card 
+renders correctly. Making sure the Messages card renders correctly. Making sure the Profile card renders correctly. Making sure the bottom tab 
+layout shows the five tabs with the updated labels. Making sure the tab bar displays labels instead of hiding them. Making sure the tab bar uses 
+the updated active and inactive colors.
+
+4/30/26:
+The homepage and branding redesign are now implemented and tested. The new StudyBuddy logo is displayed on the homepage, the new homepage layout 
+is in place, and the bottom tab bar now matches the redesigned style much better. The final version keeps the four main homepage action cards and 
+removes extra sections that were not part of this cycle. Both manual and automated tests confirmed that the updated homepage and tabs render 
+correctly and fit into the rest of the app without breaking navigation.

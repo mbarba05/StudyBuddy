@@ -12,7 +12,8 @@
             "supportsTablet": true,
             "bundleIdentifier": "com.nickd4vis.studdybuddy",
             "infoPlist": {
-                "NSPhotoLibraryAddUsageDescription": "Allow this app to save photos."
+                "NSPhotoLibraryAddUsageDescription": "Allow this app to save photos.",
+                "ITSAppUsesNonExemptEncryption": false
             }
         },
         "android": {
@@ -29,6 +30,7 @@
             "favicon": "./assets/images/favicon.png"
         },
         "plugins": [
+            "expo-notifications",
             "expo-image-picker",
             {
                 "photosPermission": "Allow access to photos to upload images."

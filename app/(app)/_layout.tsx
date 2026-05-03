@@ -1,5 +1,5 @@
 // app/(app)/_layout.tsx
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { useProfileGate } from "@/services/ProfileProvider";
 import { Redirect, Stack, usePathname } from "expo-router";

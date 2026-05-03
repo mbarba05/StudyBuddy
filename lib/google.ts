@@ -3,7 +3,7 @@ import { createSessionFromUrl } from "@/services/auth/authRedirect";
 import { makeRedirectUri } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { Alert } from "react-native";
-import supabase from "./subapase";
+import supabase from "./supabase";
 
 WebBrowser.maybeCompleteAuthSession();
 

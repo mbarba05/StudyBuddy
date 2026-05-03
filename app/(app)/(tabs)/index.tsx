@@ -1,123 +1,163 @@
-/*import { SafeAreaView } from "react-native-safe-area-context";
-
-export default function HomeScreen() {
-    return (
-        <SafeAreaView
-            className="flex-1 bg-colors-background"
-            edges={["top", "left", "right"]}
-        ></SafeAreaView>
-    );
-}
-    */
 import { colors } from "@/assets/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+type HomeCardProps = {
+    title: string;
+    description: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    href: "/(tabs)/reviews" | "/(tabs)/matchmaking" | "/(tabs)/social" | "/(tabs)/profile";
+    iconBackgroundColor: string;
+};
+
+function HomeCard({ title, description, icon, href, iconBackgroundColor }: HomeCardProps) {
+    return (
+        <Link href={href} asChild>
+            <TouchableOpacity
+                activeOpacity={0.85}
+                className="rounded-[28px] px-5 py-5 mb-5 border"
+                style={{
+                    backgroundColor: "#013c8f",
+                    borderColor: "#1f63c7",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.18,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 4,
+                }}
+            >
+                <View className="flex-row items-center">
+                    <View
+                        className="w-16 h-16 rounded-2xl items-center justify-center"
+                        style={{ backgroundColor: iconBackgroundColor }}
+                    >
+                        <Ionicons name={icon} size={30} color={colors.text} />
+                    </View>
+
+                    <View
+                        className="mx-4"
+                        style={{
+                            width: 1,
+                            height: 54,
+                            backgroundColor: "#2c72dc",
+                        }}
+                    />
+
+                    <View className="flex-1 pr-4">
+                        <Text className="text-[22px] font-bold" style={{ color: colors.text }}>
+                            {title}
+                        </Text>
+                        <Text className="text-base mt-1" style={{ color: "#c7d2e5" }}>
+                            {description}
+                        </Text>
+                    </View>
+
+                    <Ionicons name="chevron-forward" size={28} color={colors.text} />
+                </View>
+            </TouchableOpacity>
+        </Link>
+    );
+}
 
 export default function HomeScreen() {
     return (
-        <SafeAreaView className="flex-1 bg-colors-background" edges={["top", "left", "right"]}>
-            <View className="flex-1 px-6 py-6">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }} edges={["top", "left", "right"]}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingHorizontal: 16,
+                    paddingTop: 18,
+                    paddingBottom: 28,
+                }}
+            >
                 {/* Header */}
-                <View className="mb-8">
-                    <Text className="text-3xl font-bold mb-2" style={{ color: colors.text }}>
-                        Welcome to StudyBuddy
+                <View className="items-center mb-8">
+                    <Image
+                        testID="home-logo"
+                        source={require("@/assets/images/studybuddy-logo.png")}
+                        style={{
+                            width: 145,
+                            height: 145,
+                            marginBottom: 6,
+                        }}
+                        resizeMode="contain"
+                    />
+
+                    <Text className="text-[44px] font-bold leading-[48px]" style={{ color: colors.text }}>
+                        Study
+                        <Text style={{ color: colors.primary }}>Buddy</Text>
                     </Text>
-                    <Text className="text-base" style={{ color: colors.text, opacity: 0.7 }}>
-                        Connect with classmates, rate your classes, and keep up with friends.
+
+                    <Text
+                        className="text-xl mt-2 text-center px-6"
+                        style={{ color: "#b9c4d8" }}
+                    >
+                        Study together. Achieve more.
                     </Text>
                 </View>
 
-                {/* Highlight card */}
+                {/* Top hero card */}
                 <View
-                    className="rounded-3xl p-5 mb-8 border border-colors-text"
-                    style={{ backgroundColor: colors.secondary }}
+                    className="rounded-[28px] p-6 mb-6 border"
+                    style={{
+                        backgroundColor: "#013c8f",
+                        borderColor: "#1f63c7",
+                        shadowColor: "#000",
+                        shadowOpacity: 0.18,
+                        shadowRadius: 8,
+                        shadowOffset: { width: 0, height: 4 },
+                        elevation: 4,
+                    }}
                 >
-                    <Text className="text-lg font-semibold mb-1" style={{ color: colors.text }}>
+                    <Text className="text-[24px] font-bold mb-2" style={{ color: colors.text }}>
                         Ready to study smarter?
                     </Text>
-                    <Text className="text-sm" style={{ color: colors.text, opacity: 0.8 }}>
+                    <Text className="text-base" style={{ color: "#c7d2e5" }}>
                         Jump into reviews, find new study partners, or check in with your friends.
                     </Text>
                 </View>
 
-                {/* Actions */}
-                <View className="gap-4">
-                    {/* Leave Reviews */}
-                    <Link href="/(tabs)/reviews" asChild>
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between py-3 px-4 rounded-2xl border border-colors-text"
-                            style={{ backgroundColor: colors.secondary }}
-                        >
-                            <View>
-                                <Text className="text-lg font-semibold " style={{ color: colors.text }}>
-                                    Leave Reviews
-                                </Text>
-                                <Text className="text-xs mt-1" style={{ color: colors.text, opacity: 0.8 }}>
-                                    Share your thoughts on professors and classes.
-                                </Text>
-                            </View>
-                            <Ionicons name="pencil" size={24} color={colors.text} />
-                        </TouchableOpacity>
-                    </Link>
+                {/* Cards */}
+                <HomeCard
+                    title="Reviews"
+                    description="Rate and review your study sessions"
+                    icon="star"
+                    href="/(tabs)/reviews"
+                    iconBackgroundColor={colors.secondary}
+                />
 
-                    {/* Match with Students */}
-                    <Link href="/(tabs)/matchmaking" asChild>
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between py-3 px-4 rounded-2xl border border-colors-text"
-                            style={{ backgroundColor: colors.secondary }}
-                        >
-                            <View>
-                                <Text className="text-lg font-semibold" style={{ color: colors.text }}>
-                                    Match with Students
-                                </Text>
-                                <Text className="text-xs mt-1" style={{ color: colors.text, opacity: 0.8 }}>
-                                    Find classmates with similar schedules and majors.
-                                </Text>
-                            </View>
-                            <Ionicons name="heart" size={24} color={colors.text} />
-                        </TouchableOpacity>
-                    </Link>
+                <HomeCard
+                    title="Matchmaking"
+                    description="Find the perfect study buddy for you"
+                    icon="heart"
+                    href="/(tabs)/matchmaking"
+                    iconBackgroundColor={colors.primary}
+                />
 
-                    {/* Chat with Friends */}
-                    <Link href="/(tabs)/social" asChild>
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between py-3 px-4 rounded-2xl border border-colors-text"
-                            style={{ backgroundColor: colors.secondary }}
-                        >
-                            <View>
-                                <Text className="text-lg font-semibold" style={{ color: colors.text }}>
-                                    Chat with Friends
-                                </Text>
-                                <Text className="text-xs mt-1" style={{ color: colors.text, opacity: 0.8 }}>
-                                    Keep in touch with your study group.
-                                </Text>
-                            </View>
-                            <Ionicons name="chatbox" size={24} color={colors.text} />
-                        </TouchableOpacity>
-                    </Link>
+                <HomeCard
+                    title="Messages"
+                    description="Chat with your study buddies"
+                    icon="chatbubble"
+                    href="/(tabs)/social"
+                    iconBackgroundColor={colors.secondary}
+                />
 
-                    {/* Edit Profile */}
-                    <Link href="/(tabs)/profile" asChild>
-                        <TouchableOpacity
-                            className="flex-row items-center justify-between py-3 px-4 rounded-2xl border border-colors-text"
-                            style={{ backgroundColor: colors.secondary }}
-                        >
-                            <View>
-                                <Text className="text-lg font-semibold" style={{ color: colors.text }}>
-                                    Edit Profile
-                                </Text>
-                                <Text className="text-xs mt-1" style={{ color: colors.text, opacity: 0.8 }}>
-                                    Update your major, classes, and preferences.
-                                </Text>
-                            </View>
-                            <Ionicons name="person-circle" size={26} color={colors.text} />
-                        </TouchableOpacity>
-                    </Link>
+                <HomeCard
+                    title="Profile"
+                    description="View and manage your profile"
+                    icon="person"
+                    href="/(tabs)/profile"
+                    iconBackgroundColor={colors.primary}
+                />
+
+                {/* Study streak */}
+                <View
+                >
                 </View>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }

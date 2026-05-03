@@ -1,0 +1,4 @@
+﻿Scrum Cycle 5
+
+
+For cycle 5, I focused on implementing push notifications for the newly added chat feature. After the chat system was completed, I integrated real‑time notifications so that when User A sends a message, User B immediately receives a push alert (and vice versa). This ensures users are aware of new messages from their friends without needing to open the app. The feature is now functioning and enhances overall communication responsiveness.

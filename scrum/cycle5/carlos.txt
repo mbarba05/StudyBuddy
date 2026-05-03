@@ -1,0 +1,9 @@
+2/10/2026: For this scrum cycle I will be working on creating replies to the comments
+left by users on the professor reviews. I will try adding a button that says reply on the comment
+and a user will be able to reply to a comment annoynymously. Also will create test cases and will fix
+any failed test runs. 
+
+
+2/19/2026: I managed to add the feature in which the users can leave a reply to a user comment 
+on a professor review. There's a button that says reply and the user clicks on it to reply to a user comment
+and can reply. You can also reply to a comment reply. Also managed to fix all my test case fails. 

@@ -2,6 +2,7 @@ import { colors } from "@/assets/colors";
 import { BlueButton } from "@/components/ui/Buttons";
 import { ReviewInput } from "@/components/ui/TextInputs";
 import { gradeOptions } from "@/lib/enumFrontend";
+import { containsBadWords } from "@/lib/badWords";
 import { ReviewableEnrollment } from "@/services/enrollmentService";
 import { submitReview } from "@/services/reviewsService";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +11,7 @@ import { ActivityIndicator, Modal, StyleSheet, Text, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import StarRating from "react-native-star-rating-widget";
 import { DifficultyIcon, ProfessorQualityIcon } from "./RatingIcons";
+
 
 interface WriteReviewModalProps {
     visible: boolean;
@@ -37,15 +39,20 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
         } else if (reviewText.length > 300) {
             setError("Review text cannot be longer than 300 chars.");
             return false;
+        } else if (containsBadWords(reviewText)) {
+            setError("Please remove bad or vulgar language before submitting your review.");
+            return false;
         }
-        return true;
+
+    return true;
     };
 
     const handleSubmitReview = async () => {
+        setError(null);
+
         if (!validateInputs()) return;
 
         setLoading(true);
-        setError(null);
 
         try {
             const reviewInput = {
@@ -169,7 +176,13 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
                         />
                     </View>
                 </View>
-                <View className="h-8">{error && <Text className="text-lg text-colors-error">{error}</Text>}</View>
+                <View className="min-h-10 items-center justify-center px-2">
+                    {error && (
+                        <View className="bg-red-900/70 border border-red-500 rounded-lg px-3 py-2">
+                            <Text className="text-lg text-white text-center">{error}</Text>
+                        </View>
+                    )}
+                </View>
                 <View>
                     {loading ? <ActivityIndicator /> : <BlueButton onPress={handleSubmitReview}>Submit</BlueButton>}
                 </View>

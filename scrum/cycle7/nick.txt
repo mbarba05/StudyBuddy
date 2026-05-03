@@ -1,0 +1,14 @@
+3/10: Working on the search reviews screen, gonna show the most recent searches for a user, then after a good
+suggestion from the ta, show the most popular professors for someones major. Ima have to make a couple new tables for this.
+I also need to update the tables whenever a user views reviews for a professor.
+
+3/12: Gonna have to add a new column called 'department' for a professor since we never kept track of that
+if we ant to show the professors for someone's major. Gonna have to manually
+add them to the ones we have already. Also probably gonna need to add the ability to add that when adding a new professor in the app.
+Just finished updating the view counts for both of the tables when a user pick a professor from the page, now 
+to making a query to get them.
+Finished everything in about 4 hours of coding. Went good, updating the state after picking a professor
+was lowkey the hardest part but i got it.
+
+3/17: wrote the tests today, getting the hang of writing them, this screen was also easy to test because we dont import
+much in it

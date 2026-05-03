@@ -1,23 +1,31 @@
 import { colors } from "@/assets/colors";
-import AttachmentImages from "@/components/features/chats/AttachmentImage";
-import ChatBubble from "@/components/features/chats/ChatBubble";
+import ChatRow from "@/components/features/chats/ChatRow";
 import SendTextInput from "@/components/features/chats/SendTextInput";
 import { CHAT_PAGE_SIZE } from "@/lib/enumFrontend";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
+import { formatPrettyDate } from "@/lib/utillities";
 import { useAuth } from "@/services/auth/AuthProvider";
+import { blockUser, unblockUser } from "@/services/blockingService";
+import { removeFriend, sendFriendRequest } from "@/services/friendshipsService";
 import {
     Chat,
+    ChatHeaderState,
+    getChatHeaderState,
     getMessagesForConv,
     LoadedAttachment,
     MessageAttachmentTable,
     MessagesTable,
 } from "@/services/messageService";
 import { sendPushNotification } from "@/services/PushNotifications";
+import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useSharedValue, withSpring } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ChatRouteParams = {
@@ -25,6 +33,8 @@ type ChatRouteParams = {
     dmName: string;
     ppPic: string;
 };
+
+type ChatListItem = { type: "message"; chat: Chat } | { type: "date"; dateKey: string };
 
 const ConversationScreen = () => {
     const { conversationId, dmName, ppPic } = useLocalSearchParams<ChatRouteParams>();
@@ -34,15 +44,62 @@ const ConversationScreen = () => {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [countLeft, setCountLeft] = useState(0);
+    const [headerState, setHeaderState] = useState<ChatHeaderState | null>(null);
+    const [busy, setBusy] = useState(false);
 
-    //we need to store chats as a record because of the way we subsrcibe to them on supabase
-    //messages and attachments are 2 diff tables, so we need to make 2 realitime subscriptions and
-    //merge the attachments into the messages seperatley
     const [chatsById, setChatsById] = useState<Record<string, Chat>>({});
     const [order, setOrder] = useState<string[]>([]);
     const chats = useMemo(() => order.map((id) => chatsById[id]).filter(Boolean), [order, chatsById]);
-
+    const messagesListRef = useRef<FlatList<ChatListItem>>(null);
     const user = useAuth();
+
+    const dateKey = (iso: string) => {
+        const d = new Date(iso);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const listData: ChatListItem[] = useMemo(() => {
+        const out: ChatListItem[] = [];
+
+        for (let i = 0; i < chats.length; i++) {
+            const chat = chats[i];
+            out.push({ type: "message", chat });
+
+            const cur = dateKey(chat.created_at);
+            const next = chats[i + 1] ? dateKey(chats[i + 1].created_at) : null;
+
+            if (cur !== next) {
+                out.push({ type: "date", dateKey: cur });
+            }
+        }
+
+        return out;
+    }, [chats]);
+
+    useEffect(() => {
+        if (!order.length) return;
+
+        const id = setTimeout(() => {
+            messagesListRef.current?.scrollToOffset({ offset: 0, animated: true });
+        }, 0);
+
+        return () => clearTimeout(id);
+    }, [order[0]]);
+
+    useEffect(() => {
+        if (!conversationId) return;
+
+        const loadHeader = async () => {
+            try {
+                const data = await getChatHeaderState(conversationId);
+                setHeaderState(data);
+            } catch (err) {
+                console.error("loadHeader:", err);
+            }
+        };
+
+        loadHeader();
+    }, [conversationId]);
 
     useFocusEffect(
         useCallback(() => {
@@ -52,10 +109,12 @@ const ConversationScreen = () => {
                 try {
                     setLoading(true);
                     const chat = await getMessagesForConv(conversationId, 0);
+
                     if (mounted) {
-                        const count = chat && chat?.length > 0 ? chat[0].count : 0;
+                        const count = chat && chat.length > 0 ? chat[0].count : 0;
                         if (count > CHAT_PAGE_SIZE) setCountLeft(count - CHAT_PAGE_SIZE);
                         if (!chat) return;
+
                         const nextById: Record<string, Chat> = {};
                         const nextOrder: string[] = [];
 
@@ -71,9 +130,9 @@ const ConversationScreen = () => {
                     if (mounted) setLoading(false);
                 }
             };
+
             fetchChats();
 
-            // cleanup when screen loses focus
             return () => {
                 mounted = false;
             };
@@ -94,7 +153,8 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 async (payload) => {
-                    let newMsg = payload.new as MessagesTable;
+                    const newMsg = payload.new as MessagesTable;
+
                     setChatsById((prev) => {
                         if (prev[newMsg.id]) return prev;
 
@@ -107,6 +167,7 @@ const ConversationScreen = () => {
                             sender_id: newMsg.sender_id,
                             count: 0,
                         };
+
                         return { ...prev, [newMsg.id]: newChat };
                     });
 
@@ -117,15 +178,13 @@ const ConversationScreen = () => {
                     });
 
                     const currentUserId = user.user?.id;
-
                     if (!currentUserId) return;
 
-                    //Notify the user if they receive a new message from the other person in the DM
                     if (newMsg.sender_id !== currentUserId) {
                         await sendPushNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
                     }
 
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                 },
             )
             .subscribe();
@@ -133,7 +192,7 @@ const ConversationScreen = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [conversationId]);
+    }, [conversationId, dmName, user.user?.id]);
 
     useEffect(() => {
         if (!conversationId) return;
@@ -149,7 +208,7 @@ const ConversationScreen = () => {
                     filter: `conversation_id=eq.${conversationId}`,
                 },
                 async (payload) => {
-                    let newAtt = payload.new as MessageAttachmentTable;
+                    const newAtt = payload.new as MessageAttachmentTable;
 
                     setChatsById((prev) => {
                         const msg = prev[newAtt.message_id];
@@ -175,13 +234,11 @@ const ConversationScreen = () => {
                         };
                     });
 
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
                     const currentUserId = user.user?.id;
-
                     if (!currentUserId) return;
 
-                    //Notify the user if they receive a new message from the other person in the DM
                     if (newAtt.sender_id !== currentUserId) {
                         await sendPushNotification(currentUserId, `New message from ${dmName}: New Attachment`);
                     }
@@ -192,14 +249,20 @@ const ConversationScreen = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [conversationId]);
+    }, [conversationId, dmName, user.user?.id]);
 
     const loadOlderMessages = async () => {
         if (countLeft <= 0 || loadingMore) return;
+
         setLoadingMore(true);
         const offset = order.length;
         const oldChats = await getMessagesForConv(conversationId, offset);
-        if (!oldChats) return;
+
+        if (!oldChats) {
+            setLoadingMore(false);
+            return;
+        }
+
         const nextById: Record<string, Chat> = {};
         const nextOrder: string[] = [];
 
@@ -210,30 +273,153 @@ const ConversationScreen = () => {
 
         setChatsById((prev) => ({ ...prev, ...nextById }));
         setOrder((prev) => [...prev, ...nextOrder]);
-
         setCountLeft((prev) => prev - CHAT_PAGE_SIZE);
         setLoadingMore(false);
     };
 
+    const refreshHeaderState = async () => {
+        const refreshed = await getChatHeaderState(conversationId);
+        setHeaderState(refreshed);
+    };
+
+    const handleFriendAction = async () => {
+        if (!headerState || busy || headerState.any_block) return;
+
+        try {
+            setBusy(true);
+
+            if (headerState.is_friend) {
+                await removeFriend(headerState.other_user_id);
+            } else {
+                await sendFriendRequest(headerState.other_user_id);
+            }
+
+            await refreshHeaderState();
+        } catch (err) {
+            console.error("handleFriendAction:", err);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleBlockToggle = async () => {
+        if (!headerState || busy || headerState.blocked_me) return;
+
+        try {
+            setBusy(true);
+
+            if (headerState.i_blocked) {
+                await unblockUser(headerState.other_user_id);
+            } else {
+                await blockUser(headerState.other_user_id);
+            }
+
+            await refreshHeaderState();
+        } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to update block status");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const globalX = useSharedValue(0);
+
+    const swipeLeftGesture = useMemo(() => {
+        return Gesture.Pan()
+            .activeOffsetX([-12, 12])
+            .failOffsetY([-10, 10])
+            .onUpdate((e) => {
+                const nextX = Math.min(0, e.translationX);
+                globalX.value = Math.max(nextX, -60);
+            })
+            .onEnd(() => {
+                globalX.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.6 });
+            });
+    }, [globalX]);
+
     const renderItem = useCallback(
-        ({ item }: { item: Chat }) => {
-            const isOwn = item.sender_id === user.user?.id;
-            return (
-                <View className={`flex flex-col mb-2 ${isOwn ? "items-end" : "items-start"}`}>
-                    {item.attachments?.length > 0 && <AttachmentImages attachments={item.attachments} />}
-                    {item.content && <ChatBubble isOwn={isOwn}>{item.content}</ChatBubble>}
-                </View>
-            );
+        ({ item }: { item: ChatListItem }) => {
+            if (item.type === "date") {
+                return (
+                    <View className="items-center mt-2">
+                        <Text className="text-sm text-colors-textSecondary">{formatPrettyDate(item.dateKey)}</Text>
+                    </View>
+                );
+            }
+
+            const chat = item.chat;
+            const isOwn = chat.sender_id === user.user?.id;
+
+            return <ChatRow item={chat} isOwn={isOwn} globalX={globalX} />;
         },
-        [user.user?.id],
+        [user.user?.id, globalX],
     );
 
     const header = () => (
-        <View className="flex flex-row items-center gap-2">
-            <Image source={{ uri: ppPic }} className="w-12 h-12 rounded-full" />
-            <Text className="text-colors-text text-2xl font-semibold">{dmName}</Text>
+        <View className="flex flex-row items-center justify-between w-full pr-2">
+            <View className="flex flex-row items-center gap-2 flex-1">
+                <Image
+                    contentFit="cover"
+                    source={{ uri: ppPic as string }}
+                    style={{
+                        width: 54,
+                        height: 54,
+                        borderRadius: 27,
+                        borderColor: colors.textSecondary,
+                        borderWidth: 1,
+                    }}
+                    cachePolicy="memory-disk"
+                />
+                <Text className="text-colors-text text-2xl font-semibold" numberOfLines={1}>
+                    {dmName}
+                </Text>
+            </View>
+
+            <View className="flex-row items-center gap-2 ml-2">
+                {headerState && !headerState.is_blocked && (
+                    <TouchableOpacity
+                        onPress={handleFriendAction}
+                        disabled={busy}
+                        activeOpacity={0.8}
+                        className="bg-[#0A2F6B] border border-[#0E57C8] rounded-full px-4 py-2"
+                    >
+                        <View className="flex-row items-center gap-1">
+                            <Text className="text-white text-[14px] font-semibold">
+                                {headerState.is_friend ? "Remove Friend" : "Add Friend"}
+                            </Text>
+                            <Ionicons
+                                name={headerState.is_friend ? "person-remove" : "person-add"}
+                                size={18}
+                                color="white"
+                            />
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+                {headerState && !headerState.blocked_me && (
+                    <TouchableOpacity
+                        onPress={handleBlockToggle}
+                        disabled={busy}
+                        activeOpacity={0.8}
+                        className="bg-[#3A1111] border border-[#A22] rounded-full px-4 py-2"
+                    >
+                        <View className="flex-row items-center gap-1">
+                            <Text className="text-white text-[14px] font-semibold">
+                                {headerState.i_blocked ? "Unblock" : "Block"}
+                            </Text>
+                            <Ionicons
+                                name={headerState.i_blocked ? "lock-open" : "ban"}
+                                size={18}
+                                color="white"
+                            />
+                        </View>
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
     );
+
+    const canMessage = headerState?.is_blocked ? false : (headerState?.is_friend ?? true);
 
     return (
         <>
@@ -244,30 +430,49 @@ const ConversationScreen = () => {
                     headerStyle: { backgroundColor: colors.background },
                 }}
             />
-            <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
-                <KeyboardAvoidingView
-                    className="flex-1"
-                    behavior={Platform.OS === "ios" ? "padding" : undefined}
-                    keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
-                >
-                    {loadingMore && <ActivityIndicator className="mt-4" />}
-                    <FlatList
-                        testID="chats"
+            <GestureDetector gesture={swipeLeftGesture}>
+                <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
+                    <KeyboardAvoidingView
                         className="flex-1"
-                        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
-                        data={chats}
-                        keyExtractor={(item) => item.id}
-                        renderItem={renderItem}
-                        inverted
-                        keyboardShouldPersistTaps="handled"
-                        onEndReached={loadOlderMessages}
-                        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-                    />
-                    <SendTextInput setChatsById={setChatsById} setOrder={setOrder} convId={conversationId} />
-                </KeyboardAvoidingView>
-            </SafeAreaView>
+                        behavior={Platform.OS === "ios" ? "padding" : undefined}
+                        keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight + insets.bottom : 0}
+                    >
+                        {(loading || loadingMore) && <ActivityIndicator className="mt-4" />}
+                        <FlatList
+                            ref={messagesListRef}
+                            testID="chats"
+                            ItemSeparatorComponent={() => <View className="h-1" />}
+                            className="flex-1"
+                            contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 12 }}
+                            data={listData}
+                            keyExtractor={(item) =>
+                                item.type === "message" ? `m:${item.chat.id}` : `d:${item.dateKey}`
+                            }
+                            renderItem={renderItem}
+                            keyboardShouldPersistTaps="handled"
+                            onEndReached={loadOlderMessages}
+                            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+                            inverted
+                        />
+                        {headerState?.blocked_me && (
+                            <View className="px-4 py-2">
+                                <Text className="text-center text-colors-textSecondary">Messaging unavailable.</Text>
+                            </View>
+                        )}
+                        {headerState?.i_blocked && (
+                            <View className="px-4 py-2">
+                                <Text className="text-center text-colors-textSecondary">
+                                    You blocked this user. Unblock them to message again.
+                                </Text>
+                            </View>
+                        )}
+                        <SendTextInput convId={conversationId} canMessage={canMessage} />
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </GestureDetector>
         </>
     );
 };
 
 export default ConversationScreen;
+

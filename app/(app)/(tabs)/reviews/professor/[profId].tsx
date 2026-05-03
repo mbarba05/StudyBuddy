@@ -1,14 +1,15 @@
 import { colors } from "@/assets/colors";
+import AverageStuff from "@/components/features/reviews/review-averages/AverageStuff";
 import ReviewWidget from "@/components/features/reviews/ReviewWidget";
 import { ClassFilterButton } from "@/components/ui/Buttons";
-import LoadingScreen from "@/components/ui/LoadingScreen";
-import { ReviewSeparator } from "@/components/ui/Seperators";
-import supabase from "@/lib/subapase";
-import { getReviewsForProf, ReviewDisplay } from "@/services/reviewsService";
+import { LoadingScreen } from "@/components/ui/Loading";
+import { ReviewSeparator, SectionSeperator } from "@/components/ui/Seperators";
+import supabase from "@/lib/supabase";
+import { getReviewsForProf, getUserReviewScore, ReviewDisplay } from "@/services/reviewsService";
 import { useFocusEffect } from "@react-navigation/native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const ProfessorReviewsScreen = () => {
@@ -23,6 +24,9 @@ const ProfessorReviewsScreen = () => {
     // Auth state for “myVote” hydration
     const [userId, setUserId] = useState<string | null | undefined>(undefined);
 
+    const [reviewCount, setReviewCount] = useState(0);
+    const [totalPoints, setTotalPoints] = useState(0);
+
     // Course filter state
     const [selectedCourseCode, setSelectedCourseCode] = useState<string | null>(null);
 
@@ -31,12 +35,24 @@ const ProfessorReviewsScreen = () => {
         const init = async () => {
             const { data } = await supabase.auth.getSession();
             setUserId(data.session?.user?.id ?? null);
+
+            if (data.session?.user?.id) {
+                const score = await getUserReviewScore(data.session.user.id);
+                setReviewCount(score.reviewCount);
+                setTotalPoints(score.totalPoints);
+            }
         };
 
         init();
 
-        const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setUserId(session?.user?.id ?? null);
+
+            if (session?.user?.id) {
+                const score = await getUserReviewScore(session.user.id);
+                setReviewCount(score.reviewCount);
+                setTotalPoints(score.totalPoints);
+            }
         });
 
         return () => {
@@ -133,6 +149,14 @@ const ProfessorReviewsScreen = () => {
         </View>
     );
 
+    const reviewsTexts = useMemo(() => {
+        const list = reviews ?? [];
+        return list
+            .map((r) => (r.reviewText ?? "").trim())
+            .filter(Boolean)
+            .slice(0, 120);
+    }, [reviews]);
+
     if (loading) return <LoadingScreen />;
 
     return (
@@ -145,15 +169,12 @@ const ProfessorReviewsScreen = () => {
                     headerBackTitle: "Search",
                 }}
             />
-            <SafeAreaView className="flex-1  bg-colors-background" edges={["left", "right"]}>
+            <SafeAreaView className="flex-1 bg-colors-background" edges={["left", "right"]}>
                 {/* Course filter */}
                 {courseOptions.length > 0 && (
-                    <View className="border-y p-2 border-colors-textSecondary w-full">
+                    <View className="border-y border-colors-textSecondary w-full py-2">
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <View className="flex-row gap-2">
-                                <Text className="text-colors-textSecondary text-lg font-semibold self-center">
-                                    Course:
-                                </Text>
+                            <View className="flex-row gap-3 justify-center items-center ml-4">
                                 <ClassFilterButton
                                     selected={selectedCourseCode === null}
                                     onPress={() => setSelectedCourseCode(null)}
@@ -179,24 +200,38 @@ const ProfessorReviewsScreen = () => {
                     </View>
                 )}
 
-                {/* Reviews list */}
-                {filteredReviews && filteredReviews.length > 0 ? (
-                    <FlatList
-                        data={filteredReviews}
-                        keyExtractor={(r) => String(r.reviewId)}
-                        renderItem={({ item }) => <ReviewWidget review={item} onVoted={fetchReviews} />}
-                        ItemSeparatorComponent={ReviewSeparator}
-                        contentContainerStyle={{
-                            paddingTop: 20,
-                            paddingBottom: 20,
-                            alignItems: "center",
-                        }}
-                    />
-                ) : (
-                    <Text className="text-colors-textSecondary text-lg text-center mt-4">
-                        {selectedCourseCode ? "No reviews for this selection." : "No reviews yet for this professor."}
-                    </Text>
-                )}
+                <ScrollView
+                    contentContainerStyle={{
+                        paddingTop: 2,
+                        paddingBottom: 20,
+                        alignItems: "center",
+                    }}
+                >
+                    <View className="self-center py-4">
+                        <AverageStuff
+                            reviews={reviews ?? []}
+                            selectedCourseCode={selectedCourseCode}
+                            profId={Number(profId)}
+                            professorName={profName ?? "unknown"}
+                        />
+                    </View>
+                    <SectionSeperator />
+                    <View className="h-4" />
+                    {filteredReviews && filteredReviews.length > 0 ? (
+                        filteredReviews.map((item, index) => (
+                            <React.Fragment key={item.reviewId}>
+                                {index > 0 && <ReviewSeparator />}
+                                <ReviewWidget review={item} onVoted={fetchReviews} />
+                            </React.Fragment>
+                        ))
+                    ) : (
+                        <Text className="text-colors-textSecondary text-lg text-center mt-4">
+                            {selectedCourseCode
+                                ? "No reviews for this selection."
+                                : "No reviews yet for this professor."}
+                        </Text>
+                    )}
+                </ScrollView>
             </SafeAreaView>
         </>
     );

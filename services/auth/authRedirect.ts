@@ -1,4 +1,4 @@
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 
 export async function createSessionFromUrl(url: string) {

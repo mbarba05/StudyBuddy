@@ -8,6 +8,9 @@ const { SUPABASE_URL, SUPABASE_SECRET, SUPABASE_PUBLISHABLE_KEY } = Constants.ex
     SUPABASE_PUBLISHABLE_KEY: string;
 };
 
+console.log("SUPABASE_URL:", SUPABASE_URL);
+console.log("SUPABASE_PUBLISHABLE_KEY:", SUPABASE_PUBLISHABLE_KEY);
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
         storage: AsyncStorage,
