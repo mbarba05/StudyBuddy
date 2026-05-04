@@ -21,36 +21,6 @@ export function ResizeImage({ url, width, aspectRatio, borderRadius = 12, testID
     const onClose = () => {
         setFullscreenVisible(false);
     };
-    const styles = StyleSheet.create({
-        modalContainer: {
-            flex: 1,
-            backgroundColor: colors.black,
-        },
-        imageLayer: {
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 20,
-            paddingVertical: 32,
-        },
-        fullscreenImage: {
-            width: "100%",
-            height: "80%",
-        },
-        topBar: {
-            position: "absolute",
-            top: 20,
-            right: 20,
-        },
-        closeButton: {
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            backgroundColor: colors.primary,
-            alignItems: "center",
-            justifyContent: "center",
-        },
-    });
 
     return (
         <>
@@ -92,3 +62,33 @@ export function ResizeImage({ url, width, aspectRatio, borderRadius = 12, testID
         </>
     );
 }
+const styles = StyleSheet.create({
+    modalContainer: {
+        flex: 1,
+        backgroundColor: colors.black,
+    },
+    imageLayer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 20,
+        paddingVertical: 32,
+    },
+    fullscreenImage: {
+        width: "100%",
+        height: "80%",
+    },
+    topBar: {
+        position: "absolute",
+        top: 20,
+        right: 20,
+    },
+    closeButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.primary,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+});
