@@ -1,11 +1,17 @@
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
+import { sendFriendAcceptedNotification, sendFriendRequestNotification } from "@/services/PushNotifications";
 import { createConversation } from "./messageService";
-import {
-    sendFriendAcceptedNotification,
-    sendFriendRequestNotification,
-} from "./PushNotifications";
 
+async function getDisplayName(userId: string): Promise<string> {
+    const { data, error } = await supabase.from("profiles").select("display_name").eq("user_id", userId).single();
+
+    if (error || !data?.display_name) {
+        return "Someone";
+    }
+
+    return data.display_name;
+}
 export type FriendStatus = "pending" | "accepted" | "rejected";
 
 export type Friendship = {
@@ -23,20 +29,6 @@ export type FriendRequest = {
     receiver_id: string;
     status: FriendStatus;
 };
-
-async function getDisplayName(userId: string): Promise<string> {
-    const { data, error } = await supabase
-        .from(TABLES.PROFILES)
-        .select("display_name")
-        .eq("user_id", userId)
-        .single();
-
-    if (error || !data?.display_name) {
-        return "Someone";
-    }
-
-    return data.display_name;
-}
 
 export async function sendFriendRequest(receiver_id: string) {
     const {
@@ -123,7 +115,6 @@ export async function getOutgoingFriendRequests(user_id: string) {
 export async function acceptFriendRequest(request: FriendRequest) {
     console.log("Req", request.id);
 
-    // Update request to "accepted"
     const { error: updateErr } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
         .update({ status: "accepted" })
@@ -131,7 +122,6 @@ export async function acceptFriendRequest(request: FriendRequest) {
 
     if (updateErr) throw updateErr;
 
-    // Insert mutual friendship entries
     const { error: insertErr } = await supabase.from(TABLES.FRIENDSHIPS).insert([
         {
             user_id: request.sender_id,
