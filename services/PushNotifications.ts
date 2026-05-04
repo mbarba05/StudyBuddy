@@ -55,6 +55,7 @@ export const sendPushNotification = async (receiverId: string, message: string):
 
     try {
         const url = new URL(`${supabaseUrl}/functions/v1/new-message-notify`);
+
         if (!url.hostname.endsWith(".supabase.co")) {
             console.error("Invalid Supabase URL");
             return false;
@@ -67,8 +68,8 @@ export const sendPushNotification = async (receiverId: string, message: string):
                 Authorization: `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({
-                userId: receiverId,
-                body: message,
+                receiverId,
+                message,
             }),
         });
 
@@ -76,9 +77,18 @@ export const sendPushNotification = async (receiverId: string, message: string):
             console.error("Failed to send push notification", response.statusText);
             return false;
         }
+
         return true;
     } catch (error) {
         console.error("Error sending push notification");
         return false;
     }
+};
+
+export const sendFriendRequestNotification = async (receiverId: string, senderName: string): Promise<boolean> => {
+    return sendPushNotification(receiverId, `${senderName} has sent you a friend request`);
+};
+
+export const sendFriendAcceptedNotification = async (receiverId: string, friendName: string): Promise<boolean> => {
+    return sendPushNotification(receiverId, `${friendName} has accepted your friend request`);
 };
