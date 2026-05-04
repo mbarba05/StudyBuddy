@@ -8,7 +8,6 @@ export interface Review {
     review: string;
     courseDiff: number;
     profRating: number;
-    likes: number;
 }
 
 export interface ReviewInput {
@@ -30,8 +29,6 @@ export interface ReviewDisplay {
     code: string;
     reviewDate: string;
     grade: string;
-    //upvotes: number;
-    //downvotes: number;
     voteScore: number;
     myVote?: -1 | 0 | 1;
 }
@@ -50,7 +47,6 @@ export async function submitReview(fullReview: ReviewInput) {
             review: fullReview.review,
             course_diff: fullReview.courseDiff,
             prof_rating: fullReview.profRating,
-            likes: 0,
             grade: fullReview.grade,
         })
         .select()
@@ -131,12 +127,7 @@ export async function getUserReviewScore(userId: string) {
 
     const { data: reviews, error: reviewError } = await supabase
         .from(TABLES.REVIEWS)
-        .select(
-            `
-            id,
-            likes
-        `,
-        )
+        .select("id")
         .in("enrollment_id", enrollmentIds);
 
     if (reviewError) {
@@ -145,7 +136,23 @@ export async function getUserReviewScore(userId: string) {
     }
 
     const reviewCount = reviews?.length ?? 0;
-    const upvoteCount = (reviews ?? []).reduce((sum, review) => sum + (review.likes ?? 0), 0);
+    const reviewIds = (reviews ?? []).map((review) => review.id);
+
+    if (reviewIds.length === 0) {
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const { data: votes, error: voteError } = await supabase
+        .from("review_votes")
+        .select("vote")
+        .in("review_id", reviewIds);
+
+    if (voteError) {
+        console.error("Error loading review votes for score:", voteError);
+        return { reviewCount, upvoteCount: 0, totalPoints: reviewCount };
+    }
+
+    const upvoteCount = (votes ?? []).reduce((sum, row) => sum + (row.vote === 1 ? 1 : 0), 0);
     const totalPoints = reviewCount + upvoteCount;
 
     return { reviewCount, upvoteCount, totalPoints };
@@ -196,8 +203,6 @@ const normalizeReview = (item: any): ReviewDisplay => {
         profName: item.enrollment?.course_prof?.prof?.name ?? "",
         grade: item.grade ?? "",
         reviewDate,
-        //upvotes: item.upvotes ?? 0,
-        //downvotes: item.downvotes ?? 0,
         voteScore: item.vote_score ?? 0,
     };
 };
