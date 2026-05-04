@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import LoadingScreen from "@/components/ui/LoadingScreen";
+import { LoadingScreen } from "@/components/ui/Loading";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { getUserProfile, Profile } from "@/services/profileService";
 import { Stack } from "expo-router";
@@ -55,6 +55,15 @@ export default function ProfileStack() {
                 options={{
                     headerShown: true,
                     headerTitle: "Friends",
+                    headerTitleStyle: { color: colors.text, fontSize: 22 },
+                    headerStyle: { backgroundColor: colors.background },
+                }}
+            />
+            <Stack.Screen
+                name="blocked-users"
+                options={{
+                    headerShown: true,
+                    headerTitle: "Blocked",
                     headerTitleStyle: { color: colors.text, fontSize: 22 },
                     headerStyle: { backgroundColor: colors.background },
                 }}

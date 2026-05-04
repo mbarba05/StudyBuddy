@@ -64,6 +64,17 @@ export const formatMessageTime = (dmSentAt: string): string => {
     return `${years} year${years === 1 ? "" : "s"} ago`;
 };
 
+export const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
+export const formatPrettyDate = (key: string) => {
+    const [y, m, d] = key.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+};
+
 export const requestPermission = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
     return status === "granted";
@@ -90,3 +101,7 @@ export const saveImage = async (url: string) => {
         console.log("Error saving image:", error);
     }
 };
+
+export function getParam(param: string | string[]) {
+    return Array.isArray(param) ? param[0] : param;
+}

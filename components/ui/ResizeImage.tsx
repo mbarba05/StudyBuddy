@@ -10,9 +10,17 @@ type ResizeImageProps = {
     aspectRatio: number;
     borderRadius?: number;
     testID?: string;
+    onPress?: () => void;
 };
 
-export function ResizeImage({ url, width, aspectRatio, borderRadius = 12, testID }: ResizeImageProps) {
+export function ResizeImage({
+    url,
+    width,
+    aspectRatio,
+    borderRadius = 12,
+    testID,
+    onPress,
+}: ResizeImageProps) {
     const [fullscreenVisible, setFullscreenVisible] = useState(false);
 
     const blurhash =
@@ -22,9 +30,18 @@ export function ResizeImage({ url, width, aspectRatio, borderRadius = 12, testID
         setFullscreenVisible(false);
     };
 
+    const handlePress = () => {
+        if (onPress) {
+            onPress();
+            return;
+        }
+
+        setFullscreenVisible(true);
+    };
+
     return (
         <>
-            <Pressable disabled={!url} onPress={() => setFullscreenVisible(true)}>
+            <Pressable disabled={!url} onPress={handlePress}>
                 <Image
                     source={{ uri: url }}
                     style={{
@@ -33,7 +50,7 @@ export function ResizeImage({ url, width, aspectRatio, borderRadius = 12, testID
                         borderRadius,
                     }}
                     testID={testID ?? url}
-                    cachePolicy={"memory-disk"}
+                    cachePolicy="memory-disk"
                     placeholder={{ blurhash }}
                 />
             </Pressable>

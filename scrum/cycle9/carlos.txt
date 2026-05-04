@@ -1,0 +1,9 @@
+4/14/26: For the last two scrum cycles, I will be working on allowing users to block users from viewing their profile and messaging them.
+  I still want users to still be able to search for their account so that the user may unblock them in the future if 
+they want to. I will have to create a new table in Supabase storing the users a user has blocked and create a new blocking
+  service file to hanlde the backend for blocking. I will have to create a new button in the UI to block users and reflect 
+the blocking changes in several UI files and backend services. 
+
+  4/23/26: I created a new table in Supabase to store the blocked users. I also worked and completed the blocking service and added the button in some 
+of the UI files. For the next cycle, I plan to refine the service and fully test it out with the test cases and make sure 
+everything is running good. I want to make sure the UI is correctly rendered. 

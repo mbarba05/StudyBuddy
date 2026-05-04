@@ -1,0 +1,25 @@
+4/14/26:
+This scrum cycle focused on improving the review system by adding a profanity filter before a review can be submitted. 
+The goal was to stop users from posting reviews with vulgar or inappropriate language. I added a bad word filtering helper 
+in a separate file so the list of banned words could be managed in one place. Then I connected that helper to the review 
+submission flow inside the write review modal. Before a review is sent, the modal now checks the text and blocks submission 
+if any banned words are found. If the review passes all checks, it continues through the normal submission process.
+4/16/26:
+While working on this feature, I made sure the profanity filter fit in with the validation that was already there. The 
+modal was already checking for empty review text, missing grade, and reviews longer than 300 characters, so I added the 
+bad word check into the same validation function. That way everything stays in one place and the review is stopped before 
+submitReview(...) is called. I also improved the error display so it is easier for the user to notice when their review is 
+being blocked. Instead of a plain message, the error now has a styled background with white text so it stands out better in 
+the modal.
+Test Cases:
+Making sure an empty review cannot be submitted. Making sure a missing grade cannot be submitted. Making sure a review over 
+300 characters is blocked. Making sure a review containing banned words is blocked before submission. Making sure 
+submitReview(...) is not called when the profanity filter is triggered. Making sure a clean review with no banned words submits 
+successfully. Making sure the modal closes after a successful clean submission. Making sure a submission failure still shows the 
+correct error message. Making sure the profanity filter error message is displayed clearly with the new background styling.
+4/21/26:
+The review profanity filter is now fully implemented and tested. Users can no longer submit reviews containing banned words, 
+and they are given a clear error message telling them to remove the inappropriate language before posting. The validation still 
+supports the older checks for empty text, missing grade, and review length, so the feature works alongside the rest of the review 
+form without breaking the original flow. Both manual and automated tests confirm that the new filter works correctly and prevents 
+vulgar content from being submitted in reviews.

@@ -1,6 +1,33 @@
 const sanitizeForLog = (input: string): string => {
     return input.replace(/[\r\n]/g, "");
 };
+// Register device for push notifications and save token to Supabase
+export async function registerForPushNotifications(userId: string) {
+    if (!Device.isDevice) {
+        alert("Must use a physical device for Push Notifications");
+        return;
+    }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+    }
+
+    if (finalStatus !== "granted") {
+        alert("Permission not granted!");
+        return;
+    }
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    });
+
+    const pushToken = tokenData.data;
+    console.log("Push Token:", pushToken);
+    console.log("User ID:", userId);
 
 type PushNotificationType = "friend_request" | "friend_added" | "chat_message";
 

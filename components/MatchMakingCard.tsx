@@ -1,5 +1,5 @@
 import { colors } from "@/assets/colors";
-import supabase from "@/lib/subapase";
+import supabase from "@/lib/supabase";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -19,6 +19,8 @@ type MatchMakingCardProps = {
 export default function MatchMakingCard({ name, major, year, bio, imageUrls = [] }: MatchMakingCardProps) {
     const { user } = useAuth();
     const [userMajor, setUserMajor] = useState<string | null>(null);
+    const [photoIndex, setPhotoIndex] = useState(0);
+    const [showBio, setShowBio] = useState(false);
 
     const [photoIndex, setPhotoIndex] = useState(0);
     const [showBio, setShowBio] = useState(false);
@@ -44,7 +46,7 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
         const loadUserMajor = async () => {
             if (!user?.id) return;
 
-            const { data } = await supabase
+         const { data } = await supabase
                 .from("profiles")
                 .select("major:major_id!inner(name)")
                 .eq("user_id", user.id)
@@ -58,6 +60,18 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
         loadUserMajor();
     }, [user]);
 
+    const photos = useMemo(() => {
+        const filtered = (imageUrls ?? []).filter((url): url is string => !!url && url.trim().length > 0);
+        return filtered.length > 0 ? filtered : ["https://placehold.co/400x400?text=No+Image"];
+    }, [imageUrls]);
+
+    const currentPhoto = photos[photoIndex] ?? photos[0];
+    const goPrevPhoto = () => {
+        setPhotoIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    };
+    const goNextPhoto = () => {
+        setPhotoIndex((prev) => (prev < photos.length - 1 ? prev + 1 : prev));
+    };
     // compare lowercase so “Computer Science” matches “computer science”
     const isSameMajor = major && userMajor && major.trim().toLowerCase() === userMajor.trim().toLowerCase();
 
@@ -146,7 +160,7 @@ export default function MatchMakingCard({ name, major, year, bio, imageUrls = []
 const styles = StyleSheet.create({
     card: {
         width: width * 0.95,
-        height: height * 0.75,
+        height: height * 0.725,
         borderRadius: 20,
         overflow: "hidden",
         backgroundColor: "#000",
@@ -164,6 +178,41 @@ const styles = StyleSheet.create({
     },
     imageStyle: {
         resizeMode: "cover",
+    },
+    tapZones: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        flexDirection: "row",
+        zIndex: 1,
+    },
+    leftTapZone: {
+        flex: 1,
+    },
+    rightTapZone: {
+        flex: 1,
+    },
+    dotsContainer: {
+        position: "absolute",
+        top: 16,
+        left: 16,
+        right: 16,
+        flexDirection: "row",
+        gap: 6,
+        zIndex: 2,
+    },
+    dot: {
+        flex: 1,
+        height: 4,
+        borderRadius: 999,
+    },
+    activeDot: {
+        backgroundColor: colors.accent,
+    },
+    inactiveDot: {
+        backgroundColor: "rgba(255, 255, 255, 0.35)",
     },
     overlay: {
         position: "absolute",
@@ -317,5 +366,53 @@ const styles = StyleSheet.create({
         textShadowColor: "rgba(0,0,0,0.6)",
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 4,
+    },
+    bioButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start",
+        gap: 4,
+        backgroundColor: "rgba(0, 0, 0, 0.35)",
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+    },
+    bioButtonText: {
+        color: colors.text,
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    modalBackdrop: {
+        flex: 1,
+        justifyContent: "flex-end",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    bioSheet: {
+        backgroundColor: colors.background,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        minHeight: height * 0.28,
+    },
+    bioHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+    bioTitle: {
+        color: colors.text,
+        fontSize: 22,
+        fontWeight: "bold",
+    },
+    bioLabel: {
+        color: colors.textSecondary,
+        fontSize: 15,
+        marginBottom: 8,
+    },
+    bioText: {
+        color: colors.text,
+        fontSize: 16,
+        lineHeight: 22,
     },
 });

@@ -1,9 +1,23 @@
 import "@testing-library/jest-native/extend-expect";
 import { act } from "@testing-library/react-native";
+import "react-native-gesture-handler/jestSetup";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
     require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
+
+jest.mock("expo-image", () => {
+    const React = require("react");
+    const { Image } = require("react-native");
+
+    const ExpoImage = (props: any) => <Image {...props} />;
+
+    return {
+        __esModule: true,
+        Image: ExpoImage,
+        default: ExpoImage,
+    };
+});
 
 jest.mock("react-native-safe-area-context", () => {
     const React = require("react");
@@ -24,7 +38,7 @@ jest.mock("expo-haptics", () => ({
 }));
 
 //Supabase mock
-jest.mock("@/lib/subapase", () => ({
+jest.mock("@/lib/supabase", () => ({
     __esModule: true,
     default: {
         channel: jest.fn(() => ({
@@ -71,3 +85,23 @@ jest.mock("@expo/vector-icons", () => {
 });
 
 jest.mock("uuid", () => ({ v4: () => "test-uuid" }));
+
+// jest.setup.ts
+
+jest.mock("react-native", () => {
+    const RN = jest.requireActual("react-native");
+
+    // Avoid "useNativeDriver is not supported" noise + keep Animated usable in tests
+    RN.Animated = {
+        ...RN.Animated,
+        timing: () => ({ start: (cb?: any) => cb?.({ finished: true }) }),
+        spring: () => ({ start: (cb?: any) => cb?.({ finished: true }) }),
+        decay: () => ({ start: (cb?: any) => cb?.({ finished: true }) }),
+    };
+
+    return RN;
+});
+
+jest.spyOn(console, "log").mockImplementation(() => {});
+// If you use Reanimated v3+, this helps in some setups
+(globalThis as any).__reanimatedWorkletInit = () => {};

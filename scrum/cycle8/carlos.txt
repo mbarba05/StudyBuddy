@@ -1,0 +1,11 @@
+3/24/26: For this cycle, I will work on items relating to friendships and chats. Currently, users are still able to 
+chat with users who are former friends. This cycle, I want to edit it so that they can't send direct messages 
+  with each other anymore due to them both no longer being friends. I also want to change it so that there's
+  a button on the top right or so of the user profile that says "Add Friend" so that they can send them a 
+friend request again due to them no longer being friends. I also will create the test cases as well. 
+
+  
+4/9/26: For this cycle, I was able to get all of the features completed. For the add friend feature whenever a user clicked on a 
+direct message with a former friend, I added the button on the top and added a remove friend button as well if the user is still 
+friends with the user. I also added a little message in which if the users aren't friends it displays that they
+aren't able to message anymore due to them not being friends anymore. 

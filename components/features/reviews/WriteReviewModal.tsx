@@ -1,6 +1,7 @@
 import { colors } from "@/assets/colors";
 import { BlueButton } from "@/components/ui/Buttons";
 import { ReviewInput } from "@/components/ui/TextInputs";
+import { containsBadWords } from "@/lib/badWords";
 import { gradeOptions } from "@/lib/enumFrontend";
 import { ReviewableEnrollment } from "@/services/enrollmentService";
 import { submitReview } from "@/services/reviewsService";
@@ -37,15 +38,20 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
         } else if (reviewText.length > 300) {
             setError("Review text cannot be longer than 300 chars.");
             return false;
+        } else if (containsBadWords(reviewText)) {
+            setError("Please remove bad or vulgar language before submitting your review.");
+            return false;
         }
+
         return true;
     };
 
     const handleSubmitReview = async () => {
+        setError(null);
+
         if (!validateInputs()) return;
 
         setLoading(true);
-        setError(null);
 
         try {
             const reviewInput = {
@@ -79,8 +85,6 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
         setVisible(false);
         setGrade("");
     };
-
-    console.log("Selected Enrollment in Modal:", selectedEnrollment);
 
     if (!selectedEnrollment) return null;
 
@@ -169,7 +173,13 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
                         />
                     </View>
                 </View>
-                <View className="h-8">{error && <Text className="text-lg text-colors-error">{error}</Text>}</View>
+                <View className="min-h-10 items-center justify-center px-2">
+                    {error && (
+                        <View className="bg-red-900/70 border border-red-500 rounded-lg px-3 py-2">
+                            <Text className="text-lg text-white text-center">{error}</Text>
+                        </View>
+                    )}
+                </View>
                 <View>
                     {loading ? <ActivityIndicator /> : <BlueButton onPress={handleSubmitReview}>Submit</BlueButton>}
                 </View>
