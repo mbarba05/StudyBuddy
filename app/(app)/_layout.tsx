@@ -1,4 +1,5 @@
 // app/(app)/_layout.tsx
+import InAppNotificationBanner from "@/components/inAppNotificationsBanner";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { useProfileGate } from "@/services/ProfileProvider";
@@ -20,8 +21,11 @@ export default function ProtectedLayout() {
     }
 
     return (
-        <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-        </Stack>
+        <>
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+            </Stack>
+            <InAppNotificationBanner />
+        </>
     );
 }

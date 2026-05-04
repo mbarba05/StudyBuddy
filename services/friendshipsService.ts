@@ -1,6 +1,10 @@
 import { TABLES } from "@/lib/enumBackend";
 import supabase from "@/lib/subapase";
 import { createConversation } from "./messageService";
+import {
+    sendFriendAcceptedNotification,
+    sendFriendRequestNotification,
+} from "./PushNotifications";
 
 export type FriendStatus = "pending" | "accepted" | "rejected";
 
@@ -20,6 +24,20 @@ export type FriendRequest = {
     status: FriendStatus;
 };
 
+async function getDisplayName(userId: string): Promise<string> {
+    const { data, error } = await supabase
+        .from(TABLES.PROFILES)
+        .select("display_name")
+        .eq("user_id", userId)
+        .single();
+
+    if (error || !data?.display_name) {
+        return "Someone";
+    }
+
+    return data.display_name;
+}
+
 export async function sendFriendRequest(receiver_id: string) {
     const {
         data: { user },
@@ -36,6 +54,10 @@ export async function sendFriendRequest(receiver_id: string) {
         .single();
 
     if (error) throw error;
+
+    const senderName = await getDisplayName(user.id);
+    await sendFriendRequestNotification(receiver_id, senderName);
+
     return data as FriendRequest;
 }
 
@@ -126,6 +148,9 @@ export async function acceptFriendRequest(request: FriendRequest) {
     if (insertErr) throw insertErr;
 
     await createConversation(request.sender_id, request.receiver_id);
+
+    const accepterName = await getDisplayName(request.receiver_id);
+    await sendFriendAcceptedNotification(request.sender_id, accepterName);
 }
 
 // Reject friend request

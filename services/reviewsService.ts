@@ -97,7 +97,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
             `
       *,
       enrollment:enrollment_id!inner (
-        *,npx
+        *,
         course_prof:course_prof_id (
           course:course_id (code),
           prof:prof_id (name)
@@ -113,30 +113,39 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
 
 // Will count all the reviews user writes and sum up their upvotes
 export async function getUserReviewScore(userId: string) {
-    const { data, error } = await supabase
-        .from("reviews")
-        .select(
-            `
-            id,
-            likes,
-            enrollment:enrollment_id!inner (
-                id,
-                user_id
-            )
-        `,
-        )
-        .eq("enrollment.user_id", userId);
+    const { data: enrollments, error: enrollmentError } = await supabase
+        .from(TABLES.ENROLLMENTS)
+        .select("id")
+        .eq("user_id", userId);
 
-    if (error) {
-        console.error("Error loading user score:", error);
+    if (enrollmentError) {
+        console.error("Error loading user enrollments for score:", enrollmentError);
         return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
     }
 
-    // Only count reviews that actually belong to this user
-    const userReviews = (data as any[]).filter((r) => r.enrollment?.user_id === userId);
+    const enrollmentIds = (enrollments ?? []).map((enrollment) => enrollment.id);
 
-    const reviewCount = userReviews.length;
-    const upvoteCount = userReviews.reduce((sum, review) => sum + (review.likes || 0), 0);
+    if (enrollmentIds.length === 0) {
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const { data: reviews, error: reviewError } = await supabase
+        .from(TABLES.REVIEWS)
+        .select(
+            `
+            id,
+            likes
+        `,
+        )
+        .in("enrollment_id", enrollmentIds);
+
+    if (reviewError) {
+        console.error("Error loading user score:", reviewError);
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const reviewCount = reviews?.length ?? 0;
+    const upvoteCount = (reviews ?? []).reduce((sum, review) => sum + (review.likes ?? 0), 0);
     const totalPoints = reviewCount + upvoteCount;
 
     return { reviewCount, upvoteCount, totalPoints };

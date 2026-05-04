@@ -123,6 +123,36 @@ export async function getMessagesForConv(convId: string, offset: number): Promis
     return data;
 }
 
+export async function getOtherConversationMember(convId: string, currentUserId: string): Promise<string | null> {
+    const { data, error } = await supabase
+        .from(TABLES.CONVERSATION_MEMBERS)
+        .select("user_id")
+        .eq("conversation_id", convId)
+        .neq("user_id", currentUserId)
+        .single();
+
+    if (error || !data?.user_id) {
+        console.error("Error getting other conversation member", error);
+        return null;
+    }
+
+    return data.user_id;
+}
+
+export async function getProfileDisplayName(userId: string): Promise<string> {
+    const { data, error } = await supabase
+        .from(TABLES.PROFILES)
+        .select("display_name")
+        .eq("user_id", userId)
+        .single();
+
+    if (error || !data?.display_name) {
+        return "Someone";
+    }
+
+    return data.display_name;
+}
+
 export async function sendMessage(clientId: string, message: string, convId: string, uris: ChatAttachment[]) {
     const {
         data: { user },

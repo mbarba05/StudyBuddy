@@ -1,7 +1,15 @@
 import { colors } from "@/assets/colors";
 import { ResizeImage } from "@/components/ui/ResizeImage";
 import { useAuth } from "@/services/auth/AuthProvider";
-import { Chat, ChatAttachment, isImagePickerAsset, sendMessage } from "@/services/messageService";
+import {
+    Chat,
+    ChatAttachment,
+    getOtherConversationMember,
+    getProfileDisplayName,
+    isImagePickerAsset,
+    sendMessage,
+} from "@/services/messageService";
+import { sendChatMessageNotification } from "@/services/PushNotifications";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
@@ -54,6 +62,12 @@ const SendTextInput = ({ convId, setChatsById, setOrder }: SendTextInputProps) =
             // optionally restore input text or show toast
             return;
         }
+
+        const receiverId = await getOtherConversationMember(convId, user.user.id);
+        if (!receiverId) return;
+
+        const senderName = await getProfileDisplayName(user.user.id);
+        await sendChatMessageNotification(receiverId, senderName, convId);
     };
 
     const openAttachmentOptions = () => {

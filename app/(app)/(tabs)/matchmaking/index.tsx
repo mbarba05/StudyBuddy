@@ -3,7 +3,6 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { sendFriendRequest } from "@/services/friendshipsService";
 import { getPotentialMatches } from "@/services/profileService";
-import { sendMatchNotification } from "@/services/PushNotifications";
 import { getSwipeStatus, recordSwipe, SwipeLimitErr } from "@/services/swipeService";
 import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
@@ -137,10 +136,6 @@ export default function MatchmakingScreen() {
             try {
                 await handleSwipe("right", cardIndex);
                 await sendFriendRequest(targetProfile.user_id); // receiver_id = the other user
-                await sendMatchNotification(
-                    targetProfile.user_id,
-                    `${(user as any).display_name} likes you! Check your matches to connect.`,
-                );
             } catch (err) {
                 console.error("Error sending friend request", err);
             }
