@@ -3,6 +3,18 @@ import supabase from "@/lib/subapase";
 import { sendFriendAcceptedNotification, sendFriendRequestNotification } from "@/services/PushNotifications";
 import { createConversation } from "./messageService";
 
+async function getAuthenticatedUser() {
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+        throw new Error("User not authenticated");
+    }
+
+    return session.user;
+}
+
 async function getDisplayName(userId: string): Promise<string> {
     const { data, error } = await supabase.from("profiles").select("display_name").eq("user_id", userId).single();
 
@@ -31,13 +43,7 @@ export type FriendRequest = {
 };
 
 export async function sendFriendRequest(receiver_id: string) {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
+    const user = await getAuthenticatedUser();
 
     const { data, error } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
@@ -54,13 +60,7 @@ export async function sendFriendRequest(receiver_id: string) {
 }
 
 export async function getIncomingFriendRequests() {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
+    const user = await getAuthenticatedUser();
 
     const { data, error } = await supabase
         .from(TABLES.FRIEND_REQUESTS)
@@ -152,12 +152,7 @@ export async function rejectFriendRequest(request_id: number) {
 
 // Removes friends but needss to be checked on mobile
 export async function removeFriend(friend_id: string) {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
+    const user = await getAuthenticatedUser();
     const { error } = await supabase
         .from(TABLES.FRIENDSHIPS)
         .delete()
@@ -182,12 +177,7 @@ export async function areFriends(user_id: string, friend_id: string) {
 
 // Friends count for the profile screen
 export async function getFriendsCount() {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
+    const user = await getAuthenticatedUser();
 
     const { count, error } = await supabase
         .from(TABLES.FRIENDSHIPS)
@@ -205,12 +195,7 @@ export async function getFriendsCount() {
 
 // Get all friends
 export async function getAllFriends() {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
+    const user = await getAuthenticatedUser();
     const { data, error } = await supabase
         .from(TABLES.FRIENDSHIPS)
         .select(

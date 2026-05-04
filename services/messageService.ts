@@ -55,6 +55,18 @@ export type MessagesTable = {
     content: string;
 };
 
+async function getAuthenticatedUser() {
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+        throw new Error("User not authenticated");
+    }
+
+    return session.user;
+}
+
 export async function createConversation(userA: string, userB: string) {
     const { data, error } = await supabase //create conversation
         .from(TABLES.CONVERSATIONS)
@@ -93,13 +105,7 @@ export async function createConversation(userA: string, userB: string) {
 }
 
 export async function getChatsWithRecentMessage(): Promise<DMConversation[] | null> {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError) throw authError;
-    if (!user) throw new Error("User not authenticated");
+    const user = await getAuthenticatedUser();
     const { data, error } = await supabase.rpc("get_dms_for_user", {
         p_user_id: user.id,
     });
@@ -154,14 +160,13 @@ export async function getProfileDisplayName(userId: string): Promise<string> {
 }
 
 export async function sendMessage(clientId: string, message: string, convId: string, uris: ChatAttachment[]) {
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
+    let user;
 
-    if (authError || !user) {
-        console.error("Auth error when sending text", authError);
-        return authError;
+    try {
+        user = await getAuthenticatedUser();
+    } catch (error) {
+        console.error("Auth error when sending text", error);
+        return error;
     }
 
     const { data, error } = await supabase
@@ -186,14 +191,13 @@ export async function sendMessage(clientId: string, message: string, convId: str
 
 export async function updateReadMessage(messageId: string | null, convId: string) {
     if (!messageId) return;
-    const {
-        data: { user },
-        error: authError,
-    } = await supabase.auth.getUser();
+    let user;
 
-    if (authError || !user) {
-        console.error("Auth error when updating read", authError);
-        return authError;
+    try {
+        user = await getAuthenticatedUser();
+    } catch (error) {
+        console.error("Auth error when updating read", error);
+        return error;
     }
 
     const { error } = await supabase
@@ -211,9 +215,7 @@ export async function updateReadMessage(messageId: string | null, convId: string
 export type ChatAttachment = ImagePickerAsset | DocumentPickerAsset;
 
 export async function createAttachment(uris: ChatAttachment[], convId: string, messageId: string) {
-    const { data, error: authError } = await supabase.auth.getUser();
-    const user = data?.user;
-    if (authError || !user) throw authError ?? new Error("No user");
+    const user = await getAuthenticatedUser();
 
     // Compute aspect ratios from the *local* assets BEFORE upload
     const aspectRatios = await Promise.all(

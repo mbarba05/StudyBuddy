@@ -33,9 +33,20 @@ export interface ReviewDisplay {
     myVote?: -1 | 0 | 1;
 }
 
+async function getAuthenticatedUser() {
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+        throw new Error("User not authenticated");
+    }
+
+    return session.user;
+}
+
 export async function submitReview(fullReview: ReviewInput) {
-    const user = await supabase.auth.getUser();
-    if (!user) return null;
+    await getAuthenticatedUser();
 
     const reviewed = await markEnrollmentAsReviewed(fullReview.enrollmentId);
     if (!reviewed) return null;
@@ -84,8 +95,7 @@ export async function voteOnReview(reviewId: number, direction: 1 | -1) {
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return [];
+    const user = await getAuthenticatedUser();
 
     const { data, error } = await supabase
         .from(TABLES.REVIEWS)
@@ -101,7 +111,7 @@ export async function getUserReviews(): Promise<ReviewDisplay[]> {
       )
     `,
         )
-        .eq("enrollment.user_id", userData.user.id);
+        .eq("enrollment.user_id", user.id);
 
     if (error) return [];
     return normalizeReviews(data ?? []);
@@ -197,7 +207,7 @@ const normalizeReview = (item: any): ReviewDisplay => {
         reviewText: item.review,
         courseDiff: item.course_diff,
         profRating: item.prof_rating,
-        likes: item.likes,
+        likes: item.likes ?? 0,
         term: item.enrollment?.term ?? "",
         code: item.enrollment?.course_prof?.course?.code ?? "",
         profName: item.enrollment?.course_prof?.prof?.name ?? "",
