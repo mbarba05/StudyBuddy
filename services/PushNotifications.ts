@@ -1,14 +1,3 @@
-// PushNotifications.ts
-import { createClient } from "@supabase/supabase-js";
-import Constants from "expo-constants";
-import * as Device from "expo-device";
-import * as Notifications from "expo-notifications";
-
-const supabase = createClient(
-    "https://dljsmpqvqzcovvbddugh.supabase.co",
-    "sb_publishable_NYTMX9_6Gdbm5vAlPXdL5g_CWzw5afw",
-);
-
 const sanitizeForLog = (input: string): string => {
     return input.replace(/[\r\n]/g, "");
 };
@@ -40,59 +29,69 @@ export async function registerForPushNotifications(userId: string) {
     console.log("Push Token:", pushToken);
     console.log("User ID:", userId);
 
-    // Save token in Supabase profiles table
-    const { error } = await supabase.from("profiles").update({ push_token: pushToken }).eq("user_id", userId);
+type PushNotificationType = "friend_request" | "friend_added" | "chat_message";
 
-    if (error) console.error("Error saving push token:", error.message);
-    else console.log(`Push token saved for user ${userId}: ${pushToken}`);
+export const sendPushNotification = async (
+    receiverId: string,
+    message: string,
+    type: PushNotificationType = "chat_message",
+    conversationId?: string,
+): Promise<boolean> => {
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-    return pushToken;
-}
-
-// Send match notification
-export async function sendMatchNotification(targetUserId: string, message: string): Promise<boolean> {
-    const appId = process.env.EXPO_PUBLIC_NATIVE_NOTIFY_APP_ID;
-    const appToken = process.env.EXPO_PUBLIC_NATIVE_NOTIFY_APP_TOKEN;
-
-    if (!appId || !appToken) {
-        console.error("Missing Native Notify configuration");
+    if (!supabaseUrl || !supabaseKey) {
+        console.error("Missing Supabase configuration");
         return false;
     }
 
     try {
-        const formattedDate = new Date().toLocaleString();
+        const url = new URL(`${supabaseUrl}/functions/v1/send-notification`);
 
-        const payload = {
-            appId: parseInt(appId),
-            appToken,
-            title: "StudyBuddy",
-            body: message,
-            dateSent: formattedDate,
-            userIds: [targetUserId],
-        };
+        if (!url.hostname.endsWith(".supabase.co")) {
+            console.error("Invalid Supabase URL");
+            return false;
+        }
 
-        const response = await fetch("https://app.nativenotify.com/api/notification", {
+        const response = await fetch(url.toString(), {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${supabaseKey}`,
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                receiverId,
+                message,
+                type,
+                conversationId,
+            }),
         });
 
         if (!response.ok) {
             console.error("Failed to send push notification", response.statusText);
             return false;
         }
-        console.log(`Notification sent to user ${sanitizeForLog(targetUserId)}`);
+
+        console.log(`Notification sent to user ${sanitizeForLog(receiverId)}`);
         return true;
     } catch (error) {
         console.error("Error sending push notification");
         return false;
     }
-}
+};
 
-// Send message notification via Supabase Edge Function
-export const sendPushNotification = async () => {
-    console.log("sendPushNotification disabled (using Native Notify instead)");
-    return true;
+export const sendFriendRequestNotification = async (receiverId: string, senderName: string): Promise<boolean> => {
+    return sendPushNotification(receiverId, `${senderName} has sent you a friend request`, "friend_request");
+};
+
+export const sendFriendAcceptedNotification = async (receiverId: string, friendName: string): Promise<boolean> => {
+    return sendPushNotification(receiverId, `${friendName} has accepted your friend request`, "friend_added");
+};
+
+export const sendChatMessageNotification = async (
+    receiverId: string,
+    senderName: string,
+    conversationId: string,
+): Promise<boolean> => {
+    return sendPushNotification(receiverId, `${senderName} sent you a message`, "chat_message", conversationId);
 };

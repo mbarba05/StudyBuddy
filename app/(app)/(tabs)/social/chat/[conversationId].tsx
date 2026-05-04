@@ -16,7 +16,6 @@ import {
     MessageAttachmentTable,
     MessagesTable,
 } from "@/services/messageService";
-import { sendMatchNotification } from "@/services/PushNotifications";
 import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
@@ -188,14 +187,7 @@ const ConversationScreen = () => {
                         return [newMsg.id, ...prev];
                     });
 
-                    const currentUserId = user.user?.id;
-                    if (!currentUserId) return;
-
-                    if (newMsg.sender_id !== currentUserId) {
-                        await sendMatchNotification(currentUserId, `New message from ${dmName}: ${newMsg.content}`);
-                    }
-
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); //vibration
                 },
             )
             .subscribe();
@@ -247,12 +239,6 @@ const ConversationScreen = () => {
 
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-                    const currentUserId = user.user?.id;
-                    if (!currentUserId) return;
-
-                    if (newAtt.sender_id !== currentUserId) {
-                        await sendMatchNotification(currentUserId, `New message from ${dmName}: New Attachment`);
-                    }
                 },
             )
             .subscribe();

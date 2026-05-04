@@ -1,5 +1,6 @@
 // app/(app)/_layout.tsx
-import { LoadingScreen } from "@/components/ui/Loading";
+import InAppNotificationBanner from "@/components/inAppNotificationsBanner";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { useProfileGate } from "@/services/ProfileProvider";
 import { Redirect, Stack, usePathname } from "expo-router";
@@ -20,8 +21,11 @@ export default function ProtectedLayout() {
     }
 
     return (
-        <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-        </Stack>
+        <>
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+            </Stack>
+            <InAppNotificationBanner />
+        </>
     );
 }

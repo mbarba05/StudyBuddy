@@ -1,13 +1,106 @@
-import { useInAppNotifications } from "@/services/auth/inAppNotifications";
+import supabase from "@/lib/subapase";
+import { useAuth } from "@/services/auth/AuthProvider";
+import { triggerInAppNotification, useInAppNotifications } from "@/services/auth/inAppNotifications";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, Text, TouchableOpacity } from "react-native";
 
 export default function InAppNotificationBanner() {
     const { currentNotification, clearNotification } = useInAppNotifications();
+    const { user } = useAuth();
     const router = useRouter();
 
     const translateY = useRef(new Animated.Value(-120)).current;
+
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const getDisplayName = async (userId: string) => {
+            const { data } = await supabase
+                .from("profiles")
+                .select("display_name")
+                .eq("user_id", userId)
+                .single();
+
+            return data?.display_name ?? "Someone";
+        };
+
+        const friendRequestsChannel = supabase
+            .channel(`in-app-friend-requests:${user.id}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "friend_requests",
+                    filter: `receiver_id=eq.${user.id}`,
+                },
+                async (payload) => {
+                    const senderId = payload.new.sender_id as string;
+                    const senderName = await getDisplayName(senderId);
+
+                    triggerInAppNotification({
+                        type: "friend_request",
+                        message: `${senderName} has sent you a friend request`,
+                    });
+                },
+            )
+            .subscribe();
+
+        const friendAcceptedChannel = supabase
+            .channel(`in-app-friend-accepted:${user.id}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "friend_requests",
+                    filter: `sender_id=eq.${user.id}`,
+                },
+                async (payload) => {
+                    if (payload.new.status !== "accepted") return;
+
+                    const accepterId = payload.new.receiver_id as string;
+                    const accepterName = await getDisplayName(accepterId);
+
+                    triggerInAppNotification({
+                        type: "friend_added",
+                        message: `${accepterName} has accepted your friend request`,
+                    });
+                },
+            )
+            .subscribe();
+
+        const messagesChannel = supabase
+            .channel(`in-app-messages:${user.id}`)
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages",
+                },
+                async (payload) => {
+                    const senderId = payload.new.sender_id as string;
+                    if (senderId === user.id) return;
+
+                    const senderName = await getDisplayName(senderId);
+
+                    triggerInAppNotification({
+                        type: "chat_message",
+                        message: `${senderName} sent you a message`,
+                        conversationId: payload.new.conversation_id as string,
+                    });
+                },
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(friendRequestsChannel);
+            supabase.removeChannel(friendAcceptedChannel);
+            supabase.removeChannel(messagesChannel);
+        };
+    }, [user?.id]);
 
     useEffect(() => {
         if (currentNotification) {
@@ -42,6 +135,10 @@ export default function InAppNotificationBanner() {
 
         if (currentNotification.type === "friend_added") {
             router.push("/friends");
+        }
+
+        if (currentNotification.type === "chat_message" && currentNotification.conversationId) {
+            router.push(`/social/chat/${currentNotification.conversationId}`);
         }
 
         clearNotification();

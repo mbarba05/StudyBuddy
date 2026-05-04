@@ -16,7 +16,7 @@ interface WriteReviewModalProps {
     visible: boolean;
     setVisible: (visible: boolean) => void;
     selectedEnrollment: ReviewableEnrollment;
-    onSubmit: () => void;
+    onSubmit: () => void | Promise<void>;
 }
 
 const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }: WriteReviewModalProps) => {
@@ -67,7 +67,7 @@ const WriteReviewModal = ({ visible, setVisible, selectedEnrollment, onSubmit }:
                 setError("Failed to submit review. Please try again later.");
                 return;
             }
-            onSubmit();
+            await onSubmit();
             modalClose();
         } catch (e) {
             console.error("Error submitting review:", e);

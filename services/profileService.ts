@@ -45,7 +45,7 @@ export const getUserProfile = async (): Promise<Profile | null> => {
         return null;
     }
 
-    return data as Profile;
+    return data as unknown as Profile;
 };
 
 export const getProfileByUserId = async (targetUserId: string): Promise<Profile | null> => {
@@ -663,7 +663,7 @@ export async function majorMatching(
                 display_name: c.display_name as string,
                 year: (c.year ?? null) as string | null,
                 pp_url: (c.pp_url ?? null) as string | null,
-                photo_urls: (c.photo_urls ?? null) as string[],
+                photo_urls: (c.photo_urls ?? null) as string[] | null,
                 bio: (c.bio ?? null) as string | null,
                 major: c.major as Major,
                 is_admin: !!c.is_admin,

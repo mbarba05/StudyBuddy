@@ -1,7 +1,8 @@
 import { colors } from "@/assets/colors";
 import CourseSearchModal from "@/components/features/courses/CourseSearchModal";
 import { LoginButton } from "@/components/ui/Buttons";
-import { LoadingScreen } from "@/components/ui/Loading";
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import { ResizeImage } from "@/components/ui/ResizeImage";
 import { LoginInput } from "@/components/ui/TextInputs";
 import { yearOptions } from "@/lib/enumFrontend";
 import { parseLastName } from "@/lib/utillities";
@@ -14,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 
 const EditProfileScreen = () => {
@@ -260,18 +261,27 @@ const EditProfileScreen = () => {
                 <View className="w-full px-6 gap-3">
                     {/* Profile Picture */}
                     <View className="mb-3 items-center">
-                        <TouchableOpacity onPress={pickImage}>
-                            {imageUri ? (
-                                <Image
-                                    source={{ uri: imageUri }}
-                                    className="w-80 h-80 rounded-full border-2 border-colors-text"
+                        {imageUri ? (
+                            <View className="items-center gap-3">
+                                <ResizeImage
+                                    url={imageUri}
+                                    width={320}
+                                    aspectRatio={1}
+                                    borderRadius={999}
+                                    testID="edit-profile-picture"
                                 />
-                            ) : (
+
+                                <TouchableOpacity onPress={pickImage}>
+                                    <Text className="color-colors-textSecondary">Tap to change photo</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity onPress={pickImage}>
                                 <View className="w-80 h-80 rounded-full border-2 border-colors-text items-center justify-center">
                                     <Text className="color-colors-textSecondary">Tap to add photo</Text>
                                 </View>
-                            )}
-                        </TouchableOpacity>
+                            </TouchableOpacity>
+                        )}
                     </View>
                     
                     {/* Extra Photos */}

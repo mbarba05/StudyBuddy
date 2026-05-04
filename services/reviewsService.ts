@@ -9,7 +9,6 @@ export interface Review {
     review: string;
     courseDiff: number;
     profRating: number;
-    likes: number;
 }
 
 export interface ReviewInput {
@@ -34,30 +33,40 @@ export interface ReviewDisplay {
     myVote: -1 | 0 | 1;
 }
 
-const normalizeReview = (item: any): ReviewDisplay => {
+async function getAuthenticatedUser() {
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+        throw new Error("User not authenticated");
+    }
+
+    return session.user;
+}const normalizeReview = (item: any): ReviewDisplay => {
     const d = new Date(item.created_at);
     const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
-    console.log("VOTESCORE: ", item);
+
     return {
         reviewId: item.id,
         reviewText: item.review,
         courseDiff: item.course_diff,
         profRating: item.prof_rating,
-        term: item.term,
-        code: item.code,
-        profName: item.name,
-        grade: item.grade,
+        term: item.term ?? item.enrollment?.term ?? "",
+        code: item.code ?? item.enrollment?.course_prof?.course?.code ?? "",
+        profName: item.name ?? item.enrollment?.course_prof?.prof?.name ?? "",
+        grade: item.grade ?? "",
         reviewDate,
         voteScore: item.vote_score ?? 0,
         myVote: item.my_vote ?? 0,
+        likes: item.likes ?? 0,
     };
 };
 
 const normalizeReviews = (rows: any[]): ReviewDisplay[] => rows.map(normalizeReview);
 
 export async function submitReview(fullReview: ReviewInput) {
-    const user = await supabase.auth.getUser();
-    if (!user) return null;
+    await getAuthenticatedUser();
 
     const reviewed = await markEnrollmentAsReviewed(fullReview.enrollmentId);
     if (!reviewed) return null;
@@ -125,34 +134,83 @@ export async function reportReview(reviewId: number, reason: string) {
 }
 
 export async function getUserReviews(): Promise<ReviewDisplay[]> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return [];
+    const user = await getAuthenticatedUser();
 
-    const { data, error } = await supabase.rpc(FUNCTIONS.GET_USER_REVIEWS, { p_user_id: userData.user.id });
-    
+   const { data, error } = await supabase.rpc(FUNCTIONS.GET_USER_REVIEWS, {
+      p_user_id: user.id,
+    });
+
     if (error) {
-        console.error("Error, getUserReviews:", error);
-        return [];
+      console.error("Error, getUserReviews:", error);
+      return [];
     }
 
     return normalizeReviews(data ?? []);
 }
 
+// Will count all the reviews user writes and sum up their upvotes
+export async function getUserReviewScore(userId: string) {
+    const { data: enrollments, error: enrollmentError } = await supabase
+        .from(TABLES.ENROLLMENTS)
+        .select("id")
+        .eq("user_id", userId);
+
+    if (enrollmentError) {
+        console.error("Error loading user enrollments for score:", enrollmentError);
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const enrollmentIds = (enrollments ?? []).map((enrollment) => enrollment.id);
+
+    if (enrollmentIds.length === 0) {
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const { data: reviews, error: reviewError } = await supabase
+        .from(TABLES.REVIEWS)
+        .select("id")
+        .in("enrollment_id", enrollmentIds);
+
+    if (reviewError) {
+        console.error("Error loading user score:", reviewError);
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const reviewCount = reviews?.length ?? 0;
+    const reviewIds = (reviews ?? []).map((review) => review.id);
+
+    if (reviewIds.length === 0) {
+        return { reviewCount: 0, upvoteCount: 0, totalPoints: 0 };
+    }
+
+    const { data: votes, error: voteError } = await supabase
+        .from("review_votes")
+        .select("vote")
+        .in("review_id", reviewIds);
+
+    if (voteError) {
+        console.error("Error loading review votes for score:", voteError);
+        return { reviewCount, upvoteCount: 0, totalPoints: reviewCount };
+    }
+
+    const upvoteCount = (votes ?? []).reduce((sum, row) => sum + (row.vote === 1 ? 1 : 0), 0);
+    const totalPoints = reviewCount + upvoteCount;
+
+    return { reviewCount, upvoteCount, totalPoints };
+}
+
 export const getReviewsForProf = async (profId: number): Promise<ReviewDisplay[]> => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) return [];
+    const user = await getAuthenticatedUser();
 
     const { data, error } = await supabase.rpc(FUNCTIONS.GET_PROF_REVIEWS, {
         p_prof_id: profId,
-        p_user_id: userData.user.id,
+        p_user_id: user.id,
     });
 
     if (error) {
         console.error("Error: getReviewsForProf: ", error);
         return [];
     }
-
-    console.log("REVS: ", data);
 
     return normalizeReviews(data ?? []);
 };
@@ -164,6 +222,14 @@ export async function getSavedSummaries(profId: number) {
         .select("summary, review_count, updated_at")
         .eq("prof_id", profId)
         .maybeSingle();
+
+    if (error) {
+        console.error("Error: getSavedSummaries:", error);
+        return null;
+    }
+
+    return data;
+}
 
     if (error) throw error;
     return data ?? null;
@@ -220,6 +286,27 @@ export const updateRecentlyViewedRevForUser = async (profId: number) => {
         }
     }
 };
+const normalizeReview = (item: any): ReviewDisplay => {
+    const d = new Date(item.created_at);
+    const reviewDate = `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+
+    return {
+        reviewId: item.id,
+        reviewText: item.review,
+        courseDiff: item.course_diff,
+        profRating: item.prof_rating,
+        likes: item.likes ?? 0,
+        term: item.term ?? item.enrollment?.term ?? "",
+        code: item.code ?? item.enrollment?.course_prof?.course?.code ?? "",
+        profName: item.name ?? item.enrollment?.course_prof?.prof?.name ?? "",
+        grade: item.grade ?? "",
+        reviewDate,
+        voteScore: item.vote_score ?? 0,
+        myVote: item.my_vote ?? 0,
+    };
+};
+
+const normalizeReviews = (rows: any[]): ReviewDisplay[] => rows.map(normalizeReview);
 
 export const updateRecentlyViewedRevGlobal = async (profId: number) => {
     const recentlyViewedProf = await supabase
@@ -227,9 +314,9 @@ export const updateRecentlyViewedRevGlobal = async (profId: number) => {
         .select("*")
         .eq("prof_id", profId)
         .maybeSingle();
-
-    if (recentlyViewedProf.error) {
-        console.error("updateRecentlyViewedRevGlobal, error fetching global row", recentlyViewedProf.error);
+  
+    if (recentlyViewedProf.error) { 
+       console.error("updateRecentlyViewedRevGlobal, error fetching global row", recentlyViewedProf.error);
         return;
     }
 

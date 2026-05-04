@@ -1,6 +1,7 @@
 import CourseProfDisplayWidget from "@/components/features/courses/CourseProfDisplayWidget";
 import { LoginButton } from "@/components/ui/Buttons";
-import { LoadingScreen } from "@/components/ui/Loading";
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import { ResizeImage } from "@/components/ui/ResizeImage";
 import { SectionSeperator } from "@/components/ui/Seperators";
 import { useAuth } from "@/services/auth/AuthProvider";
 import { CourseProfDisplay } from "@/services/courseService";
@@ -11,7 +12,7 @@ import { getCurrentAndNextTerm, Term } from "@/services/termsService";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -99,10 +100,13 @@ export default function ProfileScreen() {
 
                 <View className="flex flex-row gap-12 items-center justify-between w-full p-2">
                     <View className="w-1/3">
-                        <Image
-                            className="w-44 h-44 rounded-full border border-colors-text"
-                            source={{ uri: profile?.pp_url as string }}
-                        />
+                        <ResizeImage
+                            url={profile?.pp_url as string}
+                            width={176}
+                            aspectRatio={1}
+                            borderRadius={999}
+                            testID="profile-picture"
+                         />
                     </View>
                     <View className="flex w-2/3 gap-2">
                         <View>
