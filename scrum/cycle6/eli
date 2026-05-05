@@ -1,0 +1,8 @@
+In this scrum cycle Im going to implement Ai professor summaries. The summaries will be generated using the reviews under a professor. 
+It will regenerate after n number of new reviews created, so that it doesn't call the api multiple times. I will also gather a one word 
+description to describe the professor and it will list the common complaints found in the reviews. 
+
+I was able to implement this using Groq which I found to be good at summarizing the reviews. when summaries are generated they are also saved in the 
+database. The api only gets called every 10 new reviews. I did this so the api wouldn't get hit all the time a new review is created. I also did 10 
+new reviews because if it would keep the summary updated to match the reviews. When the user is trying to view professors summary, it would grab the
+saved summary if there isn't any new reviews. 
